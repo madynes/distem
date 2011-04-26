@@ -1,0 +1,21 @@
+= Iterations
+== Iteration 0:
+wrekad (wrekavoc daemon) starts and can answer queries sent from wrekavoc (client) using REST
+wrekavoc uses restclient and optparse for command line parsing
+wrekad uses sinatra
+wrekanode (wrekavoc node daemon) starts and can answer queries sent from wrekad
+wrekad can send queries to wrekanode
+
+== Iteration 1:
+LXC creation using fixed IP addresses
+
+== Iteration 2:
+IP address allocation + tests
+
+== Iteration 3:
+network links + routing setup
+
+= Infrastructure:
+* Add gemspec and do the work so that Wrekavoc can be installed as a Gem
+* Prepare Debian package for Wrekavoc
+* Infrastructure for unit tests
