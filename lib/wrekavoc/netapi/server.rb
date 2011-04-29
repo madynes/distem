@@ -20,8 +20,8 @@ module Wrekavoc
         @daemon_resources = Daemon::Resource.new
       end
 
-      def daemon?
-        @target != TARGET_SELF
+      def run
+        Server.run!
       end
 
       before do
@@ -45,7 +45,7 @@ module Wrekavoc
 
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
-          vnode = Resource::VNode.new(pnode,params['name'])
+          vnode = Resource::VNode.new(pnode,params['name'],params['envimg'])
           @daemon_resources.add_vnode(vnode)
 
           cl = Client.new(@target)
@@ -57,7 +57,10 @@ module Wrekavoc
         return @ret
       end
 
-      Server.run!
+      protected
+      def daemon?
+        @target != TARGET_SELF
+      end
     end
 
   end

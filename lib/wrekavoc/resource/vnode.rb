@@ -8,7 +8,7 @@ module Wrekavoc
 
     class VNode
       @@ids = 0
-      attr_reader :id, :name, :host
+      attr_reader :id, :name, :host, :envimg
 
       def initialize(host, name, envimg)
         raise unless host.is_a?(PNode)
@@ -25,6 +25,7 @@ module Wrekavoc
         end
 
         @host = host
+        @envimg = envimg
         @vifaces = []
         @@ids += 1
       end
