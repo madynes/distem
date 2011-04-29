@@ -7,7 +7,7 @@ module Wrekavoc
   module Daemon
 
     class Resource
-      def initialize()
+      def initialize
         @pnodes = {}
         @vnodes = []
       end

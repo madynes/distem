@@ -13,8 +13,8 @@ module Wrekavoc
       set :environment, :developpement
       set :run, true
 
-      def initialize()
-        super()
+      def initialize
+        super
         @daemon_admin = Daemon::Admin.new
         @daemon_resources = Daemon::Resource.new
       end

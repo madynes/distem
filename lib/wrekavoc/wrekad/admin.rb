@@ -10,7 +10,7 @@ module Wrekavoc
       PATH_BIN_RUBY='/usr/bin/ruby'
       PATH_SSH_KEY='/root/.ssh/id_rsa'
 
-      def initialize()
+      def initialize
       end
 
       def pnode_run_server(pnode)
