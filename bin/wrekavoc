@@ -1,1 +1,65 @@
 #!/usr/bin/ruby -w
+$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'wrekavoc'
+require 'optparse'
+require 'pp'
+
+USAGE="Usage: #{$0} <daemon_address> [options]"
+
+options = {}
+
+options['f_pnode_init'] = false
+options['f_vnode_create'] = false
+
+options['daemon_port'] = 4567
+options['pnode_addr'] = false
+options['vnode_name'] = false
+options['vnode_image'] = false
+
+
+optparse = OptionParser.new(USAGE) do |opts|
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+  opts.on( '-p', '--port NUMBER', \
+    'The port that the daemon is listening on [default: 4567]' ) do |p|
+    options['daemon_port'] = p
+  end
+  opts.on( '-i', '--init-pnode ADDRESS', \
+    'Initialize the physical node (start daemons, ...)' ) do |addr|
+    options['f_pnode_init'] = true
+    options['pnode_addr'] = addr
+  end
+  opts.on( '-n', '--create-vnode HOST,NAME,IMAGE_FILE', Array,\
+    'Create the virtual node <NAME> on <HOST> deploying <IMAGE_FILE>' ) \
+    do |array|
+    options['f_vnode_create'] = true
+    options['pnode_addr'] = array[0]
+    options['vnode_name'] = array[1]
+    options['vnode_image'] = array[2]
+  end
+end
+optparse.parse!
+
+unless ARGV.length == 1
+  puts USAGE
+  exit
+end
+
+
+cl=false
+
+if (options['f_pnode_init'])
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port'])
+  puts cl.pnode_init(options['pnode_addr'])
+end
+
+if (options['f_vnode_create'])
+  unless cl
+    cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port'])
+  end
+  puts cl.vnode_create(options['pnode_addr'],options['vnode_name'], \
+    options['vnode_image'])
+end
