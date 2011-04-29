@@ -45,11 +45,11 @@ module Wrekavoc
 
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
-          vnode = Resource::VNode.new(pnode,params['name'],params['envimg'])
+          vnode = Resource::VNode.new(pnode,params['name'],params['image'])
           @daemon_resources.add_vnode(vnode)
 
           cl = Client.new(@target)
-          @ret += cl.vnode_create(TARGET_SELF,vnode.name,vnode.envimg)
+          @ret += cl.vnode_create(TARGET_SELF,vnode.name,vnode.image)
         else
           @ret += "Virtual node '#{params['name']}' created"
         end

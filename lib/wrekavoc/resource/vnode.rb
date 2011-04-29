@@ -8,13 +8,13 @@ module Wrekavoc
 
     class VNode
       @@ids = 0
-      attr_reader :id, :name, :host, :envimg
+      attr_reader :id, :name, :host, :image
 
-      def initialize(host, name, envimg)
+      def initialize(host, name, image)
         raise unless host.is_a?(PNode)
         raise unless name.is_a?(String)
-        raise unless envimg.is_a?(String)
-        # >>> TODO: validate and check envimg availability
+        raise unless image.is_a?(String)
+        # >>> TODO: validate and check image availability
 
         @id = @@ids
 
@@ -25,7 +25,7 @@ module Wrekavoc
         end
 
         @host = host
-        @envimg = envimg
+        @image = image
         @vifaces = []
         @@ids += 1
       end
