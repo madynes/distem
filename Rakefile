@@ -15,3 +15,8 @@ Rake::RDocTask.new do |t|
   t.rdoc_files.include('README')
   t.rdoc_files.include('lib/**/*.rb')
 end
+
+desc "Builds a Debian package"
+task :debian do
+  sh 'dpkg-buildpackage -us -uc'
+end
