@@ -1,5 +1,5 @@
 require 'wrekavoc/wrekad/admin'
-require 'wrekavoc/wrekad/ressource'
+require 'wrekavoc/wrekad/resource'
 require 'wrekavoc/wrekalib/pnode'
 require 'wrekavoc/wrekalib/viface'
 require 'wrekavoc/wrekalib/vnode'

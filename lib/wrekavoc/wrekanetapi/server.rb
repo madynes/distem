@@ -1,7 +1,7 @@
 require 'sinatra/base'
 require 'wrekavoc/wrekanetapi/netapi'
 require 'wrekavoc/wrekanetapi/client'
-require 'wrekavoc/wrekad/ressource'
+require 'wrekavoc/wrekad/resource'
 require 'wrekavoc/wrekad/admin'
 require 'wrekavoc/wrekalib/pnode'
 
@@ -16,7 +16,7 @@ module Wrekavoc
       def initialize()
         super()
         @daemon_admin = Daemon::Admin.new
-        @daemon_ressources = Daemon::Ressource.new
+        @daemon_resources = Daemon::Resource.new
       end
 
       def daemon?
@@ -37,9 +37,9 @@ module Wrekavoc
         # >>> TODO: Validate target addr ?
 
         if daemon?
-          pnode = @daemon_ressources.get_pnode(@target)
+          pnode = @daemon_resources.get_pnode(@target)
           vnode = VNode.new(pnode,params['name'])
-          @daemon_ressources.add_vnode(vnode)
+          @daemon_resources.add_vnode(vnode)
 
           @daemon_admin.pnode_run_server(pnode)
 

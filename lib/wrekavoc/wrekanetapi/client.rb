@@ -10,7 +10,7 @@ module Wrekavoc
         raise unless port.is_a?(Numeric)
         # >>> TODO: validate server ip
 
-        @ressource = RestClient::Resource.new('http://' + serveraddr + ':' \
+        @resource = RestClient::Resource.new('http://' + serveraddr + ':' \
                                               + port.to_s)
       end
 
@@ -19,7 +19,7 @@ module Wrekavoc
         raise if name.empty?
         # >>> TODO: validate target ip
 
-        @ressource[VNODE_CREATE].post :target => target, :name => name
+        @resource[VNODE_CREATE].post :target => target, :name => name
       end
     end
 
