@@ -20,12 +20,13 @@ module Wrekavoc
         @resource[PNODE_INIT].post :target => target
       end
 
-      def vnode_create(target, name)
+      def vnode_create(target, name, envimg)
         raise unless name.is_a?(String)
         raise if name.empty?
         # >>> TODO: validate target ip
 
-        @resource[VNODE_CREATE].post :target => target, :name => name
+        @resource[VNODE_CREATE].post :target => target, :name => name, \
+          :envimg => envimg
       end
     end
 

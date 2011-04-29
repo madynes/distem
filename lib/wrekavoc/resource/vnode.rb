@@ -10,9 +10,11 @@ module Wrekavoc
       @@ids = 0
       attr_reader :id, :name, :host
 
-      def initialize(host, name="")
-        raise unless name.is_a?(String)
+      def initialize(host, name, envimg)
         raise unless host.is_a?(PNode)
+        raise unless name.is_a?(String)
+        raise unless envimg.is_a?(String)
+        # >>> TODO: validate and check envimg availability
 
         @id = @@ids
 
