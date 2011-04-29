@@ -1,9 +1,10 @@
 require 'sinatra/base'
-require 'wrekavoc/wrekanetapi/netapi'
-require 'wrekavoc/wrekanetapi/client'
-require 'wrekavoc/wrekad/resource'
-require 'wrekavoc/wrekad/admin'
-require 'wrekavoc/wrekalib/pnode'
+require 'wrekavoc/netapi/netapi'
+require 'wrekavoc/netapi/client'
+require 'wrekavoc/daemon/resource'
+require 'wrekavoc/daemon/admin'
+require 'wrekavoc/resource/pnode'
+require 'wrekavoc/resource/vnode'
 
 module Wrekavoc
 
@@ -38,7 +39,7 @@ module Wrekavoc
 
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
-          vnode = VNode.new(pnode,params['name'])
+          vnode = Resource::VNode.new(pnode,params['name'])
           @daemon_resources.add_vnode(vnode)
 
           @daemon_admin.pnode_run_server(pnode)

@@ -1,6 +1,6 @@
 require 'resolv'
-require 'wrekavoc/wrekalib/pnode'
-require 'wrekavoc/wrekalib/vnode'
+require 'wrekavoc/resource/pnode'
+require 'wrekavoc/resource/vnode'
 
 module Wrekavoc
 
@@ -13,7 +13,7 @@ module Wrekavoc
       end
 
       def add_vnode(vnode)
-        raise unless vnode.is_a?(VNode)
+        raise unless vnode.is_a?(Resource::VNode)
 
         @pnodes[vnode.host.address] = vnode.host \
           unless @pnodes.has_key?(vnode.host.address)
@@ -25,7 +25,7 @@ module Wrekavoc
           if @pnodes.has_key?(address)
             ret = @pnodes[address]
           else
-            ret = PNode.new(address)
+            ret = Resource::PNode.new(address)
           end
 
           return ret
@@ -35,3 +35,5 @@ module Wrekavoc
     end
 
   end
+
+end
