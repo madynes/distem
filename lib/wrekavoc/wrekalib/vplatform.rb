@@ -1,6 +1,6 @@
 module Wrekavoc
 
-  class VPlateform
+  class VPlatform
     def initialize()
       @nodes = {}
       @links = []
