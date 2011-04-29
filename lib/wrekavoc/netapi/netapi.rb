@@ -4,7 +4,9 @@ module Wrekavoc
 
     TARGET_SELF=''
 
-    VNODE_CREATE='/vnode/create'
+    PNODE_INIT='/pnodes/init'
+
+    VNODE_CREATE='/vnodes/create'
 
   end
 

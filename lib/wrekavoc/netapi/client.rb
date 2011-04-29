@@ -14,6 +14,12 @@ module Wrekavoc
                                               + port.to_s)
       end
 
+      def pnode_init(target)
+        # >>> TODO: validate target ip
+
+        @resource[PNODE_INIT].post :target => target
+      end
+
       def vnode_create(target, name)
         raise unless name.is_a?(String)
         raise if name.empty?

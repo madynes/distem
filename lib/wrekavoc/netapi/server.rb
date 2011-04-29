@@ -34,6 +34,12 @@ module Wrekavoc
         @ret = nil
       end
 
+      post PNODE_INIT do
+          pnode = @daemon_resources.get_pnode(@target)
+          @daemon_admin.pnode_run_server(pnode)
+      end
+
+
       post VNODE_CREATE do
         # >>> TODO: Validate target addr ?
 
@@ -42,10 +48,8 @@ module Wrekavoc
           vnode = Resource::VNode.new(pnode,params['name'])
           @daemon_resources.add_vnode(vnode)
 
-          @daemon_admin.pnode_run_server(pnode)
-
           cl = Client.new(@target)
-          @ret += cl.vnode_create(TARGET_SELF,vnode.name)
+          @ret += cl.vnode_create(TARGET_SELF,vnode.name,vnode.envimg)
         else
           @ret += "Virtual node '#{params['name']}' created"
         end
