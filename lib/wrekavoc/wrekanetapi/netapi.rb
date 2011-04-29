@@ -1,6 +1,11 @@
-module NetAPI
-  TARGET_SELF=''
+module Wrekavoc
 
-  VNODE_CREATE='/vnode/create'
+  module NetAPI
+
+    TARGET_SELF=''
+
+    VNODE_CREATE='/vnode/create'
+
+  end
 
 end
