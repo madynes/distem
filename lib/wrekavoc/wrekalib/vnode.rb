@@ -1,5 +1,5 @@
-require 'pnode'
-require 'viface'
+require 'wrekavoc/wrekalib/pnode'
+require 'wrekavoc/wrekalib/viface'
 require 'resolv'
 
 module Wrekavoc

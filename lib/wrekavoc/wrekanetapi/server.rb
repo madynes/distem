@@ -1,9 +1,9 @@
 require 'sinatra/base'
-require 'netapi'
-require 'client'
-require 'ressource'
-require 'admin'
-require 'pnode'
+require 'wrekavoc/wrekanetapi/netapi'
+require 'wrekavoc/wrekanetapi/client'
+require 'wrekavoc/wrekad/ressource'
+require 'wrekavoc/wrekad/admin'
+require 'wrekavoc/wrekalib/pnode'
 
 module Wrekavoc
 

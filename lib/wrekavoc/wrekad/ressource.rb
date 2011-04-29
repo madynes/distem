@@ -1,6 +1,6 @@
 require 'resolv'
-require 'pnode'
-require 'vnode'
+require 'wrekavoc/wrekalib/pnode'
+require 'wrekavoc/wrekalib/vnode'
 
 module Wrekavoc
 
