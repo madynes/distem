@@ -15,12 +15,12 @@ module Wrekavoc
 
       def get_default_iface
         # >>> TODO: check command line return 
-        `route | grep 'default' | awk '{print $8}' | tr -d '\n'`
+        Lib::Shell.run("route | grep 'default' | awk '{print \$8}' | tr -d '\n'")
       end 
 
       def get_iface_addr(iface)
         # >>> TODO: check command line return 
-        `ifconfig "#{iface}" | grep 'inet addr' | awk '{print $2}' | cut -d':' -f2 | tr -d '\n'`
+        Lib::Shell.run("ifconfig #{iface} | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
       end
 
       def set_bridge
@@ -28,17 +28,17 @@ module Wrekavoc
         addr = get_iface_addr(iface)
 
         # >>> TODO: check command line return 
-        `brctl addbr br0`
-        `brctl setfd br0 0`
-        `ifconfig br0 #{addr} promisc up`
-        `brctl addif br0 #{iface}`
-        `ifconfig #{iface} 0.0.0.0 up`
+        Lib::Shell.run("brctl addbr br0")
+        Lib::Shell.run("brctl setfd br0 0")
+        Lib::Shell.run("ifconfig br0 #{addr} promisc up")
+        Lib::Shell.run("brctl addif br0 #{iface}")
+        Lib::Shell.run("ifconfig #{iface} 0.0.0.0 up")
       end
 
       def set_cgroups
         # >>> TODO: check command line return 
-        `mkdir #{PATH_CGROUP}`
-        `mount -t cgroup cgroup #{PATH_CGROUP}`
+        Lib::Shell.run("mkdir #{PATH_CGROUP}")
+        Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
       end
     end
 
