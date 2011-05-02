@@ -1,5 +1,5 @@
 require 'net/ssh'
-require 'wrekavoc/resource/pnode'
+require 'wrekavoc'
 
 module Wrekavoc
 

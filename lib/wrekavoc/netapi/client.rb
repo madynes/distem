@@ -1,5 +1,5 @@
 require 'rest_client'
-require 'wrekavoc/netapi/netapi'
+require 'wrekavoc'
 
 module Wrekavoc
 

@@ -1,11 +1,5 @@
 require 'sinatra/base'
-require 'wrekavoc/netapi/netapi'
-require 'wrekavoc/netapi/client'
-require 'wrekavoc/daemon/resource'
-require 'wrekavoc/daemon/admin'
-require 'wrekavoc/resource/pnode'
-require 'wrekavoc/resource/vnode'
-require 'wrekavoc/node/admin'
+require 'wrekavoc'
 
 module Wrekavoc
 
