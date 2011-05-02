@@ -5,6 +5,7 @@ require 'wrekavoc/daemon/resource'
 require 'wrekavoc/daemon/admin'
 require 'wrekavoc/resource/pnode'
 require 'wrekavoc/resource/vnode'
+require 'wrekavoc/node/admin'
 
 module Wrekavoc
 
@@ -18,6 +19,7 @@ module Wrekavoc
         super
         @daemon_admin = Daemon::Admin.new
         @daemon_resources = Daemon::Resource.new
+        @node_admin = Node::Admin.new
       end
 
       def run
@@ -35,8 +37,19 @@ module Wrekavoc
       end
 
       post PNODE_INIT do
+        if daemon?
           pnode = @daemon_resources.get_pnode(@target)
           @daemon_admin.pnode_run_server(pnode)
+          sleep(1)
+
+          cl = Client.new(@target)
+          @ret += cl.pnode_init(TARGET_SELF)
+        else
+          @node_admin.init_node()
+          @ret += "Node initilized"
+        end
+
+        return @ret
       end
 
 
