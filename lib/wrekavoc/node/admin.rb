@@ -15,12 +15,20 @@ module Wrekavoc
 
       def get_default_iface
         # >>> TODO: check command line return 
-        Lib::Shell.run("route | grep 'default' | awk '{print \$8}' | tr -d '\n'")
+        cmdret = Lib::Shell.run("/sbin/route") 
+        # | grep 'default' | awk '{print \$8}' | tr -d '\n'")
+        ret=""
+        cmdret.each_line { |s| ret=s.split[7] if s.include?("default") }
+        return ret
       end 
 
       def get_iface_addr(iface)
         # >>> TODO: check command line return 
-        Lib::Shell.run("ifconfig #{iface} | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
+        cmdret = Lib::Shell.run("/sbin/ifconfig #{iface}") 
+        # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
+        ret=""
+        cmdret.each_line { |s| ret=s.split[1].split(":")[1] if s.include?("inet addr") }
+        return ret
       end
 
       def set_bridge
