@@ -14,7 +14,6 @@ module Wrekavoc
       end
 
       def get_default_iface
-        # >>> TODO: check command line return 
         cmdret = Lib::Shell.run("/sbin/route") 
         # | grep 'default' | awk '{print \$8}' | tr -d '\n'")
         ret=""
@@ -23,7 +22,6 @@ module Wrekavoc
       end 
 
       def get_iface_addr(iface)
-        # >>> TODO: check command line return 
         cmdret = Lib::Shell.run("/sbin/ifconfig #{iface}") 
         # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
         ret=""
@@ -35,7 +33,6 @@ module Wrekavoc
         iface = get_default_iface()
         addr = get_iface_addr(iface)
 
-        # >>> TODO: check command line return 
         Lib::Shell.run("brctl addbr br0")
         Lib::Shell.run("brctl setfd br0 0")
         Lib::Shell.run("ifconfig br0 #{addr} promisc up")
@@ -44,7 +41,6 @@ module Wrekavoc
       end
 
       def set_cgroups
-        # >>> TODO: check command line return 
         Lib::Shell.run("mkdir #{PATH_CGROUP}")
         Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
       end
