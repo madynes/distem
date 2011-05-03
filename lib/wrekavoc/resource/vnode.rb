@@ -1,5 +1,6 @@
 require 'wrekavoc'
 require 'resolv'
+require 'uri'
 
 module Wrekavoc
 
@@ -11,7 +12,9 @@ module Wrekavoc
 
       # The unique id of this Node
       attr_reader :id
-      attr_reader :name, :host, :image
+      # The URI to the -bootstrapped and compressed- image file
+      attr_reader :image
+      attr_reader :name, :host
 
       
       # Create a new Virtual Node
@@ -37,7 +40,7 @@ module Wrekavoc
         end
 
         @host = host
-        @image = image
+        @image = URI.encode(image)
         @vifaces = []
         @@ids += 1
       end

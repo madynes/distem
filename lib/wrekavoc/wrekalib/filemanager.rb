@@ -7,14 +7,14 @@ module Wrekavoc
     class FileManager
       PATH_DEFAULT_DOWNLOAD="/tmp/"
 
-      BIN_TAR="/usr/bin/tar"
+      BIN_TAR="/bin/tar"
       BIN_GUNZIP="/bin/gunzip"
       BIN_BUNZIP2="/bin/bunzip2"
       BIN_UNZIP="/usr/bin/unzip"
       
       # Returns a path to the file on the local machine
       def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
-        uri = URI.parse(uri_str)
+        uri = URI.parse(URI.decode(uri_str))
         ret = ""
         
         case uri.scheme
