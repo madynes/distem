@@ -1,5 +1,5 @@
-require 'sinatra/base'
 require 'wrekavoc'
+require 'sinatra/base'
 
 module Wrekavoc
 
@@ -14,6 +14,7 @@ module Wrekavoc
         @daemon_admin = Daemon::Admin.new
         @daemon_resources = Daemon::Resource.new
         @node_admin = Node::Admin.new
+        @node_config = Node::ConfigManager.new
       end
 
       def run
@@ -53,11 +54,17 @@ module Wrekavoc
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
           vnode = Resource::VNode.new(pnode,params['name'],params['image'])
+
           @daemon_resources.add_vnode(vnode)
 
           cl = Client.new(@target)
           @ret += cl.vnode_create(TARGET_SELF,vnode.name,vnode.image)
         else
+          pnode = Resource::PNode.new(@target)
+          vnode = Resource::VNode.new(pnode,params['name'],params['image'])
+
+          @node_config.vnode_add(vnode)
+
           @ret += "Virtual node '#{params['name']}' created"
         end
 
