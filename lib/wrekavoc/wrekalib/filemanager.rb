@@ -41,7 +41,7 @@ module Wrekavoc
           unless File.exists?(targetdir)
             Lib::Shell.run("mkdir -p #{targetdir}")
           end
-          Lib::Shell.run("ln -f #{archivefile} #{File.join(targetdir,basename)}")
+          Lib::Shell.run("ln -sf #{archivefile} #{File.join(targetdir,basename)}")
           link=true
         end
 
