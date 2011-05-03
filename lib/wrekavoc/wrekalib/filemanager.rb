@@ -11,10 +11,14 @@ module Wrekavoc
       def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
         uri = URI.parse(uri_str)
         ret = ""
-        raise "Protocol not supported" unless uri.scheme == "file"
-
-        ret = uri.path
-        raise "File '#{ret}' not found" unless File.exists?(ret)
+        
+        case uri.scheme
+          when "file"
+            ret = uri.path
+            raise "File '#{ret}' not found" unless File.exists?(ret)
+          else
+            raise "Protocol not supported" unless uri.scheme == "file"
+        end
 
         return ret
       end
