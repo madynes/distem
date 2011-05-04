@@ -64,7 +64,41 @@ module Wrekavoc
 
           @node_config.vnode_add(vnode)
 
-          @ret += "Virtual node '#{params['name']}' created"
+          @ret += "Virtual node '#{vnode.name}' created"
+        end
+
+        return @ret
+      end
+
+      post VNODE_START do
+        # >>> TODO: Validate target addr ?
+
+        if daemon?
+          cl = Client.new(@target)
+          @ret += cl.vnode_start(TARGET_SELF,params['vnode'])
+        else
+          vnode = @node_config.vnode_get(params['vnode'])
+
+          @node_config.vnode_start(vnode)
+
+          @ret += "Virtual node '#{vnode.name}' started"
+        end
+
+        return @ret
+      end
+
+      post VNODE_STOP do
+        # >>> TODO: Validate target addr ?
+
+        if daemon?
+          cl = Client.new(@target)
+          @ret += cl.vnode_stop(TARGET_SELF,params['vnode'])
+        else
+          vnode = @node_config.vnode_get(params['vnode'])
+
+          @node_config.vnode_stop(vnode)
+
+          @ret += "Virtual node '#{vnode.name}' stoped"
         end
 
         return @ret

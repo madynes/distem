@@ -26,6 +26,16 @@ module Wrekavoc
           :image => image
       end
 
+      def vnode_start(target, vnode)
+        # >>> TODO: validate target ip
+        @resource[VNODE_START].post :target => target, :vnode => vnode
+      end
+
+      def vnode_stop(target, vnode)
+        # >>> TODO: validate target ip
+        @resource[VNODE_STOP].post :target => target, :vnode => vnode
+      end
+
       def viface_create(target, vnode, name, ip)
         # >>> TODO: validate ips
         @resource[VIFACE_CREATE].post :target => target, :vnode => vnode, \

@@ -11,6 +11,8 @@ options = {}
 
 options['f_pnode_init'] = false
 options['f_vnode_create'] = false
+options['f_vnode_start'] = false
+options['f_vnode_stop'] = false
 options['f_viface_create'] = false
 
 options['daemon_port'] = 4567
@@ -43,6 +45,20 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnode_name'] = array[1]
     options['vnode_image'] = array[2]
   end
+  opts.on( '-s', '--start-vnode HOST,VNODE', Array,\
+    'Start the virtual node <VNODE(name)> on <HOST>' ) \
+    do |array|
+    options['f_vnode_start'] = true
+    options['pnode_addr'] = array[0]
+    options['vnode_name'] = array[1]
+  end
+  opts.on( '-S', '--stop-vnode HOST,VNODE', Array,\
+    'Stop the virtual node <VNODE(name)> on <HOST>' ) \
+    do |array|
+    options['f_vnode_stop'] = true
+    options['pnode_addr'] = array[0]
+    options['vnode_name'] = array[1]
+  end
   opts.on( '-f', '--create-viface HOST,VNODE,NAME,IP', Array,\
     'Create the virtual interface <NAME> on the virtual node <VNODE(name)> with the address <IP>' ) \
     do |array|
@@ -74,6 +90,20 @@ if (options['f_vnode_create'])
   end
   puts cl.vnode_create(options['pnode_addr'],options['vnode_name'], \
     options['vnode_image'])
+end
+
+if (options['f_vnode_start'])
+  unless cl
+    cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port'])
+  end
+  puts cl.vnode_start(options['pnode_addr'],options['vnode_name'])
+end
+
+if (options['f_vnode_stop'])
+  unless cl
+    cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port'])
+  end
+  puts cl.vnode_stop(options['pnode_addr'],options['vnode_name'])
 end
 
 if (options['f_viface_create'])
