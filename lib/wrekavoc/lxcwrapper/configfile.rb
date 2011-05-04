@@ -32,6 +32,15 @@ module LXCWrapper
             "devpts defaults 0 0"
           f.puts "lxc.mount.entry=sysfs #{rootfspath}/sys " \
             "sysfs defaults  0 0"
+
+          vnode.vifaces.each do |viface|
+            f.puts "lxc.network.type = veth"
+            f.puts "lxc.network.link = #{Wrekavoc::Node::Admin::NAME_BRIDGE}"
+            f.puts "lxc.network.name = #{Wrekavoc::Node::Admin.get_default_iface()}"
+            f.puts "lxc.network.flags = up"
+            f.puts "lxc.network.veth.pair = #{viface.name}"
+            f.puts "lxc.network.ipv4 = #{viface.ip}"
+          end
         end
       end
   end

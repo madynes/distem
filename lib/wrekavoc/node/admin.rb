@@ -4,16 +4,14 @@ module Wrekavoc
     class Admin
 
       PATH_CGROUP='/dev/cgroup'
+      NAME_BRIDGE='br0'
       
-      def initialize
-      end
-
-      def init_node
+      def self.init_node
         set_bridge()
         set_cgroups()
       end
 
-      def get_default_iface
+      def self.get_default_iface
         cmdret = Lib::Shell.run("/sbin/route") 
         # | grep 'default' | awk '{print \$8}' | tr -d '\n'")
         ret=""
@@ -21,7 +19,7 @@ module Wrekavoc
         return ret
       end 
 
-      def get_iface_addr(iface)
+      def self.get_iface_addr(iface)
         cmdret = Lib::Shell.run("/sbin/ifconfig #{iface}") 
         # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
         ret=""
@@ -29,18 +27,18 @@ module Wrekavoc
         return ret
       end
 
-      def set_bridge
-        iface = get_default_iface()
-        addr = get_iface_addr(iface)
+      def self.set_bridge
+        iface = self.get_default_iface()
+        addr = self.get_iface_addr(iface)
 
-        Lib::Shell.run("brctl addbr br0")
-        Lib::Shell.run("brctl setfd br0 0")
-        Lib::Shell.run("ifconfig br0 #{addr} promisc up")
-        Lib::Shell.run("brctl addif br0 #{iface}")
+        Lib::Shell.run("brctl addbr #{NAME_BRIDGE}")
+        Lib::Shell.run("brctl setfd #{NAME_BRIDGE} 0")
+        Lib::Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
+        Lib::Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
         Lib::Shell.run("ifconfig #{iface} 0.0.0.0 up")
       end
 
-      def set_cgroups
+      def self.set_cgroups
         Lib::Shell.run("mkdir #{PATH_CGROUP}")
         Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
       end

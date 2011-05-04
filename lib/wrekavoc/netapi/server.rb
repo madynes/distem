@@ -11,9 +11,7 @@ module Wrekavoc
 
       def initialize
         super
-        @daemon_admin = Daemon::Admin.new
         @daemon_resources = Daemon::Resource.new
-        @node_admin = Node::Admin.new
         @node_config = Node::ConfigManager.new
       end
 
@@ -34,13 +32,13 @@ module Wrekavoc
       post PNODE_INIT do
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
-          @daemon_admin.pnode_run_server(pnode)
+          Daemon::Admin.pnode_run_server(pnode)
           sleep(1)
 
           cl = Client.new(@target)
           @ret += cl.pnode_init(TARGET_SELF)
         else
-          @node_admin.init_node()
+          Node::Admin.init_node()
           @ret += "Node initilized"
         end
 
@@ -50,6 +48,7 @@ module Wrekavoc
 
       post VNODE_CREATE do
         # >>> TODO: Validate target addr ?
+        # >>> TODO: Check if vnode already exists (name)
 
         if daemon?
           pnode = @daemon_resources.get_pnode(@target)
@@ -66,6 +65,30 @@ module Wrekavoc
           @node_config.vnode_add(vnode)
 
           @ret += "Virtual node '#{params['name']}' created"
+        end
+
+        return @ret
+      end
+
+      post VIFACE_CREATE do
+        # >>> TODO: Validate target addr ?
+        # >>> TODO: Check if viface already exists (name)
+
+        if daemon?
+          vnode = @daemon_resources.get_vnode(params['vnode'])
+          viface = Resource::VIface.new(params['name'],params['ip'])
+          vnode.add_viface(viface)
+
+          cl = Client.new(@target)
+          @ret += cl.viface_create(TARGET_SELF,vnode.name,viface.name,viface.ip)
+        else
+          vnode = @node_config.vnode_get(params['vnode'])
+          viface = Resource::VIface.new(params['name'],params['ip'])
+          vnode.add_viface(viface)
+
+          @node_config.vnode_configure(vnode)
+
+          @ret += "Virtual Interface '#{viface.name}' created on '#{vnode.name}'"
         end
 
         return @ret

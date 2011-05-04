@@ -8,7 +8,7 @@ module Wrekavoc
     class Resource
       def initialize
         @pnodes = {}
-        @vnodes = []
+        @vnodes = {}
       end
 
       def add_vnode(vnode)
@@ -16,7 +16,7 @@ module Wrekavoc
 
         @pnodes[vnode.host.address] = vnode.host \
           unless @pnodes.has_key?(vnode.host.address)
-        @vnodes << vnode
+        @vnodes[vnode.name] = vnode
       end
 
       def get_pnode(address)
@@ -28,6 +28,10 @@ module Wrekavoc
         end
 
         return ret
+      end
+
+      def get_vnode(name)
+        return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
 
     end

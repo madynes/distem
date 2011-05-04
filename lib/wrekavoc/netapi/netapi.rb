@@ -7,6 +7,7 @@ module Wrekavoc
     PNODE_INIT='/pnodes/init'
 
     VNODE_CREATE='/vnodes/create'
+    VIFACE_CREATE='/vnodes/vifaces/create'
 
   end
 

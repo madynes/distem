@@ -11,11 +11,14 @@ options = {}
 
 options['f_pnode_init'] = false
 options['f_vnode_create'] = false
+options['f_viface_create'] = false
 
 options['daemon_port'] = 4567
 options['pnode_addr'] = false
 options['vnode_name'] = false
 options['vnode_image'] = false
+options['viface_name'] = false
+options['viface_ip'] = false
 
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -40,6 +43,15 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnode_name'] = array[1]
     options['vnode_image'] = array[2]
   end
+  opts.on( '-f', '--create-viface HOST,VNODE,NAME,IP', Array,\
+    'Create the virtual interface <NAME> on the virtual node <VNODE(name)> with the address <IP>' ) \
+    do |array|
+    options['f_viface_create'] = true
+    options['pnode_addr'] = array[0]
+    options['vnode_name'] = array[1]
+    options['viface_name'] = array[2]
+    options['viface_ip'] = array[3]
+  end
 end
 optparse.parse!
 
@@ -62,4 +74,12 @@ if (options['f_vnode_create'])
   end
   puts cl.vnode_create(options['pnode_addr'],options['vnode_name'], \
     options['vnode_image'])
+end
+
+if (options['f_viface_create'])
+  unless cl
+    cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port'])
+  end
+  puts cl.viface_create(options['pnode_addr'],options['vnode_name'], \
+    options['viface_name'],options['viface_ip'])
 end

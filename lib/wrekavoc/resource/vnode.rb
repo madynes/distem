@@ -14,7 +14,7 @@ module Wrekavoc
       attr_reader :id
       # The URI to the -bootstrapped and compressed- image file
       attr_reader :image
-      attr_reader :name, :host
+      attr_reader :name, :host, :vifaces
 
       
       # Create a new Virtual Node

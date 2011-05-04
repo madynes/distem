@@ -1,8 +1,7 @@
-require 'net/ssh'
 require 'wrekavoc'
+require 'net/ssh'
 
 module Wrekavoc
-
   module Daemon
 
     class Admin
@@ -10,10 +9,7 @@ module Wrekavoc
       PATH_BIN_RUBY='/usr/bin/ruby'
       PATH_SSH_KEY='/root/.ssh/id_rsa'
 
-      def initialize
-      end
-
-      def pnode_run_server(pnode)
+      def self.pnode_run_server(pnode)
         raise unless pnode.is_a?(Wrekavoc::Resource::PNode)
 
         if pnode.status == Wrekavoc::Resource::PNode::STATUS_INIT

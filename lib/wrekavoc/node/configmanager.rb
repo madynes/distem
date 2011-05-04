@@ -6,33 +6,41 @@ module Wrekavoc
     class ConfigManager
       PATH_DEFAULT_ROOTFS="/tmp/rootfs/"
       def initialize
-        @vnodes = []
+        @vnodes = {}
         @containers = {}
         #@routes
         #@tc
       end
+
+      def vnode_get(name)
+        return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
+      end
       
       # >>> TODO: Add the ability to modify a vnode      
-
       def vnode_add(vnode)
-        raise "VNode already exists" if @vnodes.include?(vnode)
+        raise "VNode already exists" if @vnodes.has_key?(vnode.name)
 
         rootfsfile = Lib::FileManager.download(vnode.image)
         rootfspath = File.join(PATH_DEFAULT_ROOTFS,vnode.name)
 
         rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
 
-        @vnodes << vnode
+        @vnodes[vnode.name] = vnode
         @containers[vnode] = Node::Container.new(vnode,rootfspath)
       end
 
+      def vnode_configure(vnode)
+        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
+        @containers[vnode].configure()
+      end
+
       def vnode_start(vnode)
-        raise "VNode '#{vnode.name}' not found" unless @vnodes.include?(vnode)
+        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
         @containers[vnode].start()
       end
 
       def vnode_stop(vnode)
-        raise "VNode '#{vnode.name}' not found" unless @vnodes.include?(vnode)
+        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
         @containers[vnode].stop()
       end
 

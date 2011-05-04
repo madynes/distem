@@ -1,7 +1,6 @@
 require 'resolv'
 
 module Wrekavoc
-
   module Resource
 
     # Wrekavoc Physical Node (the physical machine used to deploy Virtual Nodes)
@@ -45,5 +44,4 @@ module Wrekavoc
     end
 
   end  
-
 end

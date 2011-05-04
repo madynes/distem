@@ -1,8 +1,7 @@
-require 'rest_client'
 require 'wrekavoc'
+require 'rest_client'
 
 module Wrekavoc
-
   module NetAPI
 
     class Client
@@ -21,15 +20,18 @@ module Wrekavoc
       end
 
       def vnode_create(target, name, image)
-        raise unless name.is_a?(String)
-        raise if name.empty?
         # >>> TODO: validate target ip
 
         @resource[VNODE_CREATE].post :target => target, :name => name, \
           :image => image
       end
+
+      def viface_create(target, vnode, name, ip)
+        # >>> TODO: validate ips
+        @resource[VIFACE_CREATE].post :target => target, :vnode => vnode, \
+          :name => name, :ip => ip
+      end
     end
 
   end
-
 end

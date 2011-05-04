@@ -43,13 +43,14 @@ module Wrekavoc
         stop()
         Lib::Shell.run("lxc-destroy -n #{@curname}") unless @curname.empty?
 
-        @id += 1
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
         LXCWrapper::ConfigFile.generate(@vnode,configfile,@rootfspath)
 
         Lib::Shell.run("lxc-create -f #{configfile} -n #{@curname}")
+
+        @id += 1
       end
     end
 
