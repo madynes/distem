@@ -6,6 +6,9 @@ module Wrekavoc
     class Container
       PATH_DEFAULT_CONFIGFILE="/tmp/config/"
 
+      STATUS_STOP=0
+      STATUS_RUN=1
+
       def initialize(vnode,rootfspath)
         raise unless vnode.is_a?(Resource::VNode)
         raise "RootFS directory '#{rootfspath}' not found" \
@@ -22,25 +25,31 @@ module Wrekavoc
         @curname = ""
         @configfile = ""
         @id = 0
+        @status = STATUS_STOP
 
         self.configure()
       end
 
       def start
-        Lib::Shell::run("lxc-start -d -n #{@curname}")
+        Lib::Shell::run("lxc-start -d -n #{@curname}") if @status == STATUS_STOP
       end
 
       def stop
-        Lib::Shell::run("lxc-stop -n #{@curname}")
+        Lib::Shell::run("lxc-stop -n #{@curname}") if @status == STATUS_RUN
       end
 
       #To configure or reconfigure (if the vnode has changed)
       def configure
+        stop()
+        Lib::Shell.run("lxc-destroy -n #{@curname}") unless @curname.empty?
+
         @id += 1
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
-        File.open(configfile, 'w') { |f| f.puts("It works!") }
-        #ContainerWrapper.perform_config(configfile,vnode)
+
+        LXCWrapper::ConfigFile.generate(@vnode,configfile,@rootfspath)
+
+        Lib::Shell.run("lxc-create -f #{configfile} -n #{@curname}")
       end
     end
 
