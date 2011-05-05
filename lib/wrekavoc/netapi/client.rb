@@ -41,6 +41,11 @@ module Wrekavoc
         @resource[VIFACE_CREATE].post :target => target, :vnode => vnode, \
           :name => name, :ip => ip
       end
+
+      def vnode_info_rootfs(target, vnode)
+        # >>> TODO: validate ips
+        @resource[VNODE_INFO_ROOTFS].post :target => target, :vnode => vnode
+      end
     end
 
   end

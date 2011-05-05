@@ -9,6 +9,8 @@ module Wrekavoc
       STATUS_STOP=0
       STATUS_RUN=1
 
+      attr_reader :rootfspath
+
       def initialize(vnode,rootfspath)
         raise unless vnode.is_a?(Resource::VNode)
         raise "RootFS directory '#{rootfspath}' not found" \

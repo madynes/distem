@@ -3,28 +3,55 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'wrekavoc'
 require 'optparse'
+require 'pathname'
 
 USAGE="Usage: #{$0} <host_address> <vnode_name> [options]"
+
+DEFAULT_COPY_PATH="/tmp"
 
 options = {}
 
 options['f_exec'] = false
 options['f_shell'] = false
+options['f_file_send'] = false
+options['f_file_get'] = false
 
 options['ssh_user'] = 'root'
+options['file_src'] = false
+options['file_dest'] = false
+options['daemon_addr'] = false
+options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
     puts opts
     exit
   end
+  opts.on( '-p', '--port NUMBER', \
+    'The port that the daemon is listening on [default: 4567]' ) do |p|
+    options['daemon_port'] = p
+  end
   opts.on( '-u', '--ssh-user USERNAME', \
     'The username used to connect to a physical node through SSH [default: root]' ) do |u|
     options['ssh_user'] = u
   end
-  opts.on( '-s', '--shell', Array, \
-    'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do |array|
+  opts.on( '-s', '--shell', \
+    'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do 
     options['f_shell'] = true
+  end
+  opts.on( '-c', '--copy-to DAEMON_ADDR,SOURCE,DEST', Array, \
+    'Copy the SOURCE file into DEST on the Virtual Node (copy it into /tmp/ if the path is not absolute)' ) do |array|
+    options['f_file_send'] = true
+    options['daemon_addr'] = array[0]
+    options['file_src'] = array[1]
+    options['file_dest'] = array[2]
+  end
+  opts.on( '-C', '--copy-from DAEMON_ADDR,SOURCE,DEST', Array, \
+    'Copy the SOURCE file from the Virtual node into DEST (copy it from /tmp/ if the path is not absolute)' ) do |array|
+    options['f_file_get'] = true
+    options['daemon_addr'] = array[0]
+    options['file_src'] = array[1]
+    options['file_dest'] = array[2]
   end
 end
 
@@ -35,6 +62,27 @@ unless ARGV.length == 2
   exit
 end
 
+cl=false
+
 if (options['f_shell'])
   system("ssh -t #{options['ssh_user']}@#{ARGV[0]} 'lxc-console -n #{ARGV[1]}'")
+end
+
+if options['f_file_send'] or options['f_file_get']
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  rootfs = cl.vnode_info_rootfs(ARGV[0],ARGV[1]).split[1]
+  if (options['f_file_send'])
+    vfile = options['file_dest']
+  else
+    vfile = options['file_src']
+  end
+
+  path = Pathname.new(vfile)
+  path = File.join(rootfs,(path.absolute? ? "" : DEFAULT_COPY_PATH),path.to_s)
+
+  if (options['f_file_send'])
+    system("scp #{options['file_src']} #{options['ssh_user']}@#{ARGV[0]}:#{path}")
+  else
+    system("scp #{options['ssh_user']}@#{ARGV[0]}:#{path} #{options['file_src']}")
+  end
 end

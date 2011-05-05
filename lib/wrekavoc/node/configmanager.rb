@@ -12,10 +12,14 @@ module Wrekavoc
         #@tc
       end
 
-      def vnode_get(name)
+      def get_vnode(name)
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
       
+      def get_container(name)
+        return (@containers.has_key?(name) ? @containers[name] : nil)
+      end
+
       # >>> TODO: Add the ability to modify a vnode      
       def vnode_add(vnode)
         raise "VNode already exists" if @vnodes.has_key?(vnode.name)

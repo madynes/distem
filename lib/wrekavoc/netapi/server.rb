@@ -77,7 +77,7 @@ module Wrekavoc
           cl = Client.new(@target)
           @ret += cl.vnode_start(TARGET_SELF,params['vnode'])
         else
-          vnode = @node_config.vnode_get(params['vnode'])
+          vnode = @node_config.get_vnode(params['vnode'])
 
           @node_config.vnode_start(vnode)
 
@@ -94,7 +94,7 @@ module Wrekavoc
           cl = Client.new(@target)
           @ret += cl.vnode_stop(TARGET_SELF,params['vnode'])
         else
-          vnode = @node_config.vnode_get(params['vnode'])
+          vnode = @node_config.get_vnode(params['vnode'])
 
           @node_config.vnode_stop(vnode)
 
@@ -116,13 +116,25 @@ module Wrekavoc
           cl = Client.new(@target)
           @ret += cl.viface_create(TARGET_SELF,vnode.name,viface.name,viface.ip)
         else
-          vnode = @node_config.vnode_get(params['vnode'])
+          vnode = @node_config.get_vnode(params['vnode'])
           viface = Resource::VIface.new(params['name'],params['ip'])
           vnode.add_viface(viface)
 
           @node_config.vnode_configure(vnode)
 
           @ret += "Virtual Interface '#{viface.name}' created on '#{vnode.name}'"
+        end
+
+        return @ret
+      end
+
+      post VNODE_INFO_ROOTFS do
+        if daemon?
+          cl = Client.new(@target)
+          @ret += cl.vnode_info_rootfs(TARGET_SELF,params['vnode'])
+        else
+          vnode = @node_config.get_vnode(params['vnode'])
+          @ret += @node_config.get_container(vnode).rootfspath
         end
 
         return @ret
