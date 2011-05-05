@@ -8,6 +8,21 @@ require 'pathname'
 USAGE="Usage: #{$0} <host_address> <vnode_name> [options]"
 
 DEFAULT_COPY_PATH="/tmp"
+ERR_NONE=0
+ERR_DAEMON=1
+
+def errorcheck(errid,optvar,msg="")
+  unless optvar
+    case errid
+      when ERR_DAEMON
+	errmsg="You have to specify the daemon (option --daemon)"
+      else
+	errmsg = msg
+    end
+    puts errmsg
+    exit
+  end
+end
 
 options = {}
 
@@ -35,23 +50,25 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The username used to connect to a physical node through SSH [default: root]' ) do |u|
     options['ssh_user'] = u
   end
+  opts.on( '-d', '--daemon ADDRESS', \
+    'The address of the daemon' ) do |h|
+    options['daemon_addr'] = h
+  end
   opts.on( '-s', '--shell', \
     'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do 
     options['f_shell'] = true
   end
-  opts.on( '-c', '--copy-to DAEMON_ADDR,SOURCE,DEST', Array, \
+  opts.on( '-c', '--copy-to SOURCE,DEST', Array, \
     'Copy the SOURCE file into DEST on the Virtual Node (copy it into /tmp/ if the path is not absolute)' ) do |array|
     options['f_file_send'] = true
-    options['daemon_addr'] = array[0]
-    options['file_src'] = array[1]
-    options['file_dest'] = array[2]
+    options['file_src'] = array[0]
+    options['file_dest'] = array[1]
   end
-  opts.on( '-C', '--copy-from DAEMON_ADDR,SOURCE,DEST', Array, \
+  opts.on( '-C', '--copy-from SOURCE,DEST', Array, \
     'Copy the SOURCE file from the Virtual node into DEST (copy it from /tmp/ if the path is not absolute)' ) do |array|
     options['f_file_get'] = true
-    options['daemon_addr'] = array[0]
-    options['file_src'] = array[1]
-    options['file_dest'] = array[2]
+    options['file_src'] = array[0]
+    options['file_dest'] = array[1]
   end
 end
 
@@ -69,6 +86,8 @@ if (options['f_shell'])
 end
 
 if options['f_file_send'] or options['f_file_get']
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   rootfs = cl.vnode_info_rootfs(ARGV[0],ARGV[1]).split[1]
   if (options['f_file_send'])
