@@ -38,7 +38,7 @@ module LXCWrapper
             f.puts "lxc.network.link = #{Wrekavoc::Node::Admin::NAME_BRIDGE}"
             f.puts "lxc.network.name = #{Wrekavoc::Node::Admin.get_default_iface()}"
             f.puts "lxc.network.flags = up"
-            f.puts "lxc.network.veth.pair = #{viface.name}"
+            f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"
             f.puts "lxc.network.ipv4 = #{viface.ip}"
           end
         end
