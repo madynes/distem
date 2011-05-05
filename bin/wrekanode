@@ -1,1 +1,40 @@
 #!/usr/bin/ruby -w
+$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'wrekavoc'
+require 'optparse'
+
+USAGE="Usage: #{$0} <host_address> <vnode_name> [options]"
+
+options = {}
+
+options['f_exec'] = false
+options['f_shell'] = false
+
+options['ssh_user'] = 'root'
+
+optparse = OptionParser.new(USAGE) do |opts|
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+  opts.on( '-u', '--ssh-user USERNAME', \
+    'The username used to connect to a physical node through SSH [default: root]' ) do |u|
+    options['ssh_user'] = u
+  end
+  opts.on( '-s', '--shell', Array, \
+    'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do |array|
+    options['f_shell'] = true
+  end
+end
+
+optparse.parse!
+
+unless ARGV.length == 2
+  puts USAGE
+  exit
+end
+
+if (options['f_shell'])
+  system("ssh -t #{options['ssh_user']}@#{ARGV[0]} 'lxc-console -n #{ARGV[1]}'")
+end

@@ -31,24 +31,24 @@ module Wrekavoc
       end
 
       def start
-        Lib::Shell::run("lxc-start -d -n #{@curname}") if @status == STATUS_STOP
+        Lib::Shell::run("lxc-start -d -n #{@vnode.name}") if @status == STATUS_STOP
       end
 
       def stop
-        Lib::Shell::run("lxc-stop -n #{@curname}") if @status == STATUS_RUN
+        Lib::Shell::run("lxc-stop -n #{@vnode.name}") if @status == STATUS_RUN
       end
 
       #To configure or reconfigure (if the vnode has changed)
       def configure
         stop()
-        Lib::Shell.run("lxc-destroy -n #{@curname}") unless @curname.empty?
+        Lib::Shell.run("lxc-destroy -n #{@vnode.name}") unless @curname.empty?
 
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
         LXCWrapper::ConfigFile.generate(@vnode,configfile,@rootfspath)
 
-        Lib::Shell.run("lxc-create -f #{configfile} -n #{@curname}")
+        Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
 
         @id += 1
       end
