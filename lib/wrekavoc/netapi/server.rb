@@ -8,6 +8,7 @@ module Wrekavoc
     class Server < Sinatra::Base
       set :environment, :developpement
       set :run, true
+      #class MyCustomError < StandardError; end 
 
       def initialize
         super
@@ -19,10 +20,25 @@ module Wrekavoc
         Server.run!
       end
 
+      #error MyCustomError do
+      #  'So what happened was...' + env['sinatra.error'].message
+      #end
+
       before do
+        # >>> TODO: Validate target addr ?
+
         @target = params['target']
         @ret = (daemon? ? "(#{@target}) " : "")
       end
+
+      #before %r{^(?!"#{PNODE_INIT}"$)} do
+        #if daemon?
+        #  pnode = @daemon_resources.get_pnode(@target)
+        #  if pnode.status != Wrekavoc::Resource::PNode::STATUS_RUN
+        #    raise MyCustomError, "PROUT"
+        #  end
+        #end
+      #end
 
       after do
         @target = nil
@@ -47,10 +63,14 @@ module Wrekavoc
 
 
       post VNODE_CREATE do
-        # >>> TODO: Validate target addr ?
-        # >>> TODO: Check if vnode already exists (name)
+        # >>> TODO: Check if PNode is initialized
+        # >>> TODO: Check if the image file is correct
 
         if daemon?
+          #The current node is replaces if the name is already taken
+          vnode = @daemon_resources.get_vnode(params['name'])
+          @daemon_resources.destroy_vnode(vnode) if vnode
+
           pnode = @daemon_resources.get_pnode(@target)
           vnode = Resource::VNode.new(pnode,params['name'],params['image'])
 
@@ -59,6 +79,10 @@ module Wrekavoc
           cl = Client.new(@target)
           @ret += cl.vnode_create(TARGET_SELF,vnode.name,vnode.image)
         else
+          #The current node is replaces if the name is already taken
+          vnode = @node_config.get_vnode(params['name'])
+          @node_config.destroy(vnode) if vnode
+          
           pnode = Resource::PNode.new(@target)
           vnode = Resource::VNode.new(pnode,params['name'],params['image'])
 
@@ -71,7 +95,8 @@ module Wrekavoc
       end
 
       post VNODE_START do
-        # >>> TODO: Validate target addr ?
+        # >>> TODO: Check if PNode is initialized
+        # >>> TODO: Check if VNode is valid
 
         if daemon?
           cl = Client.new(@target)
@@ -88,7 +113,8 @@ module Wrekavoc
       end
 
       post VNODE_STOP do
-        # >>> TODO: Validate target addr ?
+        # >>> TODO: Check if PNode is initialized
+        # >>> TODO: Check if VNode is valid
 
         if daemon?
           cl = Client.new(@target)
@@ -105,8 +131,9 @@ module Wrekavoc
       end
 
       post VIFACE_CREATE do
-        # >>> TODO: Validate target addr ?
+        # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if viface already exists (name)
+        # >>> TODO: Check if VNode is valid
 
         if daemon?
           vnode = @daemon_resources.get_vnode(params['vnode'])
@@ -129,6 +156,9 @@ module Wrekavoc
       end
 
       post VNODE_INFO_ROOTFS do
+        # >>> TODO: Check if PNode is initialized
+        # >>> TODO: Check if VNode is valid
+
         if daemon?
           cl = Client.new(@target)
           @ret += cl.vnode_info_rootfs(TARGET_SELF,params['vnode'])

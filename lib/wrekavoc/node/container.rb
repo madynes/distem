@@ -37,13 +37,22 @@ module Wrekavoc
       end
 
       def stop
-        Lib::Shell::run("lxc-stop -n #{@vnode.name}") if @status == STATUS_RUN
+        Lib::Shell::run("lxc-stop -n #{@vnode.name}") #if @status == STATUS_RUN
+      end
+
+      def destroy
+        stop()
+
+        #check if the lxc container name is already taken
+        lxcls = Lib::Shell.run("lxc-ls")
+        if (lxcls.split().include?(@vnode.name))
+          Lib::Shell.run("lxc-destroy -n #{@vnode.name}")
+        end
       end
 
       #To configure or reconfigure (if the vnode has changed)
       def configure
-        stop()
-        Lib::Shell.run("lxc-destroy -n #{@vnode.name}") unless @curname.empty?
+        destroy()
 
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")

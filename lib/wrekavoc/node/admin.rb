@@ -31,16 +31,22 @@ module Wrekavoc
         iface = self.get_default_iface()
         addr = self.get_iface_addr(iface)
 
-        Lib::Shell.run("brctl addbr #{NAME_BRIDGE}")
-        Lib::Shell.run("brctl setfd #{NAME_BRIDGE} 0")
-        Lib::Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
-        Lib::Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
-        Lib::Shell.run("ifconfig #{iface} 0.0.0.0 up")
+        str = Lib::Shell.run("ifconfig")
+
+        unless str.include?("#{NAME_BRIDGE}")
+          Lib::Shell.run("brctl addbr #{NAME_BRIDGE}")
+          Lib::Shell.run("brctl setfd #{NAME_BRIDGE} 0")
+          Lib::Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
+          Lib::Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
+          Lib::Shell.run("ifconfig #{iface} 0.0.0.0 up")
+        end
       end
 
       def self.set_cgroups
-        Lib::Shell.run("mkdir #{PATH_CGROUP}")
-        Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
+        unless File.exists?("#{PATH_CGROUP}")
+          Lib::Shell.run("mkdir #{PATH_CGROUP}")
+          Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
+        end
       end
     end
 

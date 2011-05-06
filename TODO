@@ -15,7 +15,12 @@ IP address allocation + tests
 == Iteration 3:
 network links + routing setup
 
-= Infrastructure:
+== Infrastructure:
 * Add gemspec and do the work so that Wrekavoc can be installed as a Gem
 * Prepare Debian package for Wrekavoc
 * Infrastructure for unit tests
+
+== Implementation
+Modify iface names on the container
+Add /vnodes/destroy in the API
+Use uniform methods name between Node::ConfigManager and Daemon::Resource

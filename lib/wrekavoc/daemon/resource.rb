@@ -34,6 +34,10 @@ module Wrekavoc
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
 
+      def destroy_vnode(vnode)
+        @vnodes[vnode.name] = nil
+      end
+
     end
 
   end

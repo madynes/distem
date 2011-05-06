@@ -16,13 +16,18 @@ module Wrekavoc
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
       
-      def get_container(name)
-        return (@containers.has_key?(name) ? @containers[name] : nil)
+      def get_container(vnode)
+        return (@containers.has_key?(vnode) ? @containers[vnode] : nil)
+      end
+
+      def include?(name)
+        return @vnodes[name]
       end
 
       # >>> TODO: Add the ability to modify a vnode      
       def vnode_add(vnode)
         raise "VNode already exists" if @vnodes.has_key?(vnode.name)
+        # >>> TODO: Check if the file is correct
 
         rootfsfile = Lib::FileManager.download(vnode.image)
         rootfspath = File.join(PATH_DEFAULT_ROOTFS,vnode.name)
@@ -46,6 +51,12 @@ module Wrekavoc
       def vnode_stop(vnode)
         raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
         @containers[vnode].stop()
+      end
+
+      def vnode_destroy(vnode)
+        @vnodes[vnode.name] = nil
+        @containers[vnode].destroy if @containers[vnode]
+        @containers[vnode] = nil
       end
 
     end
