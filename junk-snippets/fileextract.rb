@@ -2,4 +2,5 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'wrekavoc'
 
-puts Wrekavoc::Lib::FileManager.extract(File.join(File.dirname(__FILE__),"..","pkg","wrekavoc-0.1.tar.gz"),"/tmp/test/")
+puts Wrekavoc::Lib::FileManager.extract("/tmp/rootfs.tar.bz2","/tmp/test1/")
+puts Wrekavoc::Lib::FileManager.extract("/tmp/rootfs.tar.bz2","/tmp/test2/")
