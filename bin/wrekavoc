@@ -114,26 +114,23 @@ if (options['f_vnode_create'])
 end
 
 if (options['f_viface_create'])
-  errorcheck(ERR_HOST,options['pnode_addr'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.viface_create(options['pnode_addr'],options['vnode_name'], \
+  puts cl.viface_create(options['vnode_name'], \
     options['viface_name'],options['viface_ip'])
 end
 
 if (options['f_vnode_start'])
-  errorcheck(ERR_HOST,options['pnode_addr'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vnode_start(options['pnode_addr'],options['vnode_name'])
+  puts cl.vnode_start(options['vnode_name'])
 end
 
 if (options['f_vnode_stop'])
-  errorcheck(ERR_HOST,options['pnode_addr'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vnode_stop(options['pnode_addr'],options['vnode_name'])
+  puts cl.vnode_stop(options['vnode_name'])
 end

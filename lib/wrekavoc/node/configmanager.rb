@@ -5,7 +5,11 @@ module Wrekavoc
 
     class ConfigManager
       PATH_DEFAULT_ROOTFS="/tmp/rootfs/"
+
+      attr_reader :pnode
+
       def initialize
+        @pnode = Wrekavoc::Resource::PNode.new(Admin.get_default_addr())
         @vnodes = {}
         @containers = {}
         #@routes

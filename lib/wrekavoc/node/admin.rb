@@ -27,9 +27,14 @@ module Wrekavoc
         return ret
       end
 
+      def self.get_default_addr()
+        iface = self.get_default_iface()
+        self.get_iface_addr(iface).strip
+      end
+
       def self.set_bridge
         iface = self.get_default_iface()
-        addr = self.get_iface_addr(iface)
+        addr = self.get_default_addr()
 
         str = Lib::Shell.run("ifconfig")
 

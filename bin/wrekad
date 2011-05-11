@@ -2,6 +2,31 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'wrekavoc'
+require 'optparse'
 
-daemon = Wrekavoc::NetAPI::Server.new
-daemon.run
+USAGE="Usage: #{$0} [options]"
+
+options = {}
+
+options['f_daemon'] = false
+
+optparse = OptionParser.new(USAGE) do |opts|
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+  opts.on( '-d', '--daemon', 'Execute the server as a coordinator' ) do
+    options['f_daemon'] = true
+  end
+end
+optparse.parse!
+
+if (options['f_daemon'])
+  puts "Starting the server in Daemon mode"
+  daemon = Wrekavoc::NetAPI::ServerDaemon.new
+  daemon.run
+else
+  puts "Starting the server in Node mode"
+  daemon = Wrekavoc::NetAPI::ServerNode.new
+  daemon.run
+end

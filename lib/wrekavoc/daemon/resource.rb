@@ -1,5 +1,5 @@
-require 'resolv'
 require 'wrekavoc'
+require 'resolv'
 
 module Wrekavoc
 
@@ -13,21 +13,23 @@ module Wrekavoc
 
       def add_vnode(vnode)
         raise unless vnode.is_a?(Wrekavoc::Resource::VNode)
+        raise unless vnode.host.is_a?(Wrekavoc::Resource::PNode)
 
-        @pnodes[vnode.host.address] = vnode.host \
-          unless @pnodes.has_key?(vnode.host.address)
+        add_pnode(vnode.host)
         @vnodes[vnode.name] = vnode
       end
 
-      def get_pnode(address)
-        # >>> TODO: validate ip address
-        if @pnodes.has_key?(address)
-          ret = @pnodes[address]
-        else
-          ret = Wrekavoc::Resource::PNode.new(address)
-        end
+      def add_pnode(pnode)
+        @pnodes[pnode.address] = pnode unless @pnodes.has_key?(pnode.address)
+      end
 
-        return ret
+      def get_pnode_by_address(address)
+        # >>> TODO: validate ip address
+        return @pnodes[Resolv.getaddress(address)]
+      end
+
+      def get_pnode_by_name(name)
+        return (@vnodes[name] ? @vnodes[name].host : nil)
       end
 
       def get_vnode(name)
