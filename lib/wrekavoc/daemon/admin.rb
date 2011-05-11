@@ -5,8 +5,9 @@ module Wrekavoc
   module Daemon
 
     class Admin
-      PATH_WREKAVOC_BIN=File.expand_path(File.dirname($0),'../bin/')
-      PATH_WREKAVOC_LOGS=File.expand_path(File.dirname($0),'../logs/')
+      PATH_CURRENT=File.expand_path(File.dirname(__FILE__))
+      PATH_WREKAVOC_BIN=File.expand_path('../../../bin/',PATH_CURRENT)
+      PATH_WREKAVOC_LOGS=File.expand_path('../../../logs/',PATH_CURRENT)
       PATH_WREKAD_LOG_OUT=File.join(PATH_WREKAVOC_LOGS,"wrekad.out")
       PATH_WREKAD_LOG_ERR=File.join(PATH_WREKAVOC_LOGS,"wrekad.err")
       PATH_BIN_RUBY='/usr/bin/ruby'
