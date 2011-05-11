@@ -9,10 +9,10 @@ module Wrekavoc
       PATH_DEFAULT_DOWNLOAD="/tmp/"
       PATH_DEFAULT_CACHE="/tmp/extractcache/"
 
-      BIN_TAR="/bin/tar"
-      BIN_GUNZIP="/bin/gunzip"
-      BIN_BUNZIP2="/bin/bunzip2"
-      BIN_UNZIP="/usr/bin/unzip"
+      BIN_TAR="tar"
+      BIN_GUNZIP="gunzip"
+      BIN_BUNZIP2="bunzip2"
+      BIN_UNZIP="unzip"
 
       @@extractcache = []
       
