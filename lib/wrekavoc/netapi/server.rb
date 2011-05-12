@@ -31,22 +31,11 @@ module Wrekavoc
       end
 
       before do
-        # >>> TODO: Validate target addr ?
-
         @ret = (daemon? ? "" : "(#{@node_name}) ")
       end
 
-      #before %r{^(?!"#{PNODE_INIT}"$)} do
-        #if daemon?
-        #  pnode = @daemon_resources.get_pnode(params['target'])
-        #  if pnode.status != Wrekavoc::Resource::PNode::STATUS_RUN
-        #    raise MyCustomError, "PROUT"
-        #  end
-        #end
-      #end
-
       after do
-        @ret = nil
+        @ret = ""
       end
 
       post PNODE_INIT do
@@ -184,6 +173,8 @@ module Wrekavoc
           @ret += @node_config.get_container(vnode).rootfspath
         end
 
+        non_verbose()
+
         return @ret
       end
 
@@ -202,7 +193,7 @@ module Wrekavoc
         Node::Admin.get_default_addr == target
       end
 
-      def get_vnode()
+      def get_vnode
           if daemon?
             ret = @daemon_resources.get_vnode(params['vnode'])
           else
@@ -212,6 +203,11 @@ module Wrekavoc
           #not_found unless ret
 
           return ret
+      end
+
+      def non_verbose
+        tmp = @ret.split
+        @ret = tmp[1..tmp.length]
       end
     end
 

@@ -89,7 +89,7 @@ if options['f_file_send'] or options['f_file_get']
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  rootfs = cl.vnode_info_rootfs(ARGV[1]).split[1]
+  rootfs = cl.vnode_info_rootfs(ARGV[1])
   if (options['f_file_send'])
     vfile = options['file_dest']
   else
@@ -102,6 +102,6 @@ if options['f_file_send'] or options['f_file_get']
   if (options['f_file_send'])
     system("scp -r #{options['file_src']} #{options['ssh_user']}@#{ARGV[0]}:#{path}")
   else
-    system("scp -r #{options['ssh_user']}@#{ARGV[0]}:#{path} #{options['file_src']}")
+    system("scp -r #{options['ssh_user']}@#{ARGV[0]}:#{path} #{options['file_dest']}")
   end
 end
