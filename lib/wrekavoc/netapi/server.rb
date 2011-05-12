@@ -45,11 +45,13 @@ module Wrekavoc
 
           @daemon_resources.add_pnode(pnode)
 
-          Daemon::Admin.pnode_run_server(pnode)
-          sleep(1)
+          if !target?
+            Daemon::Admin.pnode_run_server(pnode)
+            sleep(1)
 
-          cl = Client.new(params['target'])
-          @ret += cl.pnode_init(params['target'])
+            cl = Client.new(params['target'])
+            @ret += cl.pnode_init(params['target'])
+          end
         end
 
         if target?
@@ -75,8 +77,10 @@ module Wrekavoc
 
           @daemon_resources.add_vnode(vnode)
 
-          cl = Client.new(params['target'])
-          @ret += cl.vnode_create(params['target'],vnode.name,vnode.image)
+          if !target?
+            cl = Client.new(params['target'])
+            @ret += cl.vnode_create(params['target'],vnode.name,vnode.image)
+          end
         end
 
         if target?
@@ -101,17 +105,14 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          vnode = @daemon_resources.get_vnode(params['vnode'])
-
-          cl = Client.new(vnode.host.address)
-          @ret += cl.vnode_start(vnode.name)
+          if !target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.vnode_start(vnode.name)
+          end
         end
 
         if target?
-          vnode = @node_config.get_vnode(params['vnode'])
-
           @node_config.vnode_start(vnode)
-
           @ret += "Virtual node '#{vnode.name}' started"
         end
 
@@ -123,8 +124,10 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          cl = Client.new(vnode.host.address)
-          @ret += cl.vnode_stop(vnode.name)
+          if !target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.vnode_stop(vnode.name)
+          end
         end
 
         if target?
@@ -144,8 +147,10 @@ module Wrekavoc
           viface = Resource::VIface.new(params['name'],params['ip'])
           vnode.add_viface(viface)
 
-          cl = Client.new(vnode.host.address)
-          @ret += cl.viface_create(vnode.name,viface.name,viface.ip)
+          if !target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.viface_create(vnode.name,viface.name,viface.ip)
+          end
         end
 
         if target?
@@ -165,8 +170,10 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          cl = Client.new(vnode.host.address)
-          @ret += cl.vnode_info_rootfs(vnode.name)
+          if !target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.vnode_info_rootfs(vnode.name)
+          end
         end
 
         if target?
