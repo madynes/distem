@@ -44,6 +44,10 @@ module Wrekavoc
           Lib::Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
           Lib::Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
           Lib::Shell.run("ifconfig #{iface} 0.0.0.0 up")
+          iface = self.get_default_iface()
+          unless iface.empty?
+            Lib::Shell.run("ip route del default dev #{iface}")
+          end
           Lib::Shell.run("ip route add default dev #{NAME_BRIDGE}")
         end
       end
