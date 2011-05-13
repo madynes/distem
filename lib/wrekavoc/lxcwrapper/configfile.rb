@@ -35,7 +35,7 @@ module LXCWrapper
 
           vnode.vifaces.each do |viface|
             f.puts "lxc.network.type = veth"
-            f.puts "lxc.network.link = #{Wrekavoc::Node::Admin::NAME_BRIDGE}"
+            f.puts "lxc.network.link = #{Wrekavoc::Lib::NetTools::NAME_BRIDGE}"
             f.puts "lxc.network.name = #{viface.name}"
             f.puts "lxc.network.flags = up"
             f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"

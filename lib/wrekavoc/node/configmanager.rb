@@ -9,7 +9,7 @@ module Wrekavoc
       attr_reader :pnode
 
       def initialize
-        @pnode = Wrekavoc::Resource::PNode.new(Admin.get_default_addr())
+        @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
         @vnodes = {}
         @containers = {}
         #@routes

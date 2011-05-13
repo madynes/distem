@@ -244,7 +244,7 @@ module Wrekavoc
           vnode = get_vnode()
           target = vnode.host.address if vnode
         end
-        Node::Admin.get_default_addr == target
+        Lib::NetTools.get_default_addr == target
       end
 
       def get_vnode
