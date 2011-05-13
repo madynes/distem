@@ -14,6 +14,7 @@ module Wrekavoc
         @containers = {}
         #@routes
         #@tc
+        Container.stop_all()
       end
 
       def get_vnode(name)

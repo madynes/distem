@@ -29,7 +29,14 @@ module Wrekavoc
         @id = 0
         @status = STATUS_STOP
 
-        self.configure()
+        configure()
+      end
+      
+      def self.stop_all
+        list = Lib::Shell::run("lxc-ls").split
+        list.each do |name|
+          Lib::Shell::run("lxc-stop -n #{name}")
+        end
       end
 
       def start
