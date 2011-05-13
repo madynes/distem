@@ -8,6 +8,7 @@ module Wrekavoc
     VNODE_CREATE='/vnodes/create'
     VNODE_START='/vnodes/start'
     VNODE_STOP='/vnodes/stop'
+    VNODE_EXECUTE='/vnodes/execute' # Daemon only
     VIFACE_CREATE='/vnodes/vifaces/create'
     VIFACE_ATTACH='/vnodes/vifaces/attach' # Node only
     VNODE_INFO_ROOTFS='/vnodes/info/rootfs'

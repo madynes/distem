@@ -5,6 +5,7 @@ module Wrekavoc
 
     class NetTools
       NAME_BRIDGE='br0'
+      @@nic_count=1
 
       def self.get_default_iface
         cmdret = Lib::Shell.run("/sbin/route") 
@@ -45,6 +46,12 @@ module Wrekavoc
           end
           Lib::Shell.run("ip route add default dev #{NAME_BRIDGE}")
         end
+      end
+
+      def self.set_new_nic(address)
+        iface = self.get_default_iface()
+        Lib::Shell.run("ifconfig #{iface}:#{@@nic_count} #{address}")
+        @@nic_count += 1
       end
     end
 

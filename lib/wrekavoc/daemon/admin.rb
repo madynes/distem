@@ -28,6 +28,23 @@ module Wrekavoc
           pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
         end
       end
+
+      def self.vnode_run(vnode,command)
+        raise unless vnode.is_a?(Wrekavoc::Resource::VNode)
+        raise unless vnode.vifaces[0].is_a?(Wrekavoc::Resource::VIface)
+        raise unless vnode.vifaces[0].attached?
+        
+        ret = ""
+        Net::SSH.start(vnode.vifaces[0].address.to_s, "root", :keys => PATH_SSH_KEY) do |ssh|
+          ret = ssh.exec!(command)
+        end
+
+        return ret
+      end
+
+      def self.get_vnetwork_addr(vnetwork)
+        vnetwork.address.last.to_string
+      end
     end
 
   end

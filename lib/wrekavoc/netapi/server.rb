@@ -43,12 +43,12 @@ module Wrekavoc
         if daemon?
           if target?
             pnode = @node_config.pnode
+            pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
           else
             pnode = @daemon_resources.get_pnode_by_address(params['target'])
           end
 
           pnode = Wrekavoc::Resource::PNode.new(params['target']) unless pnode
-          pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
 
           @daemon_resources.add_pnode(pnode)
 
@@ -93,7 +93,7 @@ module Wrekavoc
         if target?
           #The current node is replaces if the name is already taken
           tmpvnode = @node_config.get_vnode(params['name'])
-          @node_config.destroy(tmpvnode.name) if tmpvnode
+          @node_config.vnode_destroy(tmpvnode.name) if tmpvnode
 
           @node_config.vnode_add(vnode)
 
@@ -190,6 +190,10 @@ module Wrekavoc
           # >>> TODO: Validate ip
           vnetwork = Resource::VNetwork.new(params['name'],params['address'])
           @daemon_resources.add_vnetwork(vnetwork)
+
+          #Add a virtual interface connected on the network
+          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
+
           @ret = "VNetwork #{vnetwork.name}(#{vnetwork.address.to_string}) created"
         end
 
@@ -227,6 +231,16 @@ module Wrekavoc
           @node_config.vnode_configure(vnode.name)
 
           @ret += "VIface #{viface.name} set on #{vnode.name} with #{viface.address.to_string}"
+        end
+
+        return @ret
+      end
+
+      post VNODE_EXECUTE do
+        vnode = get_vnode()
+        
+        if daemon?
+          @ret += Daemon::Admin.vnode_run(vnode,params['command'])
         end
 
         return @ret
@@ -277,6 +291,11 @@ module Wrekavoc
 
     class ServerDaemon < Server
       set :mode, MODE_DAEMON
+
+      def initialize
+        super()
+        Lib::NetTools.set_bridge()
+      end
 
       def run
         ServerDaemon.run!

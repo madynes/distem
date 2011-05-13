@@ -34,6 +34,7 @@ options['f_file_get'] = false
 options['ssh_user'] = 'root'
 options['file_src'] = false
 options['file_dest'] = false
+options['exec_cmd'] = 4567
 options['daemon_addr'] = false
 options['daemon_port'] = 4567
 
@@ -57,6 +58,11 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-s', '--shell', \
     'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do 
     options['f_shell'] = true
+  end
+  opts.on( '-e', '--execute COMMAND', \
+    'Run a command on the Virtual Node' ) do |c|
+    options['f_exec'] = true
+    options['exec_cmd'] = c
   end
   opts.on( '-c', '--copy-to SOURCE,DEST', Array, \
     'Copy the SOURCE file into DEST on the Virtual Node (copy it into /tmp/ if the path is not absolute)' ) do |array|
@@ -83,6 +89,13 @@ cl=false
 
 if (options['f_shell'])
   system("ssh -t #{options['ssh_user']}@#{ARGV[0]} 'lxc-console -n #{ARGV[1]}'")
+end
+
+if (options['f_exec'])
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  puts cl.vnode_execute(ARGV[1],options['exec_cmd'])
 end
 
 if options['f_file_send'] or options['f_file_get']

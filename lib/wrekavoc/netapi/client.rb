@@ -57,6 +57,11 @@ module Wrekavoc
         @resource[VIFACE_ATTACH].post :vnode => vnode, :viface => viface, \
           :address => address
       end
+
+      def vnode_execute(vnode, command)
+        # >>> TODO: validate ips
+        @resource[VNODE_EXECUTE].post :vnode => vnode, :command => command
+      end
     end
 
   end
