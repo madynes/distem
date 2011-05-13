@@ -52,7 +52,7 @@ module Wrekavoc
 
           @daemon_resources.add_pnode(pnode)
 
-          if !target?
+          unless target?
             Daemon::Admin.pnode_run_server(pnode)
             sleep(1)
 
@@ -84,7 +84,7 @@ module Wrekavoc
 
           @daemon_resources.add_vnode(vnode)
 
-          if !target?
+          unless target?
             cl = Client.new(params['target'])
             @ret += cl.vnode_create(params['target'],vnode.name,vnode.image)
           end
@@ -108,7 +108,7 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          if !target?
+          unless target?
             cl = Client.new(vnode.host.address)
             @ret += cl.vnode_start(vnode.name)
           end
@@ -127,7 +127,7 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          if !target?
+          unless target?
             cl = Client.new(vnode.host.address)
             @ret += cl.vnode_stop(vnode.name)
           end
@@ -149,7 +149,7 @@ module Wrekavoc
         vnode.add_viface(viface)
 
         if daemon?
-          if !target?
+          unless target?
             cl = Client.new(vnode.host.address)
             @ret += cl.viface_create(vnode.name,viface.name)
           end
@@ -169,7 +169,7 @@ module Wrekavoc
         vnode = get_vnode()
 
         if daemon?
-          if !target?
+          unless target?
             cl = Client.new(vnode.host.address)
             @ret += cl.vnode_info_rootfs(vnode.name)
           end
@@ -180,6 +180,7 @@ module Wrekavoc
         end
 
         non_verbose()
+
 
         return @ret
       end
@@ -284,8 +285,10 @@ module Wrekavoc
       end
 
       def non_verbose
-        tmp = @ret.split
-        @ret = tmp[1..tmp.length]
+        unless daemon?
+          tmp = @ret.split
+          @ret = tmp[1..tmp.length]
+        end
       end
     end
 
