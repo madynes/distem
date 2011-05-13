@@ -33,14 +33,29 @@ module Wrekavoc
         @resource[VNODE_STOP].post :vnode => vnode
       end
 
-      def viface_create(vnode, name, ip)
-        # >>> TODO: validate ips
-        @resource[VIFACE_CREATE].post :vnode => vnode, :name => name, :ip => ip
+      def viface_create(vnode, name)
+        @resource[VIFACE_CREATE].post :vnode => vnode, :name => name
       end
 
       def vnode_info_rootfs(vnode)
-        # >>> TODO: validate ips
         @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
+      end
+
+      def vnetwork_create(name, address)
+        # >>> TODO: validate ips
+        @resource[VNETWORK_CREATE].post :name => name, :address => address
+      end
+
+      def vnetwork_add_vnode(vnetwork, vnode, viface)
+        # >>> TODO: validate ips
+        @resource[VNETWORK_ADD_VNODE].post :vnetwork => vnetwork, \
+          :vnode => vnode, :viface => viface
+      end
+
+      def viface_attach(vnode, viface, address)
+        # >>> TODO: validate ips
+        @resource[VIFACE_ATTACH].post :vnode => vnode, :viface => viface, \
+          :address => address
       end
     end
 

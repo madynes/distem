@@ -9,6 +9,7 @@ USAGE="Usage: #{$0} <daemon_address> [options]"
 ERR_NONE=0
 ERR_VNODE=1
 ERR_HOST=2
+ERR_VNETWORK=3
 
 def errorcheck(errid,optvar,msg="")
   unless optvar
@@ -17,6 +18,8 @@ def errorcheck(errid,optvar,msg="")
 	errmsg="You have to specify the vnode (option --vnode)"
       when ERR_HOST
 	errmsg="You have to specify the host (option --host)"
+      when ERR_VNETWORK
+        errmsg="You have to specify the vnetwork (option --vnetwork)"
       else
 	errmsg = msg
     end
@@ -31,14 +34,17 @@ options['f_pnode_init'] = false
 options['f_vnode_create'] = false
 options['f_vnode_start'] = false
 options['f_vnode_stop'] = false
+options['f_vnode_attach'] = false
 options['f_viface_create'] = false
+options['f_vnetwork_create'] = false
 
 options['daemon_port'] = 4567
 options['pnode_addr'] = false
 options['vnode_name'] = false
 options['vnode_image'] = false
 options['viface_name'] = false
-options['viface_ip'] = false
+options['vnetwork_name'] = false
+options['vnetwork_address'] = false
 
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -54,9 +60,13 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The HOSTNAME of the physical node that host virtual ones' ) do |h|
     options['pnode_addr'] = h
   end
-  opts.on( '-n', '--vnode VNODENAME', \
+  opts.on( '-n', '--vnode VNODE', \
     'The name of the Virtual Node' ) do |n|
     options['vnode_name'] = n
+  end
+  opts.on( '-N', '--vnetwork VNETWORK', \
+    'The name of the Virtual Network' ) do |n|
+    options['vnetwork_name'] = n
   end
   opts.on( '-i', '--init-pnode HOSTNAME', \
     'Initialize the physical node (start daemons, ...)' ) do |h|
@@ -70,6 +80,12 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnode_name'] = array[0]
     options['vnode_image'] = array[1]
   end
+  opts.on( '-A', '--attach-vnetwork VIFACE', \
+    'Connect the Virtual Node to the Virtual Network with the Virtual Interface' ) \
+    do |i|
+    options['f_vnode_attach'] = true
+    options['viface_name'] = i
+  end
   opts.on( '-s', '--start-vnode',\
     'Start the virtual node' ) \
     do 
@@ -80,12 +96,18 @@ optparse = OptionParser.new(USAGE) do |opts|
     do |array|
     options['f_vnode_stop'] = true
   end
-  opts.on( '-f', '--create-viface NAME,IP', Array,\
-    'Create the virtual interface <NAME> with the address <IP> on the Virtual Node' ) \
-    do |array|
+  opts.on( '-f', '--create-viface NAME', \
+    'Create the virtual interface <NAME> on the Virtual Node' ) \
+    do |i|
     options['f_viface_create'] = true
-    options['viface_name'] = array[0]
-    options['viface_ip'] = array[1]
+    options['viface_name'] = i
+  end
+  opts.on( '-C', '--create-vnetwork NAME,ADDRESS', Array,\
+    'Create the VNetwork NAME with the ADDRESS (ip/mask or ip/prefix)' ) \
+    do |array|
+    options['f_vnetwork_create'] = true
+    options['vnetwork_name'] = array[0]
+    options['vnetwork_address'] = array[1]
   end
 end
 optparse.parse!
@@ -113,12 +135,26 @@ if (options['f_vnode_create'])
     options['vnode_image'])
 end
 
+if options['f_vnetwork_create']
+  errorcheck(ERR_VNETWORK,options['vnetwork_name'])
+
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  puts cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
+end
+
 if (options['f_viface_create'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.viface_create(options['vnode_name'], \
-    options['viface_name'],options['viface_ip'])
+  puts cl.viface_create(options['vnode_name'], options['viface_name'])
+end
+
+if options['f_vnode_attach']
+  errorcheck(ERR_VNODE,options['vnode_name'])
+  errorcheck(ERR_VNETWORK,options['vnetwork_name'])
+
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  puts cl.vnetwork_add_vnode(options['vnetwork_name'],options['vnode_name'],options['viface_name'])
 end
 
 if (options['f_vnode_start'])

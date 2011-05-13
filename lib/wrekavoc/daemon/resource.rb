@@ -9,6 +9,7 @@ module Wrekavoc
       def initialize
         @pnodes = {}
         @vnodes = {}
+        @vnetworks = {}
       end
 
       def add_vnode(vnode)
@@ -21,6 +22,12 @@ module Wrekavoc
 
       def add_pnode(pnode)
         @pnodes[pnode.address] = pnode unless @pnodes.has_key?(pnode.address)
+      end
+
+      def add_vnetwork(vnetwork)
+        raise unless vnetwork.is_a?(Wrekavoc::Resource::VNetwork)
+
+        @vnetworks[vnetwork.name] = vnetwork
       end
 
       def get_pnode_by_address(address)
@@ -36,8 +43,12 @@ module Wrekavoc
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
 
-      def destroy_vnode(vnode)
-        @vnodes[vnode.name] = nil
+      def get_vnetwork(name)
+        return (@vnetworks.has_key?(name) ? @vnetworks[name] : nil)
+      end
+
+      def destroy_vnode(vnodename)
+        @vnodes[vnodename] = nil
       end
 
     end

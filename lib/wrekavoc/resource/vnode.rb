@@ -55,6 +55,17 @@ module Wrekavoc
         raise unless viface.is_a?(VIface)
         @vifaces << viface
       end
+
+      def get_viface(vifacename)
+        ret = nil
+        @vifaces.each do |viface|
+          if viface.name == vifacename
+            ret = viface
+            break
+          end
+        end
+        return ret
+      end
     end
 
   end

@@ -7,21 +7,30 @@ module Wrekavoc
       # The name of the Interface
       attr_reader :name
       # The IP address of the Interface
-      attr_reader :ip
+      attr_reader :address
+      # The VNetwork this interface is working on
+      attr_reader :vnetwork
 
       # Create a new Virtual Interface
       # ==== Attributes
       # * +name+ The name of the Interface
-      # * +ip+ The IP address of the Interface
       # ==== Examples
-      #   viface = VIface.new("if0","10.16.0.1")
-      def initialize(name, ip)
+      #   viface = VIface.new("if0")
+      def initialize(name)
         raise if name.empty? or not name.is_a?(String)
-        raise if ip.empty? or not ip.is_a?(String)
 
         @name = name
-        # >>> TODO: use IPAddress to validate/store the ip
-        @ip = ip
+        @address = IPAddress::IPv4.new("0.0.0.0/0")
+        @network = @address.network
+      end
+
+      def attach(vnetwork,address)
+        @network = vnetwork
+        @address = address
+      end
+
+      def attached?
+        @network != nil and @address != nil
       end
     end
 

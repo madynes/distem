@@ -20,8 +20,8 @@ module Wrekavoc
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
       
-      def get_container(vnode)
-        return (@containers.has_key?(vnode) ? @containers[vnode] : nil)
+      def get_container(name)
+        return (@containers.has_key?(name) ? @containers[name] : nil)
       end
 
       def include?(name)
@@ -39,28 +39,28 @@ module Wrekavoc
         rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
 
         @vnodes[vnode.name] = vnode
-        @containers[vnode] = Node::Container.new(vnode,rootfspath)
+        @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
-      def vnode_configure(vnode)
-        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
-        @containers[vnode].configure()
+      def vnode_configure(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        @containers[vnodename].configure()
       end
 
-      def vnode_start(vnode)
-        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
-        @containers[vnode].start()
+      def vnode_start(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        @containers[vnodename].start()
       end
 
-      def vnode_stop(vnode)
-        raise "VNode '#{vnode.name}' not found" unless @vnodes.has_key?(vnode.name)
-        @containers[vnode].stop()
+      def vnode_stop(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        @containers[vnodename].stop()
       end
 
-      def vnode_destroy(vnode)
-        @vnodes[vnode.name] = nil
-        @containers[vnode].destroy if @containers[vnode]
-        @containers[vnode] = nil
+      def vnode_destroy(vnodename)
+        @vnodes[vnodename] = nil
+        @containers[vnodename].destroy if @containers[vnodename]
+        @containers[vnodename] = nil
       end
 
     end

@@ -1,0 +1,72 @@
+#!/usr/bin/ruby -w
+$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'wrekavoc'
+require 'optparse'
+
+USAGE="Usage: #{$0} <daemon_address> [options]"
+
+ERR_VNETWORK=0
+
+def errorcheck(errid,optvar,msg="")
+  unless optvar
+    case errid
+      when ERR_VNETWORK
+        errmsg="You have to specify the vnetwork (option --vnetwork)"
+      else
+        errmsg = msg
+    end
+    puts errmsg
+    exit
+  end
+end
+
+options = {}
+
+options['f_vnetwork_create'] = false
+options['f_vnetwork_list'] = false
+
+options['vnetwork_name'] = false
+options['vnetwork_address'] = false
+options['daemon_port'] = 4567
+
+optparse = OptionParser.new(USAGE) do |opts|
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+  opts.on( '-p', '--port NUMBER', \
+    'The port that the daemon is listening on [default: 4567]' ) do |p|
+    options['daemon_port'] = p
+  end
+  opts.on( '-c', '--create-vnetwork NAME,ADDRESS', Array, \
+    'Create the VNetwork NAME with the ADDRESS (ip/mask or ip/prefix)' ) do |array|
+    options['f_vnetwork_create'] = true
+    options['vnetwork_name'] = array[0]
+    options['vnetwork_address'] = array[1]
+  end
+  opts.on( '-n', '--vnetwork NAME', \
+    'The name of the Virtual Network' ) do |n|
+    options['vnetwork_name'] = n
+  end
+  opts.on( '-l', '--vnetwork-list', \
+    'Get the list of the VNodes connected on that VNetwork' ) do |u|
+    options['f_vnetwork_list'] = true
+  end
+end
+
+optparse.parse!
+
+unless ARGV.length == 1
+  puts USAGE
+  exit
+end
+
+cl=false
+
+if options['f_vnetwork_create']
+  errorcheck(ERR_VNETWORK,options['vnetwork_name'])
+
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  puts cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
+end

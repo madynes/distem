@@ -1,6 +1,7 @@
 require 'wrekavoc'
 require 'sinatra/base'
 require 'socket'
+require 'ipaddress'
 
 module Wrekavoc
   module NetAPI
@@ -40,8 +41,14 @@ module Wrekavoc
 
       post PNODE_INIT do
         if daemon?
-          pnode = @daemon_resources.get_pnode_by_address(params['target'])
+          if target?
+            pnode = @node_config.pnode
+          else
+            pnode = @daemon_resources.get_pnode_by_address(params['target'])
+          end
+
           pnode = Wrekavoc::Resource::PNode.new(params['target']) unless pnode
+          pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
 
           @daemon_resources.add_pnode(pnode)
 
@@ -67,13 +74,13 @@ module Wrekavoc
         # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if the image file is correct
 
+        pnode = get_pnode()
+        vnode = Resource::VNode.new(pnode,params['name'],params['image'])
+
         if daemon?
           #The current node is replaces if the name is already taken
-          vnode = @daemon_resources.get_vnode(params['name'])
-          @daemon_resources.destroy_vnode(vnode) if vnode
-
-          pnode = @daemon_resources.get_pnode_by_address(params['target'])
-          vnode = Resource::VNode.new(pnode,params['name'],params['image'])
+          vnodetmp = @daemon_resources.get_vnode(params['name'])
+          @daemon_resources.destroy_vnode(vnodetmp.name) if vnodetmp
 
           @daemon_resources.add_vnode(vnode)
 
@@ -85,12 +92,8 @@ module Wrekavoc
 
         if target?
           #The current node is replaces if the name is already taken
-          vnode = @node_config.get_vnode(params['name'])
-          @node_config.destroy(vnode) if vnode
-          
-          #pnode = Resource::PNode.new(params['target'])
-          vnode = Resource::VNode.new(@node_config.pnode,params['name'], \
-            params['image'])
+          tmpvnode = @node_config.get_vnode(params['name'])
+          @node_config.destroy(tmpvnode.name) if tmpvnode
 
           @node_config.vnode_add(vnode)
 
@@ -112,7 +115,7 @@ module Wrekavoc
         end
 
         if target?
-          @node_config.vnode_start(vnode)
+          @node_config.vnode_start(vnode.name)
           @ret += "Virtual node '#{vnode.name}' started"
         end
 
@@ -131,7 +134,7 @@ module Wrekavoc
         end
 
         if target?
-          @node_config.vnode_stop(vnode)
+          @node_config.vnode_stop(vnode.name)
           @ret += "Virtual node '#{vnode.name}' stoped"
         end
 
@@ -142,22 +145,18 @@ module Wrekavoc
         # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if viface already exists (name)
         vnode = get_vnode()
+        viface = Resource::VIface.new(params['name'])
+        vnode.add_viface(viface)
 
         if daemon?
-          viface = Resource::VIface.new(params['name'],params['ip'])
-          vnode.add_viface(viface)
-
           if !target?
             cl = Client.new(vnode.host.address)
-            @ret += cl.viface_create(vnode.name,viface.name,viface.ip)
+            @ret += cl.viface_create(vnode.name,viface.name)
           end
         end
 
         if target?
-          viface = Resource::VIface.new(params['name'],params['ip'])
-          vnode.add_viface(viface)
-
-          @node_config.vnode_configure(vnode)
+          @node_config.vnode_configure(vnode.name)
 
           @ret += "Virtual Interface '#{viface.name}' created on '#{vnode.name}'"
         end
@@ -177,10 +176,58 @@ module Wrekavoc
         end
 
         if target?
-          @ret += @node_config.get_container(vnode).rootfspath
+          @ret += @node_config.get_container(vnode.name).rootfspath
         end
 
         non_verbose()
+
+        return @ret
+      end
+
+      post VNETWORK_CREATE do
+        if daemon?
+          # >>> TODO: Check if vnetwork already exists
+          # >>> TODO: Validate ip
+          vnetwork = Resource::VNetwork.new(params['name'],params['address'])
+          @daemon_resources.add_vnetwork(vnetwork)
+          @ret = "VNetwork #{vnetwork.name}(#{vnetwork.address.to_string}) created"
+        end
+
+        return @ret
+      end
+
+      post VNETWORK_ADD_VNODE do
+        vnode = get_vnode()
+
+        if daemon?
+          # >>> TODO: Check if vnetwork exists
+          # >>> TODO: Check if viface exists
+          # >>> TODO: Validate ip
+          vnetwork = @daemon_resources.get_vnetwork(params['vnetwork'])
+          viface = vnode.get_viface(params['viface'])
+          vnetwork.add_vnode(vnode,viface)
+          
+
+          cl = Client.new(vnode.host.address)
+          @ret += cl.viface_attach(vnode.name,viface.name,viface.address.to_string)
+          @ret += "\nVNode #{vnode.name} connected on #{vnetwork.name} with #{viface.name}(#{viface.address.to_s})"
+        end
+
+        return @ret
+      end
+
+      post VIFACE_ATTACH do
+        vnode = get_vnode()
+        
+        if target?
+          viface = vnode.get_viface(params['viface'])
+          address = IPAddress::IPv4.new(params['address'])
+          viface.attach(address.network,address)
+
+          @node_config.vnode_configure(vnode.name)
+
+          @ret += "VIface #{viface.name} set on #{vnode.name} with #{viface.address.to_string}"
+        end
 
         return @ret
       end
@@ -201,15 +248,25 @@ module Wrekavoc
       end
 
       def get_vnode
-          if daemon?
-            ret = @daemon_resources.get_vnode(params['vnode'])
-          else
-            ret = @node_config.get_vnode(params['vnode'])
-          end
+        if daemon?
+          ret = @daemon_resources.get_vnode(params['vnode'])
+        else
+          ret = @node_config.get_vnode(params['vnode'])
+        end
 
-          #not_found unless ret
+        #not_found unless ret
 
-          return ret
+        return ret
+      end
+
+      def get_pnode
+        if daemon?
+          ret = @daemon_resources.get_pnode_by_address(params['target'])
+        else
+          ret = @node_config.pnode
+        end
+
+        return ret
       end
 
       def non_verbose

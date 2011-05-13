@@ -36,11 +36,10 @@ module LXCWrapper
           vnode.vifaces.each do |viface|
             f.puts "lxc.network.type = veth"
             f.puts "lxc.network.link = #{Wrekavoc::Node::Admin::NAME_BRIDGE}"
-            #f.puts "lxc.network.name = #{Wrekavoc::Node::Admin.get_default_iface()}"
             f.puts "lxc.network.name = #{viface.name}"
             f.puts "lxc.network.flags = up"
             f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"
-            f.puts "lxc.network.ipv4 = #{viface.ip}"
+            f.puts "lxc.network.ipv4 = #{viface.address.to_string}"
           end
         end
       end
