@@ -12,6 +12,7 @@ module Wrekavoc
     VIFACE_CREATE='/vnodes/vifaces/create'
     VIFACE_ATTACH='/vnodes/vifaces/attach' # Node only
     VNODE_INFO_ROOTFS='/vnodes/info/rootfs'
+    VNODE_INFO_LIST='/vnodes/info/list'
     
     VNETWORK_CREATE='/vnetworks/create' # Daemon only
     VNETWORK_ADD_VNODE='/vnetworks/vnodes/add' # Daemon only

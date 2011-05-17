@@ -25,6 +25,17 @@ module Wrekavoc
         return (@containers.has_key?(name) ? @containers[name] : nil)
       end
 
+      def get_vnodes_list()
+        ret = ""
+        @vnodes.each_value do |vnode|
+          ret += "\t#{vnode.name} (image:#{vnode.image})\n\t\tIfaces:\n"
+          vnode.vifaces.each do |viface|
+            ret += "\t\t\t#{viface.name} : #{viface.address.to_string}\n"
+          end
+        end
+        return ret
+      end
+
       def include?(name)
         return @vnodes[name]
       end

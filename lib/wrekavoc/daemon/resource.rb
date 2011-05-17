@@ -6,6 +6,8 @@ module Wrekavoc
   module Daemon
 
     class Resource
+      attr_reader :pnodes
+
       def initialize
         @pnodes = {}
         @vnodes = {}

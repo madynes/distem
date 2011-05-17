@@ -181,6 +181,27 @@ module Wrekavoc
 
         non_verbose()
 
+        return @ret
+      end
+
+      post VNODE_INFO_LIST do
+        # >>> TODO: Check if PNode is initialized
+        vnode = get_vnode()
+
+        if daemon?
+            @daemon_resources.pnodes.each_value do |pnode|
+              unless Lib::NetTools.get_default_addr == pnode.address
+                cl = Client.new(pnode.address)
+                @ret += cl.vnode_info_list(pnode.address)
+              end
+            end
+        end
+
+        if target?
+          @ret += "(#{@node_name}) " if daemon?
+          tmp = @node_config.get_vnodes_list()
+          @ret += (tmp.empty? ? "No nodes" : "\n#{tmp}")
+        end
 
         return @ret
       end

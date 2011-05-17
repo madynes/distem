@@ -41,6 +41,10 @@ module Wrekavoc
         @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
       end
 
+      def vnode_info_list(target)
+        @resource[VNODE_INFO_LIST].post :target => target
+      end
+
       def vnetwork_create(name, address)
         # >>> TODO: validate ips
         @resource[VNETWORK_CREATE].post :name => name, :address => address
