@@ -1,5 +1,6 @@
 require 'wrekavoc/daemon/admin'
 require 'wrekavoc/daemon/resource'
+require 'wrekavoc/resource/vplatform'
 require 'wrekavoc/resource/pnode'
 require 'wrekavoc/resource/vnode'
 require 'wrekavoc/resource/viface'

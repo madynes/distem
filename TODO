@@ -21,6 +21,4 @@ network links + routing setup
 * Infrastructure for unit tests
 
 == Implementation
-Modify iface names on the container
 Add /vnodes/destroy in the API
-Use uniform methods name between Node::ConfigManager and Daemon::Resource

@@ -10,15 +10,13 @@ module Wrekavoc
 
       def initialize
         @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
-        @vnodes = {}
+        @vplatform = Wrekavoc::Resource::VPlatform.new
         @containers = {}
-        #@routes
-        #@tc
         Container.stop_all()
       end
 
       def get_vnode(name)
-        return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
+        return @vplatform.get_vnode(name)
       end
       
       def get_container(name)
@@ -27,7 +25,7 @@ module Wrekavoc
 
       def get_vnodes_list()
         ret = ""
-        @vnodes.each_value do |vnode|
+        @vplatform.vnodes.each_value do |vnode|
           ret += "\t#{vnode.name} (image:#{vnode.image})\n\t\tIfaces:\n"
           vnode.vifaces.each do |viface|
             ret += "\t\t\t#{viface.name} : #{viface.address.to_string}\n"
@@ -36,13 +34,9 @@ module Wrekavoc
         return ret
       end
 
-      def include?(name)
-        return @vnodes[name]
-      end
-
       # >>> TODO: Add the ability to modify a vnode      
       def vnode_add(vnode)
-        raise "VNode already exists" if @vnodes.has_key?(vnode.name)
+        raise "VNode already exists" if @vplatform.vnodes.has_key?(vnode.name)
         # >>> TODO: Check if the file is correct
 
         rootfsfile = Lib::FileManager.download(vnode.image)
@@ -50,29 +44,36 @@ module Wrekavoc
 
         rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
 
-        @vnodes[vnode.name] = vnode
+        @vplatform.add_vnode(vnode)
         @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
       def vnode_configure(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].configure()
       end
 
       def vnode_start(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].start()
       end
 
       def vnode_stop(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vnodes.has_key?(vnodename)
+        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].stop()
       end
 
       def vnode_destroy(vnodename)
-        @vnodes[vnodename] = nil
+        @vplatform.destroy_vnode(vnode)
         @containers[vnodename].destroy if @containers[vnodename]
         @containers[vnodename] = nil
+      end
+
+      def vroute_add(vroute)
+        @vplatform.vnodes.each_value do |vnode|
+        end
+
+        @vroutes << vroute
       end
 
     end
