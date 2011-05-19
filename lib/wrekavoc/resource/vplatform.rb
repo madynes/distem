@@ -29,7 +29,7 @@ module Wrekavoc
       def add_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
 
-        @vnetworks[vnetwork.name] = vnetwork
+        @vnetworks[vnetwork.name] = vnetwork 
       end
 
       def add_vroute(vroute)
@@ -51,8 +51,19 @@ module Wrekavoc
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
 
-      def get_vnetwork(name)
+      def get_vnetwork_by_name(name)
         return (@vnetworks.has_key?(name) ? @vnetworks[name] : nil)
+      end
+
+      def get_vnetwork_by_address(address)
+        ret = nil
+        @vnetworks.each_value do |vnetwork|
+          if vnetwork.address.to_string == address
+            ret = vnetwork
+            break
+          end
+        end
+        return ret
       end
 
       def destroy_vnode(vnodename)

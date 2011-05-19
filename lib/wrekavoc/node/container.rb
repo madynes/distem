@@ -40,11 +40,14 @@ module Wrekavoc
       end
 
       def start
-        Lib::Shell::run("lxc-start -d -n #{@vnode.name}") if @status == STATUS_STOP
+        stop()
+        Lib::Shell::run("lxc-start -d -n #{@vnode.name}") #if @status == STATUS_STOP
+        @status = STATUS_RUN
       end
 
       def stop
         Lib::Shell::run("lxc-stop -n #{@vnode.name}") #if @status == STATUS_RUN
+        @status = STATUS_STOP
       end
 
       def destroy

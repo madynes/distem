@@ -3,7 +3,7 @@ require 'wrekavoc'
 module Wrekavoc
   module Daemon
 
-    class Resource < Wrekavoc::Resource::VPlatform
+    class Resource
     end
 
   end

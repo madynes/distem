@@ -33,13 +33,35 @@ module LXCWrapper
           f.puts "lxc.mount.entry=sysfs #{rootfspath}/sys " \
             "sysfs defaults  0 0"
 
-          vnode.vifaces.each do |viface|
-            f.puts "lxc.network.type = veth"
-            f.puts "lxc.network.link = #{Wrekavoc::Lib::NetTools::NAME_BRIDGE}"
-            f.puts "lxc.network.name = #{viface.name}"
-            f.puts "lxc.network.flags = up"
-            f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"
-            f.puts "lxc.network.ipv4 = #{viface.address.to_string}"
+          open("#{rootfspath}/etc/network/interfaces", "w") do |froute|
+          open("#{rootfspath}/etc/rc.local", "w") do |frclocal|
+            frclocal.puts("#!/bin/sh -e\n")
+            frclocal.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if vnode.gateway?
+            froute.puts("auto lo\niface lo inet loopback")
+            vnode.vifaces.each do |viface|
+              f.puts "lxc.network.type = veth"
+              f.puts "lxc.network.link = #{Wrekavoc::Lib::NetTools::NAME_BRIDGE}"
+              f.puts "lxc.network.name = #{viface.name}"
+              f.puts "lxc.network.flags = up"
+              f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"
+              f.puts "lxc.network.ipv4 = #{viface.address.to_string}"
+              frclocal.puts("ip route flush dev #{viface.name}")
+              froute.puts("iface #{viface.name} inet static")
+              froute.puts("\taddress #{viface.address.to_s}")
+            
+                
+              if viface.vnetwork
+                frclocal.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
+                froute.puts("\tnetmask #{viface.address.netmask.to_s}")
+                froute.puts("\tnetwork #{viface.vnetwork.address.to_s}")
+                viface.vnetwork.vroutes.each_value do |vroute|
+                  frclocal.puts("ip route add #{vroute.dstnet.address.to_string} via #{vroute.gw.address.to_s} dev #{viface.name}") unless vroute.gw.address.to_s == viface.address.to_s
+                end
+              end
+              frclocal.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
+            end
+            frclocal.puts("exit 0")
+          end
           end
         end
       end

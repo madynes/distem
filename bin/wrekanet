@@ -24,10 +24,14 @@ end
 options = {}
 
 options['f_vnetwork_create'] = false
+options['f_vroute_create'] = false
 options['f_vnetwork_list'] = false
 
 options['vnetwork_name'] = false
 options['vnetwork_address'] = false
+options['vroute_srcnet'] = false
+options['vroute_destnet'] = false
+options['vroute_gateway'] = false 
 options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -44,6 +48,13 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_vnetwork_create'] = true
     options['vnetwork_name'] = array[0]
     options['vnetwork_address'] = array[1]
+  end
+  opts.on( '-r', '--create-vroute SRCNET,DESTNET,GATEWAY', Array, \
+    'Create a VRoute between SRCNET and DESTNET (names) using the node GATEWAY (affect all the VNodes in the VNetwork SRCNET)' ) do |array|
+    options['f_vroute_create'] = true
+    options['vroute_srcnet'] = array[0]
+    options['vroute_destnet'] = array[1]
+    options['vroute_gateway'] = array[2]
   end
   opts.on( '-n', '--vnetwork NAME', \
     'The name of the Virtual Network' ) do |n|
@@ -69,4 +80,9 @@ if options['f_vnetwork_create']
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
   puts cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
+end
+
+if options['f_vroute_create']
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  puts cl.vroute_create(options['vroute_srcnet'],options['vroute_destnet'],options['vroute_gateway'])
 end

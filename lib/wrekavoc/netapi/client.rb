@@ -37,6 +37,10 @@ module Wrekavoc
         @resource[VIFACE_CREATE].post :vnode => vnode, :name => name
       end
 
+      def vnode_gateway(vnode)
+        @resource[VNODE_GATEWAY].post :vnode => vnode
+      end
+
       def vnode_info_rootfs(vnode)
         @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
       end
@@ -60,6 +64,11 @@ module Wrekavoc
         # >>> TODO: validate ips
         @resource[VIFACE_ATTACH].post :vnode => vnode, :viface => viface, \
           :address => address
+      end
+
+      def vroute_create(srcnet,destnet,gateway,vnode="")
+        @resource[VROUTE_CREATE].post :networksrc => srcnet, \
+          :networkdst => destnet, :gatewaynode => gateway, :vnode => vnode
       end
 
       def vnode_execute(vnode, command)

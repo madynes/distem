@@ -1,9 +1,9 @@
 require 'wrekavoc'
 require 'resolv'
 require 'uri'
+require 'ipaddress'
 
 module Wrekavoc
-
   module Resource
 
     # Wrekavoc Virtual Node 
@@ -15,6 +15,7 @@ module Wrekavoc
       # The URI to the -bootstrapped and compressed- image file
       attr_reader :image
       attr_reader :name, :host, :vifaces
+      attr_accessor :gateway
 
       
       # Create a new Virtual Node
@@ -41,6 +42,7 @@ module Wrekavoc
 
         @host = host
         @image = URI.encode(image)
+        @gateway = false
         @vifaces = []
         @@ids += 1
       end
@@ -56,7 +58,11 @@ module Wrekavoc
         @vifaces << viface
       end
 
-      def get_viface(vifacename)
+      def gateway?
+        return @gateway
+      end
+
+      def get_viface_by_name(vifacename)
         ret = nil
         @vifaces.each do |viface|
           if viface.name == vifacename
@@ -66,8 +72,22 @@ module Wrekavoc
         end
         return ret
       end
+
+      def get_viface_by_network(network)
+        network = network.address if network.is_a?(VNetwork)
+        raise network.class.to_s unless network.is_a?(IPAddress)
+        
+        ret = nil
+        @vifaces.each do |viface|
+          if network.include?(viface.address)
+            ret = viface
+            break
+          end
+        end
+        
+        return ret
+      end
     end
 
   end
-
 end

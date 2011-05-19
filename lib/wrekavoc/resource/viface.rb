@@ -1,5 +1,6 @@
-module Wrekavoc
+require 'ipaddress'
 
+module Wrekavoc
   module Resource
 
     # Wrekavoc Virtual Interface (to be attached on a Virtual Node)
@@ -21,19 +22,19 @@ module Wrekavoc
 
         @name = name
         @address = IPAddress::IPv4.new("0.0.0.0/0")
-        @network = @address.network
+        @vnetwork = nil
+        @vroutes = []
       end
 
       def attach(vnetwork,address)
-        @network = vnetwork
+        @vnetwork = vnetwork
         @address = address
       end
 
       def attached?
-        @network != nil and @address != nil
+        @vnetwork != nil and @address != nil
       end
     end
 
   end
-
 end

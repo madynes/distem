@@ -5,14 +5,23 @@ module Wrekavoc
   module Resource
 
     class VNetwork
-      attr_reader :address, :name
+      attr_reader :address, :name, :vnodes, :vroutes
+      @@id = 0
 
       #address = ip/mask or ip/cidr
-      def initialize(name,address)
+      def initialize(address,name="")
+        name = "vnetwork#{@@id}" if name.empty?
         @name = name
-        @address = IPAddress::IPv4.new(address).network
+        if address.is_a?(IPAddress)
+          @address = address.network
+        else
+          @address = IPAddress::IPv4.new(address).network
+        end
         @vnodes = {}
+        @vroutes = {}
+
         @curaddress = @address.first
+        @@id += 1
       end 
 
       def add_vnode(vnode,viface)
@@ -21,6 +30,12 @@ module Wrekavoc
         @vnodes[vnode] = viface
         viface.attach(self,@curaddress)
         inc_curaddress()
+      end
+
+      def add_vroute(vroute)
+        #Replace the route if it already exists
+        raise unless vroute.dstnet
+        @vroutes[vroute.dstnet] = vroute
       end
 
       def get_list

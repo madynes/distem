@@ -6,7 +6,7 @@ module Wrekavoc
     class ConfigManager
       PATH_DEFAULT_ROOTFS="/tmp/rootfs/"
 
-      attr_reader :pnode
+      attr_reader :pnode, :vplatform
 
       def initialize
         @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
@@ -48,6 +48,10 @@ module Wrekavoc
         @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
+      def vnetwork_add(vnetwork)
+        @vplatform.add_vnetwork(vnetwork)
+      end
+
       def vnode_configure(vnodename)
         raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].configure()
@@ -64,14 +68,12 @@ module Wrekavoc
       end
 
       def vnode_destroy(vnodename)
-        @vplatform.destroy_vnode(vnode)
+        @vplatform.destroy_vnode(vnodename)
         @containers[vnodename].destroy if @containers[vnodename]
         @containers[vnodename] = nil
       end
 
       def vroute_add(vroute)
-        @vplatform.vnodes.each_value do |vnode|
-        end
 
         @vroutes << vroute
       end

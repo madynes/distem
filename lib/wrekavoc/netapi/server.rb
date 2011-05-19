@@ -20,7 +20,7 @@ module Wrekavoc
         @mode = settings.mode
 
         @node_config = Node::ConfigManager.new
-        @daemon_resources = Daemon::Resource.new if @mode == MODE_DAEMON
+        @daemon_resources = Resource::VPlatform.new if @mode == MODE_DAEMON
       end
 
       #error MyCustomError do
@@ -164,6 +164,26 @@ module Wrekavoc
         return @ret
       end
 
+      post VNODE_GATEWAY do
+        vnode = get_vnode()
+
+        if daemon?
+          unless target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.vnode_gateway(vnode.name)
+          end
+        end
+
+        if target?
+          vnode.gateway = true
+          @node_config.vnode_configure(vnode.name)
+
+          @ret += "Virtual node '#{vnode.name}' set as gateway"
+        end
+
+        return @ret
+      end
+
       post VNODE_INFO_ROOTFS do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -210,7 +230,7 @@ module Wrekavoc
         if daemon?
           # >>> TODO: Check if vnetwork already exists
           # >>> TODO: Validate ip
-          vnetwork = Resource::VNetwork.new(params['name'],params['address'])
+          vnetwork = Resource::VNetwork.new(params['address'],params['name'])
           @daemon_resources.add_vnetwork(vnetwork)
 
           #Add a virtual interface connected on the network
@@ -229,8 +249,8 @@ module Wrekavoc
           # >>> TODO: Check if vnetwork exists
           # >>> TODO: Check if viface exists
           # >>> TODO: Validate ip
-          vnetwork = @daemon_resources.get_vnetwork(params['vnetwork'])
-          viface = vnode.get_viface(params['viface'])
+          vnetwork = @daemon_resources.get_vnetwork_by_name(params['vnetwork'])
+          viface = vnode.get_viface_by_name(params['viface'])
           vnetwork.add_vnode(vnode,viface)
           
 
@@ -246,13 +266,61 @@ module Wrekavoc
         vnode = get_vnode()
         
         if target?
-          viface = vnode.get_viface(params['viface'])
+          viface = vnode.get_viface_by_name(params['viface'])
           address = IPAddress::IPv4.new(params['address'])
-          viface.attach(address.network,address)
+          vnetwork = @node_config.vplatform.get_vnetwork_by_address(address.network.to_string)
+          unless vnetwork
+            vnetwork = Resource::VNetwork.new(address.network)
+            @node_config.vnetwork_add(vnetwork) 
+          end
+          viface.attach(vnetwork,address)
 
           @node_config.vnode_configure(vnode.name)
+          @node_config.vnode_stop(vnode.name)
+          @node_config.vnode_start(vnode.name)
+          @ret += "\nVIface #{viface.name} attached to #{vnetwork.name} with #{viface.address.to_s}"
+        end
 
-          @ret += "VIface #{viface.name} set on #{vnode.name} with #{viface.address.to_string}"
+        return @ret
+      end
+
+      post VROUTE_CREATE do
+        if daemon? and !target?
+          gw = @daemon_resources.get_vnode(params['gatewaynode'])
+          srcnet = @daemon_resources.get_vnetwork_by_name(params['networksrc'])
+          destnet = @daemon_resources.get_vnetwork_by_name(params['networkdst'])
+          gwaddr = gw.get_viface_by_network(srcnet).address.to_s
+        else
+          gw = IPAddress::IPv4.new(params['gatewaynode'])
+          gwaddr = gw.to_s
+          srcnet = @node_config.vplatform.get_vnetwork_by_address(params['networksrc'])
+          destnet = @node_config.vplatform.get_vnetwork_by_address(params['networkdst'])
+          destnet = Resource::VNetwork.new(params['networkdst']) unless destnet
+        end
+        raise unless srcnet
+        raise unless destnet
+        vroute = Resource::VRoute.new(srcnet,destnet,gw)
+        srcnet.add_vroute(vroute)
+
+        if daemon? and !target?
+          gwaddr = gw.get_viface_by_network(srcnet).address.to_s
+          cl = Client.new(gw.host.address)
+          @ret += cl.vnode_gateway(gw.name) + "\n"
+          
+
+          srcnet.vnodes.each_key do |vnode|
+            cl = Client.new(vnode.host.address)
+            @ret += cl.vroute_create(srcnet.address.to_string, \
+              destnet.address.to_string,gwaddr, vnode.name) + "\n"
+          end
+          @daemon_resources.add_vroute(vroute)
+        end
+
+        if target?
+          vnode = get_vnode()
+
+          @node_config.vnode_configure(vnode.name)
+          @ret += "VRoute (#{destnet.address.to_string} via #{gwaddr}) added to #{vnode.name}"
         end
 
         return @ret
