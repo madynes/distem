@@ -87,6 +87,17 @@ module Wrekavoc
         
         return ret
       end
+
+      def connected_to?(vnetwork)
+        ret = false
+        vifaces.each do |viface|
+          if viface.connected_to?(vnetwork)
+            ret = true
+            break
+          end
+        end
+        return ret
+      end
     end
 
   end

@@ -5,7 +5,7 @@ module Wrekavoc
   module Resource
 
     class VPlatform
-      attr_reader :pnodes, :vnodes
+      attr_reader :pnodes, :vnodes, :vnetworks
 
       def initialize
         @pnodes = {}

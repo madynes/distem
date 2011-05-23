@@ -45,6 +45,10 @@ module Wrekavoc
         @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
       end
 
+      def vnode_info_pnode(vnode)
+        @resource[VNODE_INFO_PNODE].post :vnode => vnode
+      end
+
       def vnode_info_list(target)
         @resource[VNODE_INFO_LIST].post :target => target
       end
@@ -69,6 +73,10 @@ module Wrekavoc
       def vroute_create(srcnet,destnet,gateway,vnode="")
         @resource[VROUTE_CREATE].post :networksrc => srcnet, \
           :networkdst => destnet, :gatewaynode => gateway, :vnode => vnode
+      end
+
+      def vroute_complete()
+        @resource[VROUTE_COMPLETE].post ""
       end
 
       def vnode_execute(vnode, command)

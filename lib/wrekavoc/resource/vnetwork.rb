@@ -46,6 +46,37 @@ module Wrekavoc
         return ret
       end
 
+      def get_vroute(vnetwork,excludelist=[])
+        ret = nil
+        excludelist << self
+        found = false
+
+        vnodes.each_key do |vnode|
+          vnode.vifaces.each do |viface|
+            found = true if viface.connected_to?(vnetwork)
+
+            unless excludelist.include?(viface.vnetwork)
+              found = true if viface.vnetwork.get_vroute(vnetwork,excludelist) 
+            end
+
+            break if found
+          end
+
+          if found
+            ret = vnode
+            break
+          end
+        end
+
+        excludelist.delete(self)
+
+        return ret
+      end
+
+      def ==(vnetwork)
+        return ((vnetwork.is_a?(VNetwork)) and (vnetwork.address.to_string == @address.to_string))
+      end
+
       protected
       def inc_curaddress
         tmp = @curaddress.u32

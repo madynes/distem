@@ -204,6 +204,16 @@ module Wrekavoc
         return @ret
       end
 
+      post VNODE_INFO_PNODE do
+        vnode = get_vnode()
+
+        @ret += vnode.host.address
+
+        non_verbose()
+
+        return @ret
+      end
+
       post VNODE_INFO_LIST do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -270,7 +280,11 @@ module Wrekavoc
           address = IPAddress::IPv4.new(params['address'])
           vnetwork = @node_config.vplatform.get_vnetwork_by_address(address.network.to_string)
           unless vnetwork
-            vnetwork = Resource::VNetwork.new(address.network)
+            if daemon?
+              vnetwork = @daemon_resources.get_vnetwork_by_address(address.network.to_string)
+            else
+              vnetwork = Resource::VNetwork.new(address.network)
+            end
             @node_config.vnetwork_add(vnetwork) 
           end
           viface.attach(vnetwork,address)
@@ -289,21 +303,20 @@ module Wrekavoc
           gw = @daemon_resources.get_vnode(params['gatewaynode'])
           srcnet = @daemon_resources.get_vnetwork_by_name(params['networksrc'])
           destnet = @daemon_resources.get_vnetwork_by_name(params['networkdst'])
-          gwaddr = gw.get_viface_by_network(srcnet).address.to_s
+          gwaddr = gw.get_viface_by_network(srcnet).address
         else
           gw = IPAddress::IPv4.new(params['gatewaynode'])
-          gwaddr = gw.to_s
+          gwaddr = gw
           srcnet = @node_config.vplatform.get_vnetwork_by_address(params['networksrc'])
           destnet = @node_config.vplatform.get_vnetwork_by_address(params['networkdst'])
           destnet = Resource::VNetwork.new(params['networkdst']) unless destnet
         end
         raise unless srcnet
         raise unless destnet
-        vroute = Resource::VRoute.new(srcnet,destnet,gw)
+        vroute = Resource::VRoute.new(srcnet,destnet,gwaddr)
         srcnet.add_vroute(vroute)
 
         if daemon? and !target?
-          gwaddr = gw.get_viface_by_network(srcnet).address.to_s
           cl = Client.new(gw.host.address)
           @ret += cl.vnode_gateway(gw.name) + "\n"
           
@@ -311,7 +324,7 @@ module Wrekavoc
           srcnet.vnodes.each_key do |vnode|
             cl = Client.new(vnode.host.address)
             @ret += cl.vroute_create(srcnet.address.to_string, \
-              destnet.address.to_string,gwaddr, vnode.name) + "\n"
+              destnet.address.to_string,gwaddr.to_s, vnode.name) + "\n"
           end
           @daemon_resources.add_vroute(vroute)
         end
@@ -320,9 +333,25 @@ module Wrekavoc
           vnode = get_vnode()
 
           @node_config.vnode_configure(vnode.name)
-          @ret += "VRoute (#{destnet.address.to_string} via #{gwaddr}) added to #{vnode.name}"
+          @ret += "VRoute (#{destnet.address.to_string} via #{gwaddr.to_s}) added to #{vnode.name}"
         end
 
+        return @ret
+      end
+
+      post VROUTE_COMPLETE do
+        if daemon?
+          @daemon_resources.vnetworks.each_value do |srcnet|
+            @daemon_resources.vnetworks.each_value do |destnet|
+              next if srcnet == destnet
+              gw = srcnet.get_vroute(destnet)
+              if gw
+                cl = Client.new(Lib::NetTools.get_default_addr())
+                @ret += cl.vroute_create(srcnet.name, destnet.name, gw.name) + "\n"
+              end
+            end
+          end
+        end
         return @ret
       end
 

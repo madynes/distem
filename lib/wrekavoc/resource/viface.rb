@@ -34,6 +34,10 @@ module Wrekavoc
       def attached?
         @vnetwork != nil and @address != nil
       end
+
+      def connected_to?(vnetwork)
+        return vnetwork.address.include?(address)
+      end
     end
 
   end
