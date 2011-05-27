@@ -18,6 +18,11 @@ module Wrekavoc
           Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
         end
       end
+
+      def self.set_iface(iface)
+        Lib::Shell.run("ethtool -K #{iface} gso off")
+        Lib::Shell.run("ethtool -K #{iface} tso off")
+      end
     end
 
   end

@@ -1,0 +1,50 @@
+module TCWrapper
+
+require 'wrekavoc'
+
+
+class FilterU32 < Filter
+  TYPE="u32"
+
+  U32_MATCH="match"
+
+  U32T_U8="u8"
+  U32T_U32="u32"
+  U32T_IP="ip"
+
+  U32_IP_DST="ip dst"
+  U32_IP_SRC="ip src"
+
+  def initialize(iface,parent,dest,protocol=Protocol::IP,prio=1,params=Hash.new)
+    super(iface,parent,dest,protocol,prio,TYPE,params)
+    parse_params
+  end
+
+  #params such as: 
+  # {
+  #   FilterU32::U32T_IP => ["ip protocol 6 0xff", "ip sport 80 0xffff"],
+  #   FilterU32::U32T_U32 => ["0x48545450 0xffffffff at 52"]
+  # }
+  def parse_params
+    oldparams = @params.dup
+    @params.clear
+
+    oldparams.each do |proto,values|
+      values.each do |value|
+          add_param(U32_MATCH + " " + proto,value)
+      end
+    end
+  end
+
+  def add_match_ip_dst(ip)
+    add_param(U32_MATCH,U32_IP_DST + " " + ip)
+    self
+  end
+
+  def add_match_ip_src(ip)
+    add_param(U32_MATCH,U32_IP_SRC + " " + ip)
+    self
+  end
+end
+
+end

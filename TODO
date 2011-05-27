@@ -22,3 +22,6 @@ network links + routing setup
 
 == Implementation
 Add /vnodes/destroy in the API
+Rebuild lxc wrapper a better way
+Use debian /etc/network/interfaces to configure the routes
+Add the possibility to specify node ip address

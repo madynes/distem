@@ -102,6 +102,9 @@ puts client.vroute_create('net6','net2','nodegw56')
 puts client.vroute_create('net3','net6','nodegw2345')
 puts client.vroute_create('net6','net3','nodegw56')
 
+puts client.vroute_create('net4','net5','nodegw2345')
+puts client.vroute_create('net5','net4','nodegw2345')
+
 puts client.vroute_create('net4','net6','nodegw2345')
 puts client.vroute_create('net6','net4','nodegw56')
 

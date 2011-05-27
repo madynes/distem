@@ -83,6 +83,11 @@ module Wrekavoc
         # >>> TODO: validate ips
         @resource[VNODE_EXECUTE].post :vnode => vnode, :command => command
       end
+
+      def limit_net_create(vnode,viface,direction,type,properties)
+        @resource[LIMIT_NET_CREATE].post :vnode => vnode, :viface => viface, \
+          :direction => direction, :type => type, :properties => properties
+      end
     end
 
   end

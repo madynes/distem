@@ -43,7 +43,7 @@ module LXCWrapper
               f.puts "lxc.network.link = #{Wrekavoc::Lib::NetTools::NAME_BRIDGE}"
               f.puts "lxc.network.name = #{viface.name}"
               f.puts "lxc.network.flags = up"
-              f.puts "lxc.network.veth.pair = #{vnode.name}-#{viface.name}"
+              f.puts "lxc.network.veth.pair = #{Wrekavoc::Lib::NetTools.get_iface_name(vnode,viface)}"
               f.puts "lxc.network.ipv4 = #{viface.address.to_string}"
               frclocal.puts("ip route flush dev #{viface.name}")
               froute.puts("iface #{viface.name} inet static")

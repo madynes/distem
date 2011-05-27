@@ -21,6 +21,7 @@ module Wrekavoc
 
         @node_config = Node::ConfigManager.new
         @daemon_resources = Resource::VPlatform.new if @mode == MODE_DAEMON
+        @daemon_vnetlimit = Limitation::NetworkManager.new if @mode == MODE_DAEMON
       end
 
       #error MyCustomError do
@@ -360,6 +361,34 @@ module Wrekavoc
         
         if daemon?
           @ret += Daemon::Admin.vnode_run(vnode,params['command'])
+        end
+
+        return @ret
+      end
+
+      post LIMIT_NET_CREATE do
+        vnode = get_vnode()
+        viface = vnode.get_viface_by_name(params['viface'])
+        direction = Limitation::Network::get_direction_by_name(params['direction'])
+        type = Limitation::Network::get_type_by_name(params['type'])
+        properties = {}
+        params['properties'].split(',').each do |propstr|
+          tmp = propstr.split('=')
+          properties[tmp[0]] = tmp[1]
+        end
+        limit = Limitation::Network::new_by_type(type,vnode,viface,direction,properties)
+        
+        if daemon?
+          @daemon_vnetlimit.add_limitation(limit)
+          unless target?
+            cl = Client.new(vnode.host.address)
+            @ret += cl.limit_net_create(vnode.name, viface.name, params['direction'], params['type'], params['properties'])
+          end
+        end
+
+        if target?
+          @node_config.network_limitation_add(limit)
+          @ret += "Limitation of #{params['type']} on #{params['direction']} added to #{vnode.name}(#{viface.name}) with properties: '#{params['properties']}'"
         end
 
         return @ret

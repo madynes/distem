@@ -5,7 +5,7 @@ require 'wrekavoc'
 require 'optparse'
 require 'pathname'
 
-USAGE="Usage: #{$0} <host_address> <vnode_name> [options]"
+USAGE="Usage: #{$0} <vnode_name> [options]"
 
 DEFAULT_COPY_PATH="/tmp"
 ERR_NONE=0
@@ -80,7 +80,7 @@ end
 
 optparse.parse!
 
-unless ARGV.length == 2
+unless ARGV.length == 1
   puts USAGE
   exit
 end
@@ -88,21 +88,26 @@ end
 cl=false
 
 if (options['f_shell'])
-  system("ssh -t #{options['ssh_user']}@#{ARGV[0]} 'lxc-console -n #{ARGV[1]}'")
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  pnode = cl.vnode_info_pnode(ARGV[0])
+  system("ssh -t #{options['ssh_user']}@#{pnode} 'lxc-console -n #{ARGV[0]}'")
 end
 
 if (options['f_exec'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  puts cl.vnode_execute(ARGV[1],options['exec_cmd'])
+  puts cl.vnode_execute(ARGV[0],options['exec_cmd'])
 end
 
 if options['f_file_send'] or options['f_file_get']
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  rootfs = cl.vnode_info_rootfs(ARGV[1])
+  rootfs = cl.vnode_info_rootfs(ARGV[0])
+  pnode = cl.vnode_info_pnode(ARGV[0])
   if (options['f_file_send'])
     vfile = options['file_dest']
   else
@@ -113,8 +118,8 @@ if options['f_file_send'] or options['f_file_get']
   path = File.join(rootfs,(path.absolute? ? "" : DEFAULT_COPY_PATH),path.to_s)
 
   if (options['f_file_send'])
-    system("scp -r #{options['file_src']} #{options['ssh_user']}@#{ARGV[0]}:#{path}")
+    system("scp -r #{options['file_src']} #{options['ssh_user']}@#{pnode}:#{path}")
   else
-    system("scp -r #{options['ssh_user']}@#{ARGV[0]}:#{path} #{options['file_dest']}")
+    system("scp -r #{options['ssh_user']}@#{pnode}:#{path} #{options['file_dest']}")
   end
 end

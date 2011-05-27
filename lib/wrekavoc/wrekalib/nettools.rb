@@ -53,6 +53,13 @@ module Wrekavoc
         Lib::Shell.run("ifconfig #{iface}:#{@@nic_count} #{address}")
         @@nic_count += 1
       end
+
+      def self.get_iface_name(vnode,viface)
+        raise unless vnode.is_a?(Resource::VNode)
+        raise unless viface.is_a?(Resource::VIface)
+
+        return "#{vnode.name}-#{viface.name}"
+      end
     end
 
   end

@@ -22,5 +22,6 @@ module Wrekavoc
     VROUTE_COMPLETE='/vnetwork/vroute/complete' # Daemon only
     VNETWORK_INFO_LIST='/vnetwork/info/list'
 
+    LIMIT_NET_CREATE='/limitation/network/create'
   end
 end
