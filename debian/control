@@ -1,8 +1,7 @@
 Source: wrekavoc
 Section: ruby
-Priority: optional
+Priority: extra
 Maintainer: Lucas Nussbaum <lucas.nussbaum@loria.fr>
-DM-Upload-Allowed: yes
 Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.2)
 Standards-Version: 3.9.1
 XS-Ruby-Versions: all
@@ -10,5 +9,5 @@ XS-Ruby-Versions: all
 Package: wrekavoc
 Architecture: all
 XB-Ruby-Versions: ${ruby:Versions}
-Depends: ${shlibs:Depends}, ${misc:Depends}, ruby1.8 | ruby-interpreter, ruby-net-ssh
+Depends: ${shlibs:Depends}, ${misc:Depends}, ruby | ruby-interpreter, ruby-net-ssh, ruby-ipaddress, ruby-rest-client, ruby-sinatra, lxc, bridge-utils
 Description: FIXME
