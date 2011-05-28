@@ -84,9 +84,9 @@ module Wrekavoc
         @resource[VNODE_EXECUTE].post :vnode => vnode, :command => command
       end
 
-      def limit_net_create(vnode,viface,direction,type,properties)
+      def limit_net_create(vnode,viface,direction,algorithm,properties)
         @resource[LIMIT_NET_CREATE].post :vnode => vnode, :viface => viface, \
-          :direction => direction, :type => type, :properties => properties
+          :direction => direction, :algorithm => algorithm, :properties => properties
       end
     end
 

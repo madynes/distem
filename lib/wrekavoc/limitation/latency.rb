@@ -2,15 +2,17 @@ require 'wrekavoc'
 
 module Wrekavoc
   module Limitation
+    module Network
 
-    class Latency < Network
-      attr_reader :delay
-      def initialize(vnode, viface, direction, delay)
-        super(vnode, viface, direction)
-        @delay = delay
+      class Latency < Property
+        attr_reader :delay
+        def initialize(delay)
+          super()
+          @delay = delay
+        end
       end
-    end
 
+    end
   end
 end
 

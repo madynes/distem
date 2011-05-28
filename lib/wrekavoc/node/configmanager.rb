@@ -11,7 +11,7 @@ module Wrekavoc
       def initialize
         @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
         @vplatform = Wrekavoc::Resource::VPlatform.new
-        @vnetlimit = Wrekavoc::Limitation::NetworkManager.new
+        @vnetlimit = Wrekavoc::Limitation::Network::Manager.new
         @containers = {}
         Container.stop_all()
       end

@@ -38,9 +38,9 @@ puts client.vnetwork_add_vnode('net2', 'nodegw', 'if1')
 
 puts client.vroute_complete()
 
-puts client.limit_net_create('node1','if0','OUTPUT','BANDWIDTH','rate=10mbps')
-
 puts client.vnode_start('node1')
 puts client.vnode_start('node2')
 puts client.vnode_start('nodegw')
+
+puts client.limit_net_create('node1','if0','OUTPUT','TBF','bandwidth=10mbps,latency=10ms')
 

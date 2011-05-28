@@ -2,14 +2,16 @@ require 'wrekavoc'
 
 module Wrekavoc
   module Limitation
+    module Network
 
-    class Bandwidth < Network
-      attr_reader :rate
-      def initialize(vnode, viface, direction, rate)
-        super(vnode, viface, direction)
-        @rate = rate
+      class Bandwidth < Property
+        attr_reader :rate
+        def initialize(rate)
+          super()
+          @rate = rate
+        end
       end
-    end
 
+    end
   end
 end
