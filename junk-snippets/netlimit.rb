@@ -7,7 +7,6 @@ IMAGE='file:///home/lsarzyniec/rootfs.tar.bz2'
 
 machine1 = 'graphene-51'
 machine2 = 'graphene-52'
-machine2 = 'graphene-53'
 coord = machine1
 
 
