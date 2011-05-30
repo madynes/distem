@@ -2,11 +2,12 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'wrekavoc'
 
-IMAGE='file:///home/lsarzyniec/rootfs-squeeze.tar.bz2'
+IMAGE='file:///home/lsarzyniec/rootfs.tar.bz2'
 
 
-machine1 = 'graphene-10'
-machine2 = 'graphene-100'
+machine1 = 'graphene-51'
+machine2 = 'graphene-52'
+machine2 = 'graphene-53'
 coord = machine1
 
 
@@ -40,7 +41,10 @@ puts client.vroute_complete()
 
 puts client.vnode_start('node1')
 puts client.vnode_start('node2')
+puts client.vnode_start('node3')
 puts client.vnode_start('nodegw')
 
-puts client.limit_net_create('node1','if0','OUTPUT','TBF','bandwidth=10mbps,latency=10ms')
-
+puts client.limit_net_create('node1','if0','OUTPUT','{ "bandwidth" : {"rate" : "10mbps"}, "latency" : {"delay" : "10ms"} }')
+puts client.limit_net_create('node3','if0','OUTPUT','{ "bandwidth" : {"rate" : "1mbps"}, "latency" : {"delay" : "100ms"} }')
+puts client.limit_net_create('nodegw','if0','OUTPUT','{ "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} }')
+puts client.limit_net_create('nodegw','if1','OUTPUT','{ "bandwidth" : {"rate" : "2mbps"}, "latency" : {"delay" : "50ms"} }')

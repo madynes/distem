@@ -5,14 +5,14 @@ module Wrekavoc
 
     class NetworkLimitation
       def self.apply(limitation)
-        case limitation.algorithm
-          when Limitation::Network::Algorithm::TBF
+        #case limitation.algorithm
+        #  when Limitation::Network::Algorithm::TBF
             apply_tbf(limitation)
-          when Limitation::Network::Algorithm::HTB
-            apply_htb(limitation)
-          else
-            apply_tbf(limitation)
-        end
+        #  when Limitation::Network::Algorithm::HTB
+        #    apply_htb(limitation)
+        #  else
+        #    apply_tbf(limitation)
+        #end
       end
 
       def self.apply_tbf(limitation)

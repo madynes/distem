@@ -2,6 +2,7 @@ require 'wrekavoc'
 require 'sinatra/base'
 require 'socket'
 require 'ipaddress'
+require 'json'
 
 module Wrekavoc
   module NetAPI
@@ -370,21 +371,20 @@ module Wrekavoc
         vnode = get_vnode()
         viface = vnode.get_viface_by_name(params['viface'])
         dir = Limitation::Network::Rule.get_direction_by_name(params['direction'])
-        algo = Limitation::Network::Rule.get_algorithm_by_name(params['algorithm'])
-        limit = Limitation::Network::Rule.new(vnode,viface,dir,algo)
-        limit.parse_properties(params['properties'])
+        prophash = JSON.parse(params['properties'])
+        limit = Limitation::Network::Rule.new(vnode,viface,dir,prophash)
         
         if daemon?
           @daemon_vnetlimit.add_limitation(limit)
           unless target?
             cl = Client.new(vnode.host.address)
-            @ret += cl.limit_net_create(vnode.name, viface.name, params['direction'], params['type'], params['properties'])
+            @ret += cl.limit_net_create(vnode.name, viface.name, params['direction'], params['properties'])
           end
         end
 
         if target?
           @node_config.network_limitation_add(limit)
-          @ret += "Limitation of #{params['type']} on #{params['direction']} added to #{vnode.name}(#{viface.name}) with properties: '#{params['properties']}'"
+          @ret += "Limitation of #{params['type']} on #{params['direction']} added to #{vnode.name}(#{viface.name}) with properties: '#{prophash.inspect}'"
         end
 
         return @ret

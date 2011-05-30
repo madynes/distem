@@ -6,9 +6,15 @@ module Wrekavoc
 
       class Latency < Property
         attr_reader :delay
-        def initialize(delay)
+        def initialize(paramshash={})
           super()
-          @delay = delay
+          @delay = nil
+          parse_params(paramshash)
+        end
+
+        def parse_params(paramshash)
+          super(paramshash)
+          @delay = paramshash['delay'] if paramshash['delay']
         end
       end
 

@@ -9,6 +9,12 @@ module Wrekavoc
           BANDWIDTH=0
           LATENCY=1
         end
+        
+        def initialize()
+        end
+
+        def parse_params(paramshash)
+        end
       end
 
     end
