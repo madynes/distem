@@ -6,6 +6,10 @@ module Wrekavoc
   module Lib
 
     class FileManager
+      PATH_CURRENT=File.expand_path(File.dirname(__FILE__))
+      PATH_WREKAVOC_BIN=File.expand_path('../../../bin/',PATH_CURRENT)
+      PATH_WREKAVOC_LOGS=File.expand_path('../../../logs/',PATH_CURRENT)
+
       PATH_DEFAULT_DOWNLOAD="/tmp/"
       PATH_DEFAULT_CACHE="/tmp/extractcache/"
 
