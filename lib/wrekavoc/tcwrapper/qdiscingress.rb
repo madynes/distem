@@ -3,11 +3,18 @@ module TCWrapper
 require 'wrekavoc'
 
 
-class QdiscIngress < Qdisc
-  TYPE="ingress"
+class QdiscIngress < Wrapper
+  TYPE="qdisc"
 
-  def initialize(iface,parent,params=Hash.new)
-    super(iface,parent,TYPE,params)
+  attr_reader :id
+
+  def initialize(iface)
+    super(iface,TYPE,"ingress",Hash.new)
+    @id = Id.new("ffff")
+  end
+
+  def get_cmd(*args)
+    super(*args) + "ingress"
   end
 end
 

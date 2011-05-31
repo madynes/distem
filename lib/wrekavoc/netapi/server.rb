@@ -158,6 +158,7 @@ module Wrekavoc
         end
 
         if target?
+          @node_config.viface_add(viface)
           @node_config.vnode_configure(vnode.name)
 
           @ret += "Virtual Interface '#{viface.name}' created on '#{vnode.name}'"

@@ -5,6 +5,9 @@ module Wrekavoc
 
     # Wrekavoc Virtual Interface (to be attached on a Virtual Node)
     class VIface
+      @@ids = 0
+      # The unique identifier of the Interface
+      attr_reader :id
       # The name of the Interface
       attr_reader :name
       # The IP address of the Interface
@@ -20,10 +23,12 @@ module Wrekavoc
       def initialize(name)
         raise if name.empty? or not name.is_a?(String)
 
+        @id = @@ids
         @name = name
         @address = IPAddress::IPv4.new("0.0.0.0/0")
         @vnetwork = nil
         @vroutes = []
+        @@ids += 1
       end
 
       def attach(vnetwork,address)

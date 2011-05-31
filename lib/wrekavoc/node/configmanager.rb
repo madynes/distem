@@ -49,6 +49,11 @@ module Wrekavoc
         @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
+      def viface_add(viface)
+        raise 'Maximum ifaces numbre reached' if viface.id >= Admin::MAX_IFACES
+        Lib::Shell.run("ip link set dev ifb#{viface.id} up")
+      end
+
       def vnetwork_add(vnetwork)
         @vplatform.add_vnetwork(vnetwork)
       end

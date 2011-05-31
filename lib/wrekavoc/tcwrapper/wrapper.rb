@@ -25,7 +25,7 @@ module TCWrapper
     def get_params
       ret = ""
       @params.each{ |name,val| ret += name + " " + val.to_s + " "}
-      ret
+      return ret
     end
 
     def add_param(name,val)

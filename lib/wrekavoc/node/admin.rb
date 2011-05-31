@@ -6,9 +6,11 @@ module Wrekavoc
     class Admin
 
       PATH_CGROUP='/dev/cgroup'
+      MAX_IFACES=32
       
       def self.init_node
         Lib::NetTools.set_bridge()
+        Lib::NetTools.set_ifb(MAX_IFACES)
         set_cgroups()
       end
 
