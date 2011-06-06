@@ -7,17 +7,20 @@ require 'optparse'
 USAGE="Usage: #{$0} <daemon_address> [options]"
 
 ERR_NONE=0
-ERR_VNODE=1
-ERR_HOST=2
-ERR_VNETWORK=3
+ERR_HOST=1
+ERR_VNODE=2
+ERR_VIFACE=3
+ERR_VNETWORK=4
 
 def errorcheck(errid,optvar,msg="")
   unless optvar
     case errid
-      when ERR_VNODE
-	errmsg="You have to specify the vnode (option --vnode)"
       when ERR_HOST
-	errmsg="You have to specify the host (option --host)"
+        errmsg="You have to specify the host (option --host)"
+      when ERR_VNODE
+        errmsg="You have to specify the vnode (option --vnode)"
+      when ERR_VIFACE
+        errmsg="You have to specify the viface (option --viface)"
       when ERR_VNETWORK
         errmsg="You have to specify the vnetwork (option --vnetwork)"
       else
@@ -65,6 +68,10 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The name of the Virtual Node' ) do |n|
     options['vnode_name'] = n
   end
+  opts.on( '-I', '--viface VIFACE', \
+    'The name of the Virtual Interface' ) do |i|
+    options['viface_name'] = i
+  end
   opts.on( '-N', '--vnetwork VNETWORK', \
     'The name of the Virtual Network' ) do |n|
     options['vnetwork_name'] = n
@@ -85,11 +92,10 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnode_name'] = array[0]
     options['vnode_image'] = array[1]
   end
-  opts.on( '-A', '--attach-vnetwork VIFACE', \
+  opts.on( '-A', '--attach-vnetwork', \
     'Connect the Virtual Node to the Virtual Network with the Virtual Interface' ) \
-    do |i|
+    do
     options['f_vnode_attach'] = true
-    options['viface_name'] = i
   end
   opts.on( '-s', '--start-vnode',\
     'Start the virtual node' ) \
@@ -156,6 +162,7 @@ end
 
 if options['f_vnode_attach']
   errorcheck(ERR_VNODE,options['vnode_name'])
+  errorcheck(ERR_VIFACE,options['viface_name'])
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
