@@ -18,10 +18,10 @@ module Wrekavoc
     
     VNETWORK_CREATE='/vnetworks/create' # Daemon only
     VNETWORK_ADD_VNODE='/vnetworks/vnodes/add' # Daemon only
-    VROUTE_CREATE='/vnetwork/vroute/create'
-    VROUTE_COMPLETE='/vnetwork/vroute/complete' # Daemon only
-    VNETWORK_INFO_LIST='/vnetwork/info/list'
+    VROUTE_CREATE='/vnetworks/vroutes/create'
+    VROUTE_COMPLETE='/vnetworks/vroutes/complete' # Daemon only
+    VNETWORK_INFO_LIST='/vnetworks/info/list'
 
-    LIMIT_NET_CREATE='/limitation/network/create'
+    LIMIT_NET_CREATE='/limitations/network/create'
   end
 end
