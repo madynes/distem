@@ -25,6 +25,14 @@ Rake::PackageTask::new("wrekavoc","0.1") do |p|
   p.package_files.include('Rakefile', 'COPYING','README','TODO')
 end
 
+desc "Generate the documentation of the REST API"
+task :doc_netapi do
+  $LOAD_PATH.unshift File.join(File.dirname(__FILE__),'lib')
+  require 'docapi'
+  require 'rdoc/generator/docapi'
+  Docapi::CLI.new.generate(["lib/wrekavoc/netapi/server.rb"], "doc/netapi")
+end
+
 desc "Builds a Debian package"
 task :debian do
   sh 'dpkg-buildpackage -us -uc'

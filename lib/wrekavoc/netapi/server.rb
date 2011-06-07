@@ -15,7 +15,7 @@ module Wrekavoc
       MODE_DAEMON=0
       MODE_NODE=1
 
-      def initialize()
+      def initialize() #:nodoc:
         super
         @node_name = (ENV['HOSTNAME'] ? ENV['HOSTNAME'] : Socket::gethostname)
         @mode = settings.mode
@@ -25,11 +25,12 @@ module Wrekavoc
         @daemon_vnetlimit = Limitation::Network::Manager.new if @mode == MODE_DAEMON
       end
 
-      #error MyCustomError do
-      #  'So what happened was...' + env['sinatra.error'].message
-      #end
-
-      def run
+=begin
+      error MyCustomError do
+        'So what happened was...' + env['sinatra.error'].message
+      end
+=end
+      def run #:nodoc:
         raise "Server can not be run directly, use ServerDaemon or ServerNode"
       end
 
@@ -40,7 +41,29 @@ module Wrekavoc
       after do
         @ret = ""
       end
-
+      
+      ##
+      # :method: post(/pnodes/init)
+      #
+      # :call-seq:
+      #   POST /pnodes/init
+      # 
+      # Initialise a physical machine (launching daemon, creating cgroups, ...)
+      # This step have to be performed to be able to create virtual nodes on a machine 
+      #
+      # == Query parameters
+      # <tt>target</tt>:: the name/address of the physical machine
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post PNODE_INIT do
         if daemon?
           if target?
@@ -72,6 +95,29 @@ module Wrekavoc
       end
 
 
+      ##
+      # :method: post(/vnodes/create)
+      #
+      # :call-seq:
+      #   POST /vnodes/create
+      # 
+      # Create a virtual node using a compressed file system image.
+      #
+      # == Query parameters
+      # <tt>target</tt>:: the physical machine the virtual node will be created on
+      # <tt>name</tt>:: the -unique- name of the virtual node to create (it will be used in a lot of methods)
+      # <tt>image</tt>:: the -local- path to the file system image to be used on that node (on the physical machine)
+      # 
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_CREATE do
         # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if the image file is correct
@@ -104,7 +150,28 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnodes/start)
+      #
+      # :call-seq:
+      #   POST /vnodes/start
+      # 
+      # Start the -previously created- virtual node
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node to be started
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_START do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -124,6 +191,27 @@ module Wrekavoc
         return @ret
       end
 
+      ##
+      # :method: post(/vnodes/stop)
+      #
+      # :call-seq:
+      #   POST /vnodes/stop
+      # 
+      # Stop the virtual node
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node to be stoped
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_STOP do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -142,7 +230,28 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnodes/vifaces/create)
+      #
+      # :call-seq:
+      #   POST /vnodes/vifaces/create
+      # 
+      # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node to create the virtual interface on
+      # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VIFACE_CREATE do
         # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if viface already exists (name)
@@ -186,7 +295,7 @@ module Wrekavoc
 
         return @ret
       end
-
+      
       post VNODE_INFO_ROOTFS do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -206,7 +315,28 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnodes/info/pnode)
+      #
+      # :call-seq:
+      #   POST /vnodes/info/pnode
+      # 
+      # Get the address of the physical machine a virtual node is running on
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_INFO_PNODE do
         vnode = get_vnode()
 
@@ -216,7 +346,27 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnodes/info/list)
+      #
+      # :call-seq:
+      #   POST /vnodes/info/list
+      # 
+      # Get the list of the the currently created virtual nodes
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_INFO_LIST do
         # >>> TODO: Check if PNode is initialized
         vnode = get_vnode()
@@ -238,7 +388,29 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnetworks/create)
+      #
+      # :call-seq:
+      #   POST /vnetworks/create
+      # 
+      # Create a new virtual network specifying his range of IP address (IPv4 atm).
+      #
+      # == Query parameters
+      # <tt>name</tt>:: the -unique- name of the virtual network (it will be used in a lot of methods)
+      # <tt>address</tt>:: the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNETWORK_CREATE do
         if daemon?
           # >>> TODO: Check if vnetwork already exists
@@ -255,6 +427,30 @@ module Wrekavoc
         return @ret
       end
 
+      ##
+      # :method: post(/vnetworks/vnodes/add)
+      #
+      # :call-seq:
+      #   POST /vnetworks/vnodes/add
+      # 
+      # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
+      # The IP address is auto assigned to the virtual interface
+      #
+      # == Query parameters
+      # <tt>vnetwork</tt>:: the name of the virtual network to connect the virtual node on
+      # <tt>vnode</tt>:: the name of the virtual node to connect
+      # <tt>viface</tt>:: the virtual interface to use for the connection
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNETWORK_ADD_VNODE do
         vnode = get_vnode()
 
@@ -301,6 +497,33 @@ module Wrekavoc
         return @ret
       end
 
+
+      ##
+      # :method: post(/vnetworks/vroutes/create)
+      #
+      # :call-seq:
+      #   POST /vnetworks/vroutes/create
+      # 
+      # Create a virtual route ("go from Net1 to Net2 via NodeGW") on a virtual node
+      # (this method automagically set NodeGW as a gateway if it's not already the case
+      # and find the right virtual interface to set the virtual route on)
+      #
+      # == Query parameters
+      # <tt>networksrc</tt>:: the name of the source network
+      # <tt>networkdst</tt>:: the name of the destination network
+      # <tt>gatewaynode</tt>:: the name of the virtual node to use as a gateway
+      # <tt>vnode</tt>:: the virtual node to set the virtual route on
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VROUTE_CREATE do
         if daemon? and !target?
           gw = @daemon_resources.get_vnode(params['gatewaynode'])
@@ -341,7 +564,29 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnetworks/vroutes/complete)
+      #
+      # :call-seq:
+      #   POST /vnetworks/vroutes/complete
+      # 
+      # Try to create every possible virtual routes between the current 
+      # set of virtual nodes automagically finding and setting up 
+      # the gateways to use
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VROUTE_COMPLETE do
         if daemon?
           @daemon_resources.vnetworks.each_value do |srcnet|
@@ -357,7 +602,28 @@ module Wrekavoc
         end
         return @ret
       end
-
+      
+      ##
+      # :method: post(/vnodes/execute)
+      #
+      # :call-seq:
+      #   POST /vnodes/execute
+      # 
+      # Execute and get the result of a command on a virtual node
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node on which the command have to be executed
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
       post VNODE_EXECUTE do
         vnode = get_vnode()
         
@@ -367,7 +633,32 @@ module Wrekavoc
 
         return @ret
       end
-
+      
+      ##
+      # :method: post(/limitations/network/create)
+      #
+      # :call-seq:
+      #   POST /limitations/network/create
+      # 
+      # Create a new network limitation on a specific interface of a virtual node
+      #
+      # == Query parameters
+      # <tt>vnode</tt>:: the name of the virtual node to set the limitation on
+      # <tt>viface</tt>:: the name of the virtual interface targeted
+      # <tt>direction</tt>:: the direction of the limitation: INPUT or OUTPUT
+      # <tt>properties</tt>:: the properties of the limitation in JSON format
+      #
+      # == Content-Types
+      # <tt>application/??</tt>:: ??
+      #
+      # == Status codes
+      # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # properties sample: { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} }
+      #
+      
+      #
       post LIMIT_NET_CREATE do
         vnode = get_vnode()
         viface = vnode.get_viface_by_name(params['viface'])
@@ -392,11 +683,11 @@ module Wrekavoc
       end
 
       protected
-      def daemon?
+      def daemon? #:nodoc:
         @mode == MODE_DAEMON
       end
 
-      def target?
+      def target? #:nodoc:
         if params['target']
           target = Resolv.getaddress(params['target'])
         else
@@ -406,7 +697,7 @@ module Wrekavoc
         Lib::NetTools.get_default_addr == target
       end
 
-      def get_vnode
+      def get_vnode #:nodoc:
         if daemon?
           ret = @daemon_resources.get_vnode(params['vnode'])
         else
@@ -418,7 +709,7 @@ module Wrekavoc
         return ret
       end
 
-      def get_pnode
+      def get_pnode #:nodoc:
         if daemon?
           ret = @daemon_resources.get_pnode_by_address(params['target'])
         else
@@ -428,7 +719,7 @@ module Wrekavoc
         return ret
       end
 
-      def non_verbose
+      def non_verbose #:nodoc:
         unless daemon?
           tmp = @ret.split
           @ret = tmp[1..tmp.length]
@@ -436,7 +727,7 @@ module Wrekavoc
       end
     end
 
-    class ServerDaemon < Server
+    class ServerDaemon < Server #:nodoc:
       set :mode, MODE_DAEMON
 
       def initialize
@@ -449,7 +740,7 @@ module Wrekavoc
       end
     end
 
-    class ServerNode < Server
+    class ServerNode < Server #:nodoc:
       set :mode, MODE_NODE
 
       def run
