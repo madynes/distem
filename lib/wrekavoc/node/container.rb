@@ -42,7 +42,7 @@ module Wrekavoc
       def start
         stop()
         Lib::Shell::run("lxc-start -d -n #{@vnode.name}") #if @status == STATUS_STOP
-        sleep(1)
+        Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
         @vnode.vifaces.each do |viface|
           Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
         end
@@ -51,6 +51,7 @@ module Wrekavoc
 
       def stop
         Lib::Shell::run("lxc-stop -n #{@vnode.name}") #if @status == STATUS_RUN
+        Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
         @status = STATUS_STOP
       end
 

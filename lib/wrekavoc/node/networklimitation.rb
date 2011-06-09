@@ -4,10 +4,15 @@ module Wrekavoc
   module Node
 
     class NetworkLimitation
-      def self.apply(limitation)
+      def self.apply(limitations)
         #case limitation.algorithm
         #  when Limitation::Network::Algorithm::TBF
-            apply_tbf(limitation)
+        if limitations.is_a?(Limitation::Network::Rule)
+          apply_tbf(limitations)
+        else
+          raise unless limitations.is_a?(Array)
+          limitations.each { |limit| apply_tbf(limit) }
+        end
         #  when Limitation::Network::Algorithm::HTB
         #    apply_htb(limitation)
         #  else

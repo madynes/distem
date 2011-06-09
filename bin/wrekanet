@@ -9,7 +9,7 @@ USAGE="Usage: #{$0} <daemon_address> [options]"
 ERR_VNODE=0
 ERR_VIFACE=1
 ERR_VNETWORK=2
-ERR_LIM_DIR=2
+ERR_LIM_DIR=3
 
 def errorcheck(errid,optvar,msg="")
   unless optvar
@@ -36,6 +36,8 @@ options['f_vnetwork_create'] = false
 options['f_vroute_create'] = false
 options['f_vroute_complete'] = false
 options['f_limitation_create'] = false
+options['f_limitation_latency'] = false
+options['f_limitation_bandwidth'] = false
 options['f_vnetwork_list'] = false
 
 options['vnode_name'] = false
@@ -47,6 +49,8 @@ options['vroute_destnet'] = false
 options['vroute_gateway'] = false 
 options['lim_direction'] = false
 options['lim_params'] = false
+options['lim_latency'] = false
+options['lim_bandwidth'] = false
 options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -58,7 +62,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The port that the daemon is listening on [default: 4567]' ) do |p|
     options['daemon_port'] = p
   end
-  opts.on( '-n', '--vnetwork NAME', \
+  opts.on( '-N', '--vnetwork NAME', \
     'The name of the Virtual Network' ) do |n|
     options['vnetwork_name'] = n
   end
@@ -100,9 +104,17 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_limitation_create'] = true
     options['lim_params'] = p
   end
-  opts.on( '-l', '--vnetwork-list', \
-    'Get the list of the VNodes connected on that VNetwork' ) do |u|
-    options['f_vnetwork_list'] = true
+  opts.on( '-l', '--limit-latency VALUE', \
+    'Create a latency limitation on VIface of VNode following a Direction (option -i or -o)' ) do |l|
+    options['f_limitation_create'] = true
+    options['f_limitation_latency'] = true
+    options['lim_latency'] = l
+  end
+  opts.on( '-b', '--limit-bandwidth VALUE', \
+    'Create a bandwidth limitation on VIface of VNode following a Direction (option -i or -o)' ) do |b|
+    options['f_limitation_create'] = true
+    options['f_limitation_bandwidth'] = true
+    options['lim_bandwidth'] = b
   end
 end
 
@@ -137,6 +149,19 @@ if options['f_limitation_create']
   errorcheck(ERR_VIFACE,options['viface_name'])
   errorcheck(ERR_LIM_DIR,options['lim_direction'])
 
+  if options['lim_params']
+    params = options['lim_params']
+  else
+    params = {}
+    if options['f_limitation_latency']
+      params["#{options['lim_direction']}"] = { "latency" => { "delay" => options['lim_latency'] } }
+    end
+    if options['f_limitation_bandwidth']
+      params["#{options['lim_direction']}"] = { "bandwidth" => { "rate" => options['lim_bandwidth'] } }
+    end
+  end
+  
+  errorcheck(ERR_VNODE,options['vnode_name'])
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.limit_net_create(options['vnode_name'],options['viface_name'],options['lim_direction'],options['lim_params'])
+  puts cl.limit_net_create(options['vnode_name'],options['viface_name'],params)
 end

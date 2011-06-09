@@ -84,9 +84,9 @@ module Wrekavoc
         @vroutes << vroute
       end
 
-      def network_limitation_add(limitation)
-        @vnetlimit.add_limitation(limitation)
-        NetworkLimitation.apply(limitation)
+      def network_limitation_add(limitations)
+        @vnetlimit.add_limitations(limitations)
+        NetworkLimitation.apply(limitations)
       end
     end
 

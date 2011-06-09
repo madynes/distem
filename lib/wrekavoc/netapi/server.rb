@@ -43,10 +43,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/pnodes/init)
+      # :method: post(/pnodes)
       #
       # :call-seq:
-      #   POST /pnodes/init
+      #   POST /pnodes
       # 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
       # This step have to be performed to be able to create virtual nodes on a machine 
@@ -96,10 +96,10 @@ module Wrekavoc
 
 
       ##
-      # :method: post(/vnodes/create)
+      # :method: post(/vnodes)
       #
       # :call-seq:
-      #   POST /vnodes/create
+      #   POST /vnodes
       # 
       # Create a virtual node using a compressed file system image.
       #
@@ -232,10 +232,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/vifaces/create)
+      # :method: post(/vnodes/vifaces)
       #
       # :call-seq:
-      #   POST /vnodes/vifaces/create
+      #   POST /vnodes/vifaces
       # 
       # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
       #
@@ -317,10 +317,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/info/pnode)
+      # :method: post(/vnodes/infos/pnode)
       #
       # :call-seq:
-      #   POST /vnodes/info/pnode
+      #   POST /vnodes/infos/pnode
       # 
       # Get the address of the physical machine a virtual node is running on
       #
@@ -348,10 +348,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/info/list)
+      # :method: post(/vnodes)
       #
       # :call-seq:
-      #   POST /vnodes/info/list
+      #   POST /vnodes
       # 
       # Get the list of the the currently created virtual nodes
       #
@@ -367,10 +367,9 @@ module Wrekavoc
       # ...
       
       #
-      post VNODE_INFO_LIST do
+      get VNODE_INFO_LIST + '/:target' do
         # >>> TODO: Check if PNode is initialized
-        vnode = get_vnode()
-
+        
         if daemon?
             @daemon_resources.pnodes.each_value do |pnode|
               unless Lib::NetTools.get_default_addr == pnode.address
@@ -390,10 +389,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnetworks/create)
+      # :method: post(/vnetworks)
       #
       # :call-seq:
-      #   POST /vnetworks/create
+      #   POST /vnetworks
       # 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
       #
@@ -499,10 +498,10 @@ module Wrekavoc
 
 
       ##
-      # :method: post(/vnetworks/vroutes/create)
+      # :method: post(/vnetworks/vroutes)
       #
       # :call-seq:
-      #   POST /vnetworks/vroutes/create
+      #   POST /vnetworks/vroutes
       # 
       # Create a virtual route ("go from Net1 to Net2 via NodeGW") on a virtual node
       # (this method automagically set NodeGW as a gateway if it's not already the case
@@ -635,10 +634,10 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/limitations/network/create)
+      # :method: post(/limitations/network)
       #
       # :call-seq:
-      #   POST /limitations/network/create
+      #   POST /limitations/network
       # 
       # Create a new network limitation on a specific interface of a virtual node
       #
@@ -662,21 +661,21 @@ module Wrekavoc
       post LIMIT_NET_CREATE do
         vnode = get_vnode()
         viface = vnode.get_viface_by_name(params['viface'])
-        dir = Limitation::Network::Rule.get_direction_by_name(params['direction'])
         prophash = JSON.parse(params['properties'])
-        limit = Limitation::Network::Rule.new(vnode,viface,dir,prophash)
+        limits = Limitation::Network::Manager.parse_limitations(vnode,viface, \
+          prophash)
         
         if daemon?
-          @daemon_vnetlimit.add_limitation(limit)
+          @daemon_vnetlimit.add_limitations(limits)
           unless target?
             cl = Client.new(vnode.host.address)
-            @ret += cl.limit_net_create(vnode.name, viface.name, params['direction'], params['properties'])
+            @ret += cl.limit_net_create(vnode.name, viface.name, params['properties'])
           end
         end
 
         if target?
-          @node_config.network_limitation_add(limit)
-          @ret += "Limitation of #{params['type']} on #{params['direction']} added to #{vnode.name}(#{viface.name}) with properties: '#{prophash.inspect}'"
+          @node_config.network_limitation_add(limits)
+          @ret += "Limitation of #{params['type']} added to #{vnode.name}(#{viface.name}) with properties: '#{prophash.inspect}'"
         end
 
         return @ret

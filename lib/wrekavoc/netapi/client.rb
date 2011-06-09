@@ -1,5 +1,6 @@
 require 'wrekavoc'
 require 'rest_client'
+require 'json'
 
 module Wrekavoc
   module NetAPI
@@ -11,7 +12,7 @@ module Wrekavoc
 
         @serveraddr = serveraddr
         @resource = RestClient::Resource.new('http://' + @serveraddr + ':' \
-                                              + port.to_s)
+          + port.to_s)
       end
 
       def pnode_init(target)
@@ -50,7 +51,7 @@ module Wrekavoc
       end
 
       def vnode_info_list(target)
-        @resource[VNODE_INFO_LIST].post :target => target
+        @resource[VNODE_INFO_LIST + '/' + target].get
       end
 
       def vnetwork_create(name, address)
@@ -84,9 +85,10 @@ module Wrekavoc
         @resource[VNODE_EXECUTE].post :vnode => vnode, :command => command
       end
 
-      def limit_net_create(vnode,viface,direction,properties)
+      def limit_net_create(vnode,viface,properties)
+        properties = properties.to_json if properties.is_a?(Hash)
         @resource[LIMIT_NET_CREATE].post :vnode => vnode, :viface => viface, \
-          :direction => direction, :properties => properties
+          :properties => properties
       end
     end
 
