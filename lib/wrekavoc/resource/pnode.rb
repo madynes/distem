@@ -41,6 +41,14 @@ module Wrekavoc
       def ==(pnode)
         @address == pnode.address
       end
+
+      def to_hash()
+        ret = {}
+        ret['id'] = @id.to_s
+        ret['address'] = @address
+        ret['status'] = (@status == STATUS_INIT ? 'INIT' : 'RUN')
+        return ret
+      end
     end
 
   end  

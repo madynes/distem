@@ -6,9 +6,6 @@ module Wrekavoc
     class Container
       PATH_DEFAULT_CONFIGFILE="/tmp/config/"
 
-      STATUS_STOP=0
-      STATUS_RUN=1
-
       attr_reader :rootfspath
 
       def initialize(vnode,rootfspath)
@@ -27,7 +24,6 @@ module Wrekavoc
         @curname = ""
         @configfile = ""
         @id = 0
-        @status = STATUS_STOP
 
         configure()
       end
@@ -41,18 +37,20 @@ module Wrekavoc
 
       def start
         stop()
+        @vnode.status = Resource::VNode::Status::STARTING
         Lib::Shell::run("lxc-start -d -n #{@vnode.name}") #if @status == STATUS_STOP
         Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
         @vnode.vifaces.each do |viface|
           Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
         end
-        @status = STATUS_RUN
+        @vnode.status = Resource::VNode::Status::STARTED
       end
 
       def stop
         Lib::Shell::run("lxc-stop -n #{@vnode.name}") #if @status == STATUS_RUN
+        @vnode.status = Resource::VNode::Status::STOPING
         Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
-        @status = STATUS_STOP
+        @vnode.status = Resource::VNode::Status::STOPPED
       end
 
       def destroy
@@ -69,6 +67,7 @@ module Wrekavoc
       def configure
         destroy()
 
+        @vnode.status = Resource::VNode::Status::CONFIGURING
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
@@ -77,6 +76,7 @@ module Wrekavoc
         Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
 
         @id += 1
+        @vnode.status = Resource::VNode::Status::STOPPED
       end
     end
 

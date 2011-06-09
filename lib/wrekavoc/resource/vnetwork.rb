@@ -77,6 +77,13 @@ module Wrekavoc
         return ((vnetwork.is_a?(VNetwork)) and (vnetwork.address.to_string == @address.to_string))
       end
 
+      def to_hash()
+        ret = {}
+        ret['name'] = @name
+        ret['address'] = @address.to_string
+        return ret
+      end
+
       protected
       def inc_curaddress
         tmp = @curaddress.u32

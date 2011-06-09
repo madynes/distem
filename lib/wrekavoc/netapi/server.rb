@@ -88,7 +88,7 @@ module Wrekavoc
 
         if target?
           Node::Admin.init_node()
-          @ret += "Node initilized"
+          @ret += "#{JSON.pretty_generate(@node_config.pnode.to_hash)}"
         end
 
         return @ret
@@ -145,7 +145,7 @@ module Wrekavoc
 
           @node_config.vnode_add(vnode)
 
-          @ret += "Virtual node '#{vnode.name}' created"
+          @ret += "#{JSON.pretty_generate(vnode.to_hash)}"
         end
 
         return @ret
@@ -185,7 +185,7 @@ module Wrekavoc
 
         if target?
           @node_config.vnode_start(vnode.name)
-          @ret += "Virtual node '#{vnode.name}' started"
+          @ret += "#{JSON.pretty_generate(vnode.to_hash)}"
         end
 
         return @ret
@@ -225,7 +225,7 @@ module Wrekavoc
 
         if target?
           @node_config.vnode_stop(vnode.name)
-          @ret += "Virtual node '#{vnode.name}' stoped"
+          @ret += "#{JSON.pretty_generate(vnode.to_hash)}"
         end
 
         return @ret
@@ -269,8 +269,7 @@ module Wrekavoc
         if target?
           @node_config.viface_add(viface)
           @node_config.vnode_configure(vnode.name)
-
-          @ret += "Virtual Interface '#{viface.name}' created on '#{vnode.name}'"
+          @ret += "#{JSON.pretty_generate(viface.to_hash)}"
         end
 
         return @ret
@@ -290,7 +289,7 @@ module Wrekavoc
           vnode.gateway = true
           @node_config.vnode_configure(vnode.name)
 
-          @ret += "Virtual node '#{vnode.name}' set as gateway"
+          @ret += "#{JSON.pretty_generate(vnode.to_hash)}"
         end
 
         return @ret
@@ -420,7 +419,7 @@ module Wrekavoc
           #Add a virtual interface connected on the network
           Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
 
-          @ret = "VNetwork #{vnetwork.name}(#{vnetwork.address.to_string}) created"
+          @ret += "#{JSON.pretty_generate(vnetwork.to_hash)}"
         end
 
         return @ret
@@ -463,8 +462,11 @@ module Wrekavoc
           
 
           cl = Client.new(vnode.host.address)
-          @ret += cl.viface_attach(vnode.name,viface.name,viface.address.to_string)
-          @ret += "\nVNode #{vnode.name} connected on #{vnetwork.name} with #{viface.name}(#{viface.address.to_s})"
+          ret = {}
+          ret['vnode'] = vnode.to_hash
+          ret['vnetwork'] = vnetwork.to_hash
+          ret['viface'] = JSON.parse(cl.viface_attach(vnode.name,viface.name,viface.address.to_string))
+          @ret += "#{JSON.pretty_generate(ret)}"
         end
 
         return @ret
@@ -490,8 +492,10 @@ module Wrekavoc
           @node_config.vnode_configure(vnode.name)
           @node_config.vnode_stop(vnode.name)
           @node_config.vnode_start(vnode.name)
-          @ret += "\nVIface #{viface.name} attached to #{vnetwork.name} with #{viface.address.to_s}"
+          @ret += "#{JSON.pretty_generate(viface.to_hash)}"
         end
+
+        non_verbose()
 
         return @ret
       end
@@ -543,22 +547,22 @@ module Wrekavoc
 
         if daemon? and !target?
           cl = Client.new(gw.host.address)
-          @ret += cl.vnode_gateway(gw.name) + "\n"
+          cl.vnode_gateway(gw.name)
           
-
           srcnet.vnodes.each_key do |vnode|
             cl = Client.new(vnode.host.address)
-            @ret += cl.vroute_create(srcnet.address.to_string, \
-              destnet.address.to_string,gwaddr.to_s, vnode.name) + "\n"
+            cl.vroute_create(srcnet.address.to_string, \
+              destnet.address.to_string,gwaddr.to_s, vnode.name)
           end
           @daemon_resources.add_vroute(vroute)
+          @ret += "#{JSON.pretty_generate(vroute.to_hash)}"
         end
 
         if target?
           vnode = get_vnode()
 
           @node_config.vnode_configure(vnode.name)
-          @ret += "VRoute (#{destnet.address.to_string} via #{gwaddr.to_s}) added to #{vnode.name}"
+          #@ret += "VRoute (#{destnet.address.to_string} via #{gwaddr.to_s}) added to #{vnode.name}"
         end
 
         return @ret
@@ -588,16 +592,20 @@ module Wrekavoc
       #
       post VROUTE_COMPLETE do
         if daemon?
+          i = 0
+          ret = {}
           @daemon_resources.vnetworks.each_value do |srcnet|
             @daemon_resources.vnetworks.each_value do |destnet|
               next if srcnet == destnet
               gw = srcnet.get_vroute(destnet)
               if gw
                 cl = Client.new(Lib::NetTools.get_default_addr())
-                @ret += cl.vroute_create(srcnet.name, destnet.name, gw.name) + "\n"
+                ret[i] = JSON.parse(cl.vroute_create(srcnet.name, destnet.name, gw.name))
+                i += 1
               end
             end
           end
+          @ret += "#{JSON.pretty_generate(ret)}"
         end
         return @ret
       end

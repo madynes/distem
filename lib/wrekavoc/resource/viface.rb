@@ -43,6 +43,14 @@ module Wrekavoc
       def connected_to?(vnetwork)
         return vnetwork.address.include?(address)
       end
+
+      def to_hash()
+        ret = {}
+        ret['id'] = @id.to_s
+        ret['name'] = @name
+        ret['address'] = @address.to_string
+        return ret
+      end
     end
 
   end

@@ -10,11 +10,43 @@ module Wrekavoc
     class VNode
       @@ids = 0
 
+      class Status
+        STOPING=0
+        STOPPED=1
+        STARTING=2
+        STARTED=3
+        CONFIGURING=4
+        BUSY=5
+
+        def self.to_string(status)
+          ret = ""
+          case status
+            when STOPPED
+              ret = "Stopped"
+            when STARTED
+              ret = "Started"
+            when STARTING
+              ret = "Starting"
+            when STOPING
+              ret = "Stoping"
+            when CONFIGURING
+              ret = "Configuring"
+            when BUSY
+              ret = "Busy"
+            else
+              ret = "Unknown"
+          end
+          return ret
+        end
+      end
+
       # The unique id of this Node
       attr_reader :id
       # The URI to the -bootstrapped and compressed- image file
       attr_reader :image
       attr_reader :name, :host, :vifaces
+      # The status of the Virtual node (Started|Stopped|Booting|Installing)
+      attr_accessor :status
       attr_accessor :gateway
 
       
@@ -44,6 +76,7 @@ module Wrekavoc
         @image = URI.encode(image)
         @gateway = false
         @vifaces = []
+        @status = Status::STOPPED
         @@ids += 1
       end
 
@@ -96,6 +129,19 @@ module Wrekavoc
             break
           end
         end
+        return ret
+      end
+
+      def to_hash()
+        ret = {}
+        ret['id'] = @id.to_s
+        ret['name'] = @name
+        ret['host'] = @host.address.to_s
+        ret['image'] = @image
+        ret['status'] = Status.to_string(@status)
+        ret['gateway'] = @gateway.to_s
+        ret['ifaces'] = {}
+        @vifaces.each { |viface| ret['ifaces']["#{viface.name}"] = viface.to_hash }
         return ret
       end
     end
