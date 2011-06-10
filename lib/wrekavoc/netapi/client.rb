@@ -19,11 +19,9 @@ module Wrekavoc
         @resource[PNODE_INIT].post :target => target
       end
 
-      def vnode_create(target, name, image)
-        # >>> TODO: validate target ip
-
-        @resource[VNODE_CREATE].post :target => target, :name => name, \
-          :image => image
+      def vnode_create(name, properties)
+        properties = properties.to_json if properties.is_a?(Hash)
+        @resource[VNODE_CREATE].post :name => name, :properties => properties
       end
 
       def vnode_start(vnode)

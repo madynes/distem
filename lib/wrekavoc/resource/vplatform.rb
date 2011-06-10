@@ -47,6 +47,11 @@ module Wrekavoc
         return (@vnodes[name] ? @vnodes[name].host : nil)
       end
 
+      def get_pnode_randomly()
+        tmp = @pnodes.keys
+        return @pnodes[tmp[rand(tmp.size)]]
+      end
+
       def get_vnode(name)
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end

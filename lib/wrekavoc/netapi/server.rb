@@ -123,25 +123,39 @@ module Wrekavoc
         # >>> TODO: Check if PNode is initialized
         # >>> TODO: Check if the image file is correct
 
-        pnode = get_pnode()
-        vnode = Resource::VNode.new(pnode,params['name'],params['image'])
+        props = JSON.parse(params['properties'])
+        params['target'] = props['target']
+        if daemon?
+          if props['target']
+            pnode = @daemon_resources.get_pnode_by_address(params['target'])
+          else
+            pnode = @daemon_resources.get_pnode_randomly()
+          end
+        else
+          pnode = @node_config.pnode
+        end
+
+        raise unless pnode
+        raise unless props['image']
+
+        vnode = Resource::VNode.new(pnode,params['name'],props['image'])
 
         if daemon?
           #The current node is replaces if the name is already taken
-          vnodetmp = @daemon_resources.get_vnode(params['name'])
+          vnodetmp = @daemon_resources.get_vnode(vnode.name)
           @daemon_resources.destroy_vnode(vnodetmp.name) if vnodetmp
 
           @daemon_resources.add_vnode(vnode)
 
           unless target?
-            cl = Client.new(params['target'])
-            @ret += cl.vnode_create(params['target'],vnode.name,vnode.image)
+            cl = Client.new(pnode.address.to_s)
+            @ret += cl.vnode_create(vnode.name,params['properties'])
           end
         end
 
         if target?
           #The current node is replaces if the name is already taken
-          tmpvnode = @node_config.get_vnode(params['name'])
+          tmpvnode = @node_config.get_vnode(vnode.name)
           @node_config.vnode_destroy(tmpvnode.name) if tmpvnode
 
           @node_config.vnode_add(vnode)
@@ -721,7 +735,7 @@ module Wrekavoc
         return ret
       end
 
-      def get_pnode #:nodoc:
+      def get_pnode() #:nodoc:
         if daemon?
           ret = @daemon_resources.get_pnode_by_address(params['target'])
         else
