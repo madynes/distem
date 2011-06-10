@@ -16,6 +16,13 @@ module Wrekavoc
           super(paramshash)
           @rate = paramshash['rate'] if paramshash['rate']
         end
+
+        def to_hash()
+          ret = {}
+          ret['type'] = Bandwidth.name
+          ret['rate'] = @rate
+          return ret
+        end
       end
 
     end

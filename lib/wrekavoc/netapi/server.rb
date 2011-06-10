@@ -683,7 +683,14 @@ module Wrekavoc
 
         if target?
           @node_config.network_limitation_add(limits)
-          @ret += "Limitation of #{params['type']} added to #{vnode.name}(#{viface.name}) with properties: '#{prophash.inspect}'"
+          ret = {}
+          i = 0
+          limits.each do |limit|
+            ret[i.to_s] = limit.to_hash
+            i += 1
+          end
+
+          @ret += "#{JSON.pretty_generate(ret)}"
         end
 
         return @ret

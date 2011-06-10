@@ -15,6 +15,9 @@ module Wrekavoc
 
         def parse_params(paramshash)
         end
+
+        def to_hash()
+        end
       end
 
     end

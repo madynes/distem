@@ -13,7 +13,7 @@ module Wrekavoc
         ret = {}
         ret['networksrc'] = @srcnet.to_hash
         ret['networkdst'] = @dstnet.to_hash
-        ret['gateway'] = @gw.to_hash
+        ret['gateway'] = @gw.to_s
         return ret
       end
     end

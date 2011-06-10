@@ -54,6 +54,20 @@ module Wrekavoc
           add_property(Latency.new(hash['latency'])) if hash['latency']
         end
 
+        def to_hash()
+          ret = {}
+          ret['vnode'] = @vnode.name
+          ret['viface'] = @viface.name
+          ret['direction'] = Direction.to_string(@direction)
+          ret['properties'] = {}
+          i = 0
+          @properties.each do |prop|
+            ret['properties'][i.to_s] = prop.to_hash
+            i += 1
+          end
+          return ret
+        end
+
         def self.get_direction_by_name(name)
           ret = nil
           case name.upcase
