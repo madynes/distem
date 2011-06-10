@@ -25,12 +25,9 @@ module Wrekavoc
       end
 
       def get_vnodes_list()
-        ret = ""
+        ret = {}
         @vplatform.vnodes.each_value do |vnode|
-          ret += "\t#{vnode.name} (image:#{vnode.image})\n\t\tIfaces:\n"
-          vnode.vifaces.each do |viface|
-            ret += "\t\t\t#{viface.name} : #{viface.address.to_string}\n"
-          end
+          ret[vnode.name] = vnode.to_hash
         end
         return ret
       end

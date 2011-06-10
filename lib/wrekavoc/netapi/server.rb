@@ -35,7 +35,8 @@ module Wrekavoc
       end
 
       before do
-        @ret = (daemon? ? "" : "(#{@node_name}) ")
+        #@ret = (daemon? ? "" : "(#{@node_name}) ")
+        @ret = ""
       end
 
       after do
@@ -310,7 +311,7 @@ module Wrekavoc
           @ret += @node_config.get_container(vnode.name).rootfspath
         end
 
-        non_verbose()
+        #non_verbose()
 
         return @ret
       end
@@ -341,16 +342,16 @@ module Wrekavoc
 
         @ret += vnode.host.address
 
-        non_verbose()
+        #non_verbose()
 
         return @ret
       end
       
       ##
-      # :method: post(/vnodes)
+      # :method: get(/vnodes)
       #
       # :call-seq:
-      #   POST /vnodes
+      #   GET /vnodes
       # 
       # Get the list of the the currently created virtual nodes
       #
@@ -366,23 +367,25 @@ module Wrekavoc
       # ...
       
       #
-      get VNODE_INFO_LIST + '/:target' do
+      get VNODE_INFO_LIST do
         # >>> TODO: Check if PNode is initialized
         
         if daemon?
+            ret = {}
             @daemon_resources.pnodes.each_value do |pnode|
               unless Lib::NetTools.get_default_addr == pnode.address
                 cl = Client.new(pnode.address)
-                @ret += cl.vnode_info_list(pnode.address)
+                ret[pnode.address.to_s] = JSON.parse(cl.vnode_info_list())
+              else
+                ret[@node_config.pnode.address.to_s] = @node_config.get_vnodes_list()
               end
             end
+            @ret += "#{JSON.pretty_generate(ret)}"
+        else
+          @ret += "#{JSON.pretty_generate(@node_config.get_vnodes_list())}"
         end
 
-        if target?
-          @ret += "(#{@node_name}) " if daemon?
-          tmp = @node_config.get_vnodes_list()
-          @ret += (tmp.empty? ? "No nodes" : "\n#{tmp}")
-        end
+        #non_verbose()
 
         return @ret
       end
@@ -495,7 +498,7 @@ module Wrekavoc
           @ret += "#{JSON.pretty_generate(viface.to_hash)}"
         end
 
-        non_verbose()
+        #non_verbose()
 
         return @ret
       end

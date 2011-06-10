@@ -185,5 +185,5 @@ end
 
 if (options['f_vnode_list'])
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vnode_info_list(ARGV[0])
+  puts cl.vnode_info_list()
 end

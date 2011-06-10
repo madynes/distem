@@ -50,8 +50,8 @@ module Wrekavoc
         @resource[VNODE_INFO_PNODE].post :vnode => vnode
       end
 
-      def vnode_info_list(target)
-        @resource[VNODE_INFO_LIST + '/' + target].get
+      def vnode_info_list()
+        @resource[VNODE_INFO_LIST].get
       end
 
       def vnetwork_create(name, address)
