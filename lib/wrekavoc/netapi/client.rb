@@ -46,12 +46,12 @@ module Wrekavoc
         @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
       end
 
-      def vnode_info_pnode(vnode)
-        @resource[VNODE_INFO_PNODE].post :vnode => vnode
-      end
-
       def vnode_info_list()
         @resource[VNODE_INFO_LIST].get
+      end
+
+      def vnode_info(vnodename)
+        @resource[VNODE_INFO + '/' + vnodename].get
       end
 
       def vnetwork_create(name, address)

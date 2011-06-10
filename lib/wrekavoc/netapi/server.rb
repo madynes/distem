@@ -317,18 +317,18 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/infos/pnode)
+      # :method: get(/vnodes/:name)
       #
       # :call-seq:
-      #   POST /vnodes/infos/pnode
+      #   GET /vnodes
       # 
-      # Get the address of the physical machine a virtual node is running on
+      # Get the description of a virtual node
       #
       # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node
+      # <tt>name</tt>:: the name of the virtual node
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
       # <tt>200</tt>:: OK
@@ -337,16 +337,11 @@ module Wrekavoc
       # ...
       
       #
-      post VNODE_INFO_PNODE do
+      get VNODE_INFO + '/:vnode' do
         vnode = get_vnode()
-
-        @ret += vnode.host.address
-
-        #non_verbose()
-
-        return @ret
+        @ret += "#{JSON.pretty_generate(vnode.to_hash)}"
       end
-      
+
       ##
       # :method: get(/vnodes)
       #

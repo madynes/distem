@@ -12,10 +12,9 @@ module Wrekavoc
     VNODE_GATEWAY='/vnodes/gateway'
     VIFACE_CREATE='/vnodes/vifaces'
     VIFACE_ATTACH='/vnodes/vifaces/attach' # Node only
-    VNODE_INFO_ROOTFS='/vnodes/infos/rootfs'
-    VNODE_INFO_PNODE='/vnodes/infos/pnode'
-    VNODE_INFO_LIST='/vnodes'
     VNODE_INFO='/vnodes'
+    VNODE_INFO_LIST='/vnodes'
+    VNODE_INFO_ROOTFS='/vnodes/infos/rootfs'
     
     VNETWORK_CREATE='/vnetworks' # Daemon only
     VNETWORK_ADD_VNODE='/vnetworks/vnodes/add' # Daemon only
