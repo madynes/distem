@@ -130,6 +130,7 @@ module Wrekavoc
             pnode = @daemon_resources.get_pnode_by_address(params['target'])
           else
             pnode = @daemon_resources.get_pnode_randomly()
+            props['target'] = pnode.address.to_s
           end
         else
           pnode = @node_config.pnode
@@ -149,7 +150,7 @@ module Wrekavoc
 
           unless target?
             cl = Client.new(pnode.address.to_s)
-            @ret += cl.vnode_create(vnode.name,params['properties'])
+            @ret += cl.vnode_create(vnode.name,props.to_json)
           end
         end
 
