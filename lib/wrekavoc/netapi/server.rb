@@ -8,6 +8,8 @@ module Wrekavoc
   module NetAPI
 
     class Server < Sinatra::Base
+      HTTP_HEADER_ERR = 'X-Application-Error-Code'
+
       set :environment, :developpement
       set :run, true
       #class MyCustomError < StandardError; end 
@@ -20,6 +22,13 @@ module Wrekavoc
 
       def run #:nodoc:
         raise "Server can not be run directly, use ServerDaemon or ServerNode"
+      end
+
+      before do
+        @status = 200
+        @headers = {}
+        @body = {}
+        content_type 'application/json', :charset => 'utf-8'
       end
 
       ##
@@ -45,8 +54,20 @@ module Wrekavoc
       
       #
       post PNODE_INIT do
-        ret = @daemon.pnode_init(params['target'])
-        return JSON.pretty_generate(ret)
+        begin 
+          ret = @daemon.pnode_init(params['target'])
+        rescue Lib::UnreachableResourceError => rnfe
+          @status = 404
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(rnfe)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
 
       ##
@@ -400,6 +421,12 @@ module Wrekavoc
         )
         return JSON.pretty_generate(ret)
       end
+    end
+
+    protected
+
+    def get_http_err_desc(except)
+      except.class.name.split('::').last + " " + except.message
     end
 
     class ServerDaemon < Server #:nodoc:

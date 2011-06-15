@@ -14,15 +14,19 @@ module Wrekavoc
         raise unless pnode.is_a?(Wrekavoc::Resource::PNode)
 
         if pnode.status == Wrekavoc::Resource::PNode::STATUS_INIT
-          Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY) do |ssh|
-            ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
-            ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
+          begin
+            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY) do |ssh|
+              ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
+              ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
 
-            str = ssh.exec!("lsof -Pnl -i4")
-            unless /^wrekad .*/.match(str)
-            ssh.exec!("#{Lib::FileManager::PATH_WREKAVOC_BIN}/wrekad " \
-              "1>#{PATH_WREKAD_LOG_OUT} &>#{PATH_WREKAD_LOG_ERR} &")
+              str = ssh.exec!("lsof -Pnl -i4")
+              unless /^wrekad .*/.match(str)
+              ssh.exec!("#{Lib::FileManager::PATH_WREKAVOC_BIN}/wrekad " \
+                "1>#{PATH_WREKAD_LOG_OUT} &>#{PATH_WREKAD_LOG_ERR} &")
+              end
             end
+          rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH
+            raise Lib::UnreachableResourceError, pnode.address.to_s
           end
           pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
         end

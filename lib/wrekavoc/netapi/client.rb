@@ -1,11 +1,14 @@
 require 'wrekavoc'
 require 'rest_client'
 require 'json'
+require 'pp'
 
 module Wrekavoc
   module NetAPI
 
     class Client
+      HTTP_STATUS_OK = 200
+
       def initialize(serveraddr,port=4567)
         raise unless port.is_a?(Numeric)
         # >>> TODO: validate server ip
@@ -16,7 +19,22 @@ module Wrekavoc
       end
 
       def pnode_init(target = NetAPI::TARGET_SELF)
-        @resource[PNODE_INIT].post :target => target
+        ret = {}
+        @resource[PNODE_INIT].post( \
+          {:target => target} \
+        ) { |response, request, result|
+          ret = JSON.parse(response)
+          case result.code.to_i
+            when HTTP_STATUS_OK
+            else
+              raise Lib::ClientError.new(
+                result.code.to_i, \
+                response.headers[:x_application_error_code], \
+                ret \
+              )
+          end
+        }
+        return ret
       end
 
       def vnode_create(name, properties)

@@ -1,5 +1,6 @@
 require 'wrekavoc/wrekalib/filemanager'
 require 'wrekavoc/wrekalib/shell'
+require 'wrekavoc/wrekalib/errors'
 require 'wrekavoc/wrekalib/nettools'
 require 'wrekavoc/resource/vplatform'
 require 'wrekavoc/resource/pnode'
