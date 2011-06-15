@@ -77,7 +77,6 @@ module Wrekavoc
       end
 
       def vroute_add(vroute)
-
         @vroutes << vroute
       end
 

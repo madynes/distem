@@ -14,7 +14,7 @@ module Wrekavoc
         raise unless pnode.is_a?(Wrekavoc::Resource::PNode)
 
         if pnode.status == Wrekavoc::Resource::PNode::STATUS_INIT
-          Net::SSH.start(pnode.address, pnode.ssh_user, :keys => PATH_SSH_KEY) do |ssh|
+          Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY) do |ssh|
             ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
             ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
 

@@ -15,7 +15,7 @@ module Wrekavoc
           + port.to_s)
       end
 
-      def pnode_init(target)
+      def pnode_init(target = NetAPI::TARGET_SELF)
         @resource[PNODE_INIT].post :target => target
       end
 
