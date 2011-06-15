@@ -13,6 +13,7 @@ Rake::RDocTask.new do |t|
   t.title    = 'Wrekavoc'
   t.options << '--line-numbers'
   t.options << '--charset' << 'utf-8'
+  t.options << '--diagram'
   t.rdoc_files.include('README')
   t.rdoc_files.include('lib/**/*.rb')
 end
