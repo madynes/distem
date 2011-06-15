@@ -43,7 +43,7 @@ module Wrekavoc
             sleep(1)
 
             cl = NetAPI::Client.new(target)
-            ret = JSON.parse(cl.pnode_init())
+            ret = cl.pnode_init()
           end
         end
 
@@ -442,7 +442,11 @@ module Wrekavoc
           if param.is_a?(Resource::VNode)
             target = param.host.address.to_s
           elsif param.is_a?(String)
-            target = Resolv.getaddress(param)
+            begin
+              target = Resolv.getaddress(param)
+            rescue Resolv::ResolvError
+              raise Lib::InvalidParameterError, param
+            end
           end
           ret = (Lib::NetTools.get_default_addr == target)
         else

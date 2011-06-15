@@ -3,6 +3,7 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'wrekavoc'
 require 'optparse'
+require 'pp'
 
 USAGE="Usage: #{$0} <daemon_address> [options]"
 
@@ -135,7 +136,7 @@ if (options['f_pnode_init'])
   errorcheck(ERR_HOST,options['pnode_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.pnode_init(options['pnode_addr'])
+  pp cl.pnode_init(options['pnode_addr'])
 end
 
 if (options['f_vnode_create'])

@@ -29,7 +29,11 @@ module Wrekavoc
       #   pnode = PNode.new("my-node.lan")
       def initialize(hostname, ssh_user="root", ssh_password="")
         @id = @@ids
-        @address = Resolv.getaddress(hostname)
+        begin
+          @address = Resolv.getaddress(hostname)
+        rescue Resolv::ResolvError
+          raise Lib::InvalidParameterError, hostname
+        end
         @ssh_user = ssh_user
         @ssh_password = ssh_password
         @status = STATUS_INIT
