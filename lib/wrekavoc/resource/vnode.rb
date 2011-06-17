@@ -1,5 +1,4 @@
 require 'wrekavoc'
-require 'resolv'
 require 'uri'
 require 'ipaddress'
 

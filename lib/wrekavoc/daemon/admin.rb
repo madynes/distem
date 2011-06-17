@@ -11,11 +11,11 @@ module Wrekavoc
       PATH_SSH_KEY='/root/.ssh/id_rsa'
 
       def self.pnode_run_server(pnode)
-        raise unless pnode.is_a?(Wrekavoc::Resource::PNode)
+        raise unless pnode.is_a?(Resource::PNode)
 
-        if pnode.status == Wrekavoc::Resource::PNode::STATUS_INIT
+        if pnode.status == Resource::PNode::STATUS_INIT
           begin
-            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY) do |ssh|
+            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY, :password => pnode.ssh_password) do |ssh|
               ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
 
@@ -28,13 +28,12 @@ module Wrekavoc
           rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH
             raise Lib::UnreachableResourceError, pnode.address.to_s
           end
-          pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
         end
       end
 
       def self.vnode_run(vnode,command)
-        raise unless vnode.is_a?(Wrekavoc::Resource::VNode)
-        raise unless vnode.vifaces[0].is_a?(Wrekavoc::Resource::VIface)
+        raise unless vnode.is_a?(Resource::VNode)
+        raise unless vnode.vifaces[0].is_a?(Resource::VIface)
         raise unless vnode.vifaces[0].attached?
         
         ret = ""

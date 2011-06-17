@@ -2,14 +2,12 @@ module Wrekavoc
   module Lib
 
     class Shell
-      VERBOSE=false
 
       PATH_WREKAD_LOG_CMD=File.join(FileManager::PATH_WREKAVOC_LOGS,"wrekad.cmd")
       def self.run(cmd)
-        puts(cmd) if VERBOSE
         cmdlog = "(#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}) #{cmd}"
         ret = `#{cmd}`
-        raise "['#{cmd}' failed!]" unless $?.success?
+        raise ShellError.new(cmd,ret) unless $?.success?
 
         retlog = ""
         ret.each_line { |line| retlog += "  #{line}" }

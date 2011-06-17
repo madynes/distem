@@ -20,26 +20,22 @@ module Wrekavoc
 
       def pnode_init(target = NetAPI::TARGET_SELF)
         ret = {}
-        @resource[PNODE_INIT].post( \
-          {:target => target} \
+        @resource[PNODE_INIT].post(
+          {:target => target}
         ) { |response, request, result|
-          ret = JSON.parse(response)
-          case result.code.to_i
-            when HTTP_STATUS_OK
-            else
-              raise Lib::ClientError.new(
-                result.code.to_i, \
-                response.headers[:x_application_error_code], \
-                ret \
-              )
-          end
+          ret = JSON.parse(check_error(result,response))
         }
         return ret
       end
 
       def vnode_create(name, properties)
         properties = properties.to_json if properties.is_a?(Hash)
-        @resource[VNODE_CREATE].post :name => name, :properties => properties
+
+        @resource[VNODE_CREATE].post(
+          { :name => name , :properties => properties }
+        ) { |response, request, result|
+          ret = JSON.parse(check_error(result,response))
+        }
       end
 
       def vnode_start(vnode)
@@ -105,6 +101,21 @@ module Wrekavoc
         properties = properties.to_json if properties.is_a?(Hash)
         @resource[LIMIT_NET_CREATE].post :vnode => vnode, :viface => viface, \
           :properties => properties
+      end
+
+      protected
+
+      def check_error(result,response)
+        case result.code.to_i
+          when HTTP_STATUS_OK
+          else
+            raise Lib::ClientError.new(
+              result.code.to_i, \
+              response.headers[:x_application_error_code], \
+              JSON.parse(response) \
+            )
+        end
+        return response
       end
     end
 
