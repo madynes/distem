@@ -31,19 +31,33 @@ module Wrekavoc
       def vnode_create(name, properties)
         properties = properties.to_json if properties.is_a?(Hash)
 
+        ret = {}
         @resource[VNODE_CREATE].post(
           { :name => name , :properties => properties }
         ) { |response, request, result|
           ret = JSON.parse(check_error(result,response))
         }
+        return ret
       end
 
       def vnode_start(vnode)
-        @resource[VNODE_START].post :vnode => vnode
+        ret = {}
+        @resource[VNODE_START].post(
+          { :vnode => vnode }
+        ) { |response, request, result|
+          ret = JSON.parse(check_error(result,response))
+        }
+        return ret
       end
 
       def vnode_stop(vnode)
-        @resource[VNODE_STOP].post :vnode => vnode
+        ret = {}
+        @resource[VNODE_STOP].post(
+          { :vnode => vnode }
+        ) { |response, request, result|
+          ret = JSON.parse(check_error(result,response))
+        }
+        return ret
       end
 
       def viface_create(vnode, name)

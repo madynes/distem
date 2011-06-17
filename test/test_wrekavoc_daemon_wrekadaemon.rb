@@ -12,6 +12,8 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     @daemon_n = Wrekavoc::Daemon::WrekaDaemon.new( \
       Wrekavoc::Daemon::WrekaDaemon::MODE_NODE \
     )
+    @vnode = nil
+    @vnodename = nil
   end
 
   def teardown
@@ -22,6 +24,17 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     chars = [('a'..'z'),('A'..'Z')].map{|i| i.to_a}.flatten
     size = rand(maxsize)
     return (0..size).map{ chars[rand(chars.length)] }.join
+  end
+
+  def init_testvnode
+    localaddr = '127.0.0.1'
+    image  = 'file:///home/lsarzyniec/rootfs.tar.bz2'
+    properties   = { 'image' => image }
+
+    @vnodename = 'testvnode'
+    @daemon_d.pnode_init(localaddr)
+    @daemon_d.vnode_create(@vnodename,properties)
+    @vnode = @daemon_d.daemon_resources.get_vnode(@vnodename)
   end
 
   def test_pnode_init
@@ -156,6 +169,32 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     }
     vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
     assert_nil(vnode3)
+  end
 
+  def test_vnode_start
+    init_testvnode()
+
+    #No problems
+    @daemon_d.vnode_start(@vnodename)
+    assert_equal(@vnode.status,Wrekavoc::Resource::VNode::Status::STARTED)
+
+    #Start an undefined vnode
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_start(random_string)
+    }
+    
+  end
+
+  def test_vnode_stop
+    init_testvnode()
+
+    #No problems
+    @daemon_d.vnode_stop(@vnodename)
+    assert_equal(@vnode.status,Wrekavoc::Resource::VNode::Status::STOPPED)
+
+    #Stop an undefined vnode
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_stop(random_string)
+    }
   end
 end

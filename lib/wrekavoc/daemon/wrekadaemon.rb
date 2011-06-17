@@ -74,11 +74,11 @@ module Wrekavoc
         end
 
         #Checking args
-        hostname = properties['target']
         if pnode
           raise Lib::UnintializedResourceError, pnode.address.to_s \
             unless pnode.status == Resource::PNode::STATUS_RUN
         else
+          hostname = properties['target']
           raise Lib::ResourceNotFoundError, (hostname ? hostname : 'Any')
         end
         raise Lib::MissingParameterError, "image" unless properties['image']
@@ -114,16 +114,12 @@ module Wrekavoc
       end
 
       def vnode_start(name)
-        # >>> TODO: Check if PNode is initialized
-        # >>> TODO: Check if VNode exists
         vnode = get_vnode(name)
-
-        raise unless vnode
 
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = JSON.parse(cl.vnode_start(vnode.name))
+            ret = cl.vnode_start(vnode.name)
           end
         end
 
@@ -136,16 +132,12 @@ module Wrekavoc
       end
 
       def vnode_stop(name)
-        # >>> TODO: Check if PNode is initialized
-        # >>> TODO: Check if VNode exists
-        vnode = get_vnode()
-
-        raise unless vnode
+        vnode = get_vnode(name)
 
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = JSON.parse(cl.vnode_stop(vnode.name))
+            ret = cl.vnode_stop(vnode.name)
           end
         end
 
@@ -474,7 +466,7 @@ module Wrekavoc
           ret = @node_config.get_vnode(name)
         end
 
-        raise ResourceNotFoundError, name if raising and !ret
+        raise Lib::ResourceNotFoundError, name if raising and !ret
 
         return ret
       end

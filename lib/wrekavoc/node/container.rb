@@ -10,9 +10,9 @@ module Wrekavoc
 
       def initialize(vnode,rootfspath)
         raise unless vnode.is_a?(Resource::VNode)
-        raise "RootFS directory '#{rootfspath}' not found" \
+        raise Lib::ResourceNotFoundError, rootfspath \
           unless File.exists?(rootfspath)
-        raise "Invalid RootFS directory '#{rootfspath}'" \
+        raise Lib::InvalidParameterError, rootfspath \
           unless File.directory?(rootfspath)
 
         unless File.exists?(PATH_DEFAULT_CONFIGFILE)
@@ -38,7 +38,7 @@ module Wrekavoc
       def start
         stop()
         @vnode.status = Resource::VNode::Status::STARTING
-        Lib::Shell::run("lxc-start -d -n #{@vnode.name}") #if @status == STATUS_STOP
+        Lib::Shell::run("lxc-start -d -n #{@vnode.name}")
         Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
         @vnode.vifaces.each do |viface|
           Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
@@ -47,7 +47,7 @@ module Wrekavoc
       end
 
       def stop
-        Lib::Shell::run("lxc-stop -n #{@vnode.name}") #if @status == STATUS_RUN
+        Lib::Shell::run("lxc-stop -n #{@vnode.name}")
         @vnode.status = Resource::VNode::Status::STOPING
         Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
         @vnode.status = Resource::VNode::Status::STOPPED

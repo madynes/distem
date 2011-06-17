@@ -150,8 +150,23 @@ module Wrekavoc
       
       #
       post VNODE_START do
-        ret = @daemon.vnode_start(params['vnode'])
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vnode_start(params['vnode'])
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
 
       ##
@@ -176,8 +191,23 @@ module Wrekavoc
       
       #
       post VNODE_STOP do
-        ret = @daemon.vnode_stop(params['vnode'])
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vnode_stop(params['vnode'])
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
       
       ##

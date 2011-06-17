@@ -56,19 +56,19 @@ module Wrekavoc
 
       def vnode_configure(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].configure()
       end
 
       def vnode_start(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].start()
       end
 
       def vnode_stop(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].stop()
       end
 
