@@ -43,7 +43,7 @@ module Wrekavoc
 
       # Comparaison between two PNodes (based on the host address)
       def ==(pnode)
-        @address == pnode.address
+        pnode.is_a?(PNode) and (@address == pnode.address)
       end
 
       def to_hash()

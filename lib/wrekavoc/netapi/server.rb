@@ -9,10 +9,14 @@ module Wrekavoc
 
     class Server < Sinatra::Base
       HTTP_HEADER_ERR = 'X-Application-Error-Code'
+      HTTP_STATUS_OK = 200
+      HTTP_STATUS_NOT_FOUND = 404
+      HTTP_STATUS_BAD_REQUEST = 400
+      HTTP_STATUS_INTERN_SERV_ERROR = 500
+      HTTP_STATUS_NOT_IMPLEMENTED = 501
 
       set :environment, :developpement
       set :run, true
-      #class MyCustomError < StandardError; end 
 
       def initialize() #:nodoc:
         super
@@ -25,7 +29,7 @@ module Wrekavoc
       end
 
       before do
-        @status = 200
+        @status = HTTP_STATUS_OK
         @headers = {}
         @body = {}
         content_type 'application/json', :charset => 'utf-8'
@@ -56,9 +60,12 @@ module Wrekavoc
       post PNODE_INIT do
         begin 
           ret = @daemon.pnode_init(params['target'])
-        rescue Lib::UnreachableResourceError => rnfe
-          @status = 404
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(rnfe)
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
         rescue Lib::ClientError => ce
           @status = ce.num
           @headers[HTTP_HEADER_ERR] = ce.desc
@@ -94,10 +101,31 @@ module Wrekavoc
       
       #
       post VNODE_CREATE do
-        ret = @daemon.vnode_create(params['name'], \
-          JSON.parse(params['properties']) \
-        )
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vnode_create(params['name'], \
+            JSON.parse(params['properties']) \
+          )
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
       
       ##
@@ -421,13 +449,14 @@ module Wrekavoc
         )
         return JSON.pretty_generate(ret)
       end
+
+      protected
+
+      def get_http_err_desc(except)
+        except.class.name.split('::').last + " " + except.message
+      end
     end
 
-    protected
-
-    def get_http_err_desc(except)
-      except.class.name.split('::').last + " " + except.message
-    end
 
     class ServerDaemon < Server #:nodoc:
       set :mode, Daemon::WrekaDaemon::MODE_DAEMON

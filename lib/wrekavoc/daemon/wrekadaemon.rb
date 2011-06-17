@@ -26,17 +26,13 @@ module Wrekavoc
       end
 
       def pnode_init(target)
+        begin
         if daemon?
-          if target?(target)
-            pnode = @node_config.pnode
-            pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
-          else
-            pnode = @daemon_resources.get_pnode_by_address(target)
-          end
-
+          pnode = @daemon_resources.get_pnode_by_address(target)
           pnode = Resource::PNode.new(target) unless pnode
 
           @daemon_resources.add_pnode(pnode)
+          @node_config.pnode = pnode
 
           unless target?(target)
             Admin.pnode_run_server(pnode)
@@ -44,21 +40,28 @@ module Wrekavoc
 
             cl = NetAPI::Client.new(target)
             ret = cl.pnode_init()
+            pnode.status = Resource::PNode::STATUS_RUN
           end
         end
 
         if target?(target)
           Node::Admin.init_node()
+          @node_config.pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
           ret = @node_config.pnode.to_hash
         end
 
         return ret
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        destroy(pnode) if pnode
+        raise
+      end
+
       end
 
       def vnode_create(name,properties)
-        # >>> TODO: Check if PNode is initialized
-        # >>> TODO: Check if the image file is correct
-
+      begin
         if daemon?
           if properties['target']
             pnode = @daemon_resources.get_pnode_by_address(properties['target'])
@@ -70,35 +73,44 @@ module Wrekavoc
           pnode = @node_config.pnode
         end
 
-        raise unless pnode
-        raise unless properties['image']
+        #Checking args
+        hostname = properties['target']
+        if pnode
+          raise Lib::UnintializedResourceError, pnode.address.to_s \
+            unless pnode.status == Resource::PNode::STATUS_RUN
+        else
+          raise Lib::ResourceNotFoundError, (hostname ? hostname : 'Any')
+        end
+        raise Lib::MissingParameterError, "image" unless properties['image']
 
+        #Create the resource
         vnode = Resource::VNode.new(pnode,name,properties['image'])
 
         if daemon?
-          #The current node is replaces if the name is already taken
-          vnodetmp = @daemon_resources.get_vnode(vnode.name)
-          @daemon_resources.destroy_vnode(vnodetmp.name) if vnodetmp
-
           @daemon_resources.add_vnode(vnode)
 
-          unless target?(properties['target'])
+          unless target?(pnode.address.to_s)
+          raise pnode.address.to_s
             cl = NetAPI::Client.new(pnode.address.to_s)
-            ret = JSON.parse(cl.vnode_create(vnode.name,properties.to_json))
+            ret = cl.vnode_create(vnode.name,properties.to_json)
           end
         end
 
-        if target?(properties['target'])
-          #The current node is replaces if the name is already taken
-          tmpvnode = @node_config.get_vnode(vnode.name)
-          @node_config.vnode_destroy(tmpvnode.name) if tmpvnode
-
+        if target?(pnode.address.to_s)
           @node_config.vnode_add(vnode)
 
           ret = vnode.to_hash
         end
 
         return ret
+
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        destroy(vnode) if vnode
+        raise
+      end
+
       end
 
       def vnode_start(name)
@@ -448,22 +460,32 @@ module Wrekavoc
               raise Lib::InvalidParameterError, param
             end
           end
-          ret = (Lib::NetTools.get_default_addr == target)
+          ret = Lib::NetTools.localaddr?(target)
         else
           ret = true
         end
         return ret
       end
 
-      def get_vnode(name)
+      def get_vnode(name, raising = true)
         if daemon?
           ret = @daemon_resources.get_vnode(name)
         else
           ret = @node_config.get_vnode(name)
         end
 
+        raise ResourceNotFoundError, name if raising and !ret
+
         return ret
       end
+
+      def destroy(resource)
+        if daemon?
+          @daemon_resources.destroy(resource)
+        end
+        @node_config.destroy(resource)
+      end
+
     end
 
   end

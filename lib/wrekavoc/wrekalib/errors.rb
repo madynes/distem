@@ -1,16 +1,53 @@
 module Wrekavoc
   module Lib
 
-    class ResourceNotFoundError < Exception
+    class WrekavocError < Exception
     end
 
-    class InvalidParameterError < Exception
+    class ResourceError < WrekavocError
     end
 
-    class UnreachableResourceError < Exception
+    class ResourceNotFoundError < ResourceError
     end
 
-    class ClientError < Exception
+    class UninitializedResourceError < ResourceError
+    end
+
+    class UnreachableResourceError < ResourceError
+    end
+
+    class UnavailableResourceError < ResourceError
+    end
+
+    class ParameterError < WrekavocError
+    end
+
+    class AlreadyExistingResourceError < ParameterError
+    end
+
+    class MissingParameterError < ParameterError
+    end
+
+    class InvalidParameterError < ParameterError
+    end
+
+    class NotImplementedError < WrekavocError
+    end
+
+    class ShellError < WrekavocError
+      attr_reader :cmd, :ret, :hostname
+      def initialize(cmd, ret)
+        @hostname = Socket.gethostname
+        @cmd = cmd
+        @ret = ret
+      end
+
+      def to_s
+        return "Command '#{@cmd}' failed on #{@hostname} with result '#{@ret}'"
+      end
+    end
+
+    class ClientError < WrekavocError
       attr_reader :num, :desc, :body
       def initialize(num = 0, desc = "", body = {})
         @num = num

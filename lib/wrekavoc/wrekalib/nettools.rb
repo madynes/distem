@@ -5,6 +5,7 @@ module Wrekavoc
 
     class NetTools
       NAME_BRIDGE='br0'
+      LOCALHOST='localhost'
       @@nic_count=1
       @@addr_default=nil
 
@@ -67,6 +68,37 @@ module Wrekavoc
         raise unless viface.is_a?(Resource::VIface)
 
         return "#{vnode.name}-#{viface.name}"
+      end
+
+      def self.localaddr?(address)
+        raise unless address.is_a?(String)
+
+        begin
+          target = Resolv.getaddress(address)
+        rescue Resolv::ResolvError
+          raise Lib::InvalidParameterError, address
+        end
+
+        #Checking if the address is the loopback
+        begin
+          ret = (Resolv.getname(target) == Lib::NetTools::LOCALHOST)
+        rescue Resolv::ResolvError
+          ret = false
+        end
+
+        #Checking if the address is the one of the default interface
+        ret = (Lib::NetTools.get_default_addr == target) unless ret
+
+        #Checking if the address is the one of the ip associated with the hostname of the machine
+        unless ret
+          begin
+            ret = (Resolv.getaddress(Socket.gethostname) == target)
+          rescue Resolv::ResolvError
+            ret = false
+          end
+        end
+         
+        return ret
       end
     end
 

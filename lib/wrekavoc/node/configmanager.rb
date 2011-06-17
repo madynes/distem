@@ -7,6 +7,7 @@ module Wrekavoc
       PATH_DEFAULT_ROOTFS="/tmp/rootfs/"
 
       attr_reader :pnode, :vplatform
+      attr_writer :pnode
 
       def initialize
         @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
@@ -34,15 +35,13 @@ module Wrekavoc
 
       # >>> TODO: Add the ability to modify a vnode      
       def vnode_add(vnode)
-        raise "VNode already exists" if @vplatform.vnodes.has_key?(vnode.name)
-        # >>> TODO: Check if the file is correct
+        @vplatform.add_vnode(vnode)
 
         rootfsfile = Lib::FileManager.download(vnode.image)
         rootfspath = File.join(PATH_DEFAULT_ROOTFS,vnode.name)
 
         rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
 
-        @vplatform.add_vnode(vnode)
         @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
@@ -56,24 +55,34 @@ module Wrekavoc
       end
 
       def vnode_configure(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename \
+           unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].configure()
       end
 
       def vnode_start(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename \
+           unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].start()
       end
 
       def vnode_stop(vnodename)
-        raise "VNode '#{vnodename}' not found" unless @vplatform.vnodes.has_key?(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename \
+           unless @vplatform.vnodes.has_key?(vnodename)
         @containers[vnodename].stop()
       end
 
-      def vnode_destroy(vnodename)
-        @vplatform.destroy_vnode(vnodename)
-        @containers[vnodename].destroy if @containers[vnodename]
-        @containers[vnodename] = nil
+      def vnode_destroy(vnode)
+        raise unless vnode.is_a?(Resource::VNode)
+        @vplatform.destroy_vnode(vnode)
+        @containers[vnode.name].destroy if @containers[vnode.name]
+        @containers[vnode.name] = nil
+      end
+
+      def destroy(resource)
+        if resource.is_a?(Resource::VNode)
+          vnode_destroy(resource)
+        end
       end
 
       def vroute_add(vroute)

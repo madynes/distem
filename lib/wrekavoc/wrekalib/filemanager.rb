@@ -22,22 +22,28 @@ module Wrekavoc
       
       # Returns a path to the file on the local machine
       def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
-        uri = URI.parse(URI.decode(uri_str))
+        begin
+          uri = URI.parse(URI.decode(uri_str))
+        rescue URI::InvalidURIError
+          raise Lib::InvalidParameterError, uri_str
+        end
+
         ret = ""
         
         case uri.scheme
           when "file"
             ret = uri.path
-            raise "File '#{ret}' not found" unless File.exists?(ret)
+            raise Lib::ResourceNotFoundError, ret unless File.exists?(ret)
           else
-            raise "Protocol not supported" unless uri.scheme == "file"
+            raise Lib::NotImplementedError, uri.scheme
         end
 
         return ret
       end
 
       def self.extract(archivefile,targetdir="")
-        raise "File '#{archivefile}' not found" unless File.exists?(archivefile)
+        raise Lib::ResourceNotFoundError, archivefile \
+          unless File.exists?(archivefile)
         
         unless File.exists?(PATH_DEFAULT_CACHE)
           Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CACHE}")
@@ -79,7 +85,7 @@ module Wrekavoc
             when ".zip"
               Lib::Shell.run("cd #{cachedir}; #{BIN_UNZIP} #{basename}")
             else
-              raise "Format '#{File.extname(archivefile)}' not supported"
+              raise Lib::NotImplementedError, File.extname(archivefile)
           end
 
           Lib::Shell.run("rm #{File.join(cachedir,basename)}")
