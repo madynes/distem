@@ -33,10 +33,14 @@ module Wrekavoc
 
       def add_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
-        raise Lib::AlreadyExistingResourceError, vnetwork.name \
-          if @vnetworks[vnetwork.name]
+        raise Lib::AlreadyExistingResourceError, vnetwork.address.to_string \
+          if @vnetworks[vnetwork.address.to_string]
+        @vnetworks.each_value do |vnet|
+          raise Lib::AlreadyExistingResourceError, vnetwork.name \
+            if vnetwork.name == vnet.name
+        end
 
-        @vnetworks[vnetwork.name] = vnetwork 
+        @vnetworks[vnetwork.address.to_string] = vnetwork 
       end
 
       def add_vroute(vroute)
@@ -72,13 +76,9 @@ module Wrekavoc
       end
 
       def get_vnetwork_by_name(name)
-        return (@vnetworks.has_key?(name) ? @vnetworks[name] : nil)
-      end
-
-      def get_vnetwork_by_address(address)
         ret = nil
         @vnetworks.each_value do |vnetwork|
-          if vnetwork.address.to_string == address
+          if vnetwork.name == name
             ret = vnetwork
             break
           end
@@ -86,21 +86,32 @@ module Wrekavoc
         return ret
       end
 
-      def destroy_pnode(pnode)
+      def get_vnetwork_by_address(address)
+        return (@vnetworks.has_key?(address) ? @vnetworks[address] : nil)
+      end
+
+      def remove_pnode(pnode)
         raise unless pnode.is_a?(PNode)
         @pnodes[pnode.address] = nil
       end
 
-      def destroy_vnode(vnode)
+      def remove_vnode(vnode)
         raise unless vnode.is_a?(VNode)
         @vnodes[vnode.name] = nil
       end
 
+      def remove_vnetwork(vnetwork)
+        raise unless vnetwork.is_a?(VNetwork)
+        @vnodes[vnetwork.address.to_string] = nil
+      end
+
       def destroy(resource)
         if resource.is_a?(PNode)
-          destroy_pnode(resource)
+          remove_pnode(resource)
         elsif resource.is_a?(VNode)
-          destroy_vnode(resource)
+          remove_vnode(resource)
+        elsif resource.is_a?(VNetwork)
+          remove_vnetwork(resource)
         end
       end
     end

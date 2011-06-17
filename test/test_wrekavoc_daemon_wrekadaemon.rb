@@ -26,13 +26,17 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     return (0..size).map{ chars[rand(chars.length)] }.join
   end
 
-  def init_testvnode
+  def init_daemon
     localaddr = '127.0.0.1'
+    @daemon_d.pnode_init(localaddr)
+  end
+
+  def init_testvnode
     image  = 'file:///home/lsarzyniec/rootfs.tar.bz2'
     properties   = { 'image' => image }
 
+    init_daemon
     @vnodename = 'testvnode'
-    @daemon_d.pnode_init(localaddr)
     @daemon_d.vnode_create(@vnodename,properties)
     @vnode = @daemon_d.daemon_resources.get_vnode(@vnodename)
   end
@@ -196,5 +200,61 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
       @daemon_d.vnode_stop(random_string)
     }
+  end
+
+  def test_viface_create
+    init_testvnode()
+    name = 'if0'
+
+    #No problems
+    @daemon_d.viface_create(@vnodename,name)
+    viface = @vnode.get_viface_by_name(name)
+    assert_not_nil(viface)
+    assert_equal(viface.name,name)
+
+    #Recreate with the same name
+    assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
+      @daemon_d.viface_create(@vnodename,name)
+    }
+
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_create(random_string,name)
+    }
+
+    viface = @vnode.get_viface_by_name(random_string)
+    assert_nil(viface)
+  end
+
+  def test_vnetwork_create
+    name = 'vnetwork'
+    address = '10.144.8.0/24'
+
+    #No problems
+    init_daemon
+    @daemon_d.vnetwork_create(name,address)
+    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_name(name)
+    assert_not_nil(vnetwork)
+    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_address(address)
+    assert_not_nil(vnetwork)
+    assert_equal(vnetwork.name,name)
+    assert_equal(vnetwork.address.to_string,address)
+
+    #Recreate with the same address
+    assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
+      @daemon_d.vnetwork_create('newname',address)
+    }
+
+    #Recreate with the same name
+    assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
+      @daemon_d.vnetwork_create(name,'127.0.0.0/24')
+    }
+
+    #Create with a wrong address
+    address = 'abcdef'
+    assert_raise(Wrekavoc::Lib::InvalidParameterError) {
+      @daemon_d.vnetwork_create(name,address)
+    }
+    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_address(address)
+    assert_nil(vnetwork)
   end
 end

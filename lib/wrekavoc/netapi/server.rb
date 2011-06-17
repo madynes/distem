@@ -232,8 +232,26 @@ module Wrekavoc
       
       #
       post VIFACE_CREATE do
-        ret = @daemon.viface_create(params['vnode'],params['name'])
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.viface_create(params['vnode'],params['name'])
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
 
       post VNODE_GATEWAY do
@@ -346,8 +364,26 @@ module Wrekavoc
       
       #
       post VNETWORK_CREATE do
-        ret = @daemon.vnetwork_create(params['name'],params['address'])
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vnetwork_create(params['name'],params['address'])
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return [@status,@headers,JSON.pretty_generate(@body)]
       end
 
       ##

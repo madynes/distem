@@ -15,7 +15,11 @@ module Wrekavoc
         if address.is_a?(IPAddress)
           @address = address.network
         else
-          @address = IPAddress::IPv4.new(address).network
+          begin
+            @address = IPAddress.parse(address).network
+          rescue ArgumentError
+            raise Lib::InvalidParameterError, address
+          end
         end
         @vnodes = {}
         @vroutes = {}

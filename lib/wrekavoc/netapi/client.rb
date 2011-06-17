@@ -61,7 +61,13 @@ module Wrekavoc
       end
 
       def viface_create(vnode, name)
-        @resource[VIFACE_CREATE].post :vnode => vnode, :name => name
+        ret = {}
+        @resource[VIFACE_CREATE].post(
+          { :vnode => vnode, :name => name }
+        ) { |response, request, result|
+          ret = JSON.parse(check_error(result,response))
+        }
+        return ret
       end
 
       def vnode_gateway(vnode)
@@ -81,8 +87,13 @@ module Wrekavoc
       end
 
       def vnetwork_create(name, address)
-        # >>> TODO: validate ips
-        @resource[VNETWORK_CREATE].post :name => name, :address => address
+        ret = {}
+        @resource[VNETWORK_CREATE].post(
+          { :name => name, :address => address }
+        ) { |response, request, result|
+          ret = JSON.parse(check_error(result,response))
+        }
+        return ret
       end
 
       def vnetwork_add_vnode(vnetwork, vnode, viface)

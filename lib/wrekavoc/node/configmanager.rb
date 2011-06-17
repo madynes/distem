@@ -72,16 +72,16 @@ module Wrekavoc
         @containers[vnodename].stop()
       end
 
-      def vnode_destroy(vnode)
+      def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        @vplatform.destroy_vnode(vnode)
+        @vplatform.remove_vnode(vnode)
         @containers[vnode.name].destroy if @containers[vnode.name]
         @containers[vnode.name] = nil
       end
 
       def destroy(resource)
         if resource.is_a?(Resource::VNode)
-          vnode_destroy(resource)
+          vnode_remove(resource)
         end
       end
 

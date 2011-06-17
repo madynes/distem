@@ -90,7 +90,6 @@ module Wrekavoc
           @daemon_resources.add_vnode(vnode)
 
           unless target?(pnode.address.to_s)
-          raise pnode.address.to_s
             cl = NetAPI::Client.new(pnode.address.to_s)
             ret = cl.vnode_create(vnode.name,properties.to_json)
           end
@@ -151,10 +150,8 @@ module Wrekavoc
 
 
       def viface_create(vnodename,vifacename)
-        # >>> TODO: Check if VNode exists
-        # >>> TODO: Check if viface already exists (name)
+      begin
         vnode = get_vnode(vnodename)
-        raise unless vnode
 
         viface = Resource::VIface.new(vifacename)
         vnode.add_viface(viface)
@@ -162,7 +159,7 @@ module Wrekavoc
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = JSON.parse(cl.viface_create(vnode.name,viface.name))
+            ret = cl.viface_create(vnode.name,viface.name)
           end
         end
 
@@ -173,10 +170,16 @@ module Wrekavoc
         end
 
         return ret
+
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        vnode.remove_iface(viface) if vnode and viface
+        raise
+      end
       end
 
       def vnode_gateway(name)
-        # >>> TODO: Check if VNode exists
         vnode = get_vnode(name)
 
         raise unless vnode
@@ -261,10 +264,9 @@ module Wrekavoc
       end
 
       def vnetwork_create(name,address)
+      begin
         ret = {}
         if daemon?
-          # >>> TODO: Check if vnetwork already exists
-          # >>> TODO: Validate ip
           vnetwork = Resource::VNetwork.new(address,name)
           @daemon_resources.add_vnetwork(vnetwork)
 
@@ -275,6 +277,13 @@ module Wrekavoc
         end
 
         return ret
+
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        destroy(vnetwork) if vnetwork
+        raise
+      end
       end
 
       def vnetwork_add_vnode(vnetworkname,vnodename,vifacename)
@@ -341,7 +350,8 @@ module Wrekavoc
       end
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)
-        vnode = get_vnode(vnodename)
+        ret = {}
+        vnode = get_vnode(vnodename) if vnodename
         if daemon? and !target?(vnode)
           gw = @daemon_resources.get_vnode(nodegw)
           srcnet = @daemon_resources.get_vnetwork_by_name(networksrc)
@@ -443,6 +453,7 @@ module Wrekavoc
       def target?(param) #:nodoc:
         ret = false
         if daemon?
+          target = nil
           if param.is_a?(Resource::VNode)
             target = param.host.address.to_s
           elsif param.is_a?(String)
@@ -452,7 +463,7 @@ module Wrekavoc
               raise Lib::InvalidParameterError, param
             end
           end
-          ret = Lib::NetTools.localaddr?(target)
+          ret = Lib::NetTools.localaddr?(target) if target
         else
           ret = true
         end

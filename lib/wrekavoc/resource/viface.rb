@@ -44,6 +44,10 @@ module Wrekavoc
         return vnetwork.address.include?(address)
       end
 
+      def ==(viface)
+        viface.is_a?(VIface) and (@name == viface.name)
+      end
+
       def to_hash()
         ret = {}
         ret['id'] = @id.to_s
