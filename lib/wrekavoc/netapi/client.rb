@@ -11,63 +11,101 @@ module Wrekavoc
 
       def initialize(serveraddr,port=4567)
         raise unless port.is_a?(Numeric)
-        # >>> TODO: validate server ip
-
         @serveraddr = serveraddr
-        @resource = RestClient::Resource.new('http://' + @serveraddr + ':' \
-          + port.to_s)
+        @serverurl = 'http://' + @serveraddr + ':' + port.to_s
+        @resource = RestClient::Resource.new(@serverurl)
       end
 
       def pnode_init(target = NetAPI::TARGET_SELF)
-        ret = {}
-        @resource[PNODE_INIT].post(
-          {:target => target}
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+        begin
+          ret = {}
+          req = PNODE_INIT
+          @resource[req].post(
+            {:target => target}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_create(name, properties)
-        properties = properties.to_json if properties.is_a?(Hash)
+        begin
+          properties = properties.to_json if properties.is_a?(Hash)
 
-        ret = {}
-        @resource[VNODE_CREATE].post(
-          { :name => name , :properties => properties }
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+          ret = {}
+          req = VNODE_CREATE
+          @resource[req].post(
+            { :name => name , :properties => properties }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_start(vnode)
-        ret = {}
-        @resource[VNODE_START].post(
-          { :vnode => vnode }
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+        begin
+          ret = {}
+          req = VNODE_START
+          @resource[req].post(
+            { :vnode => vnode }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_stop(vnode)
-        ret = {}
-        @resource[VNODE_STOP].post(
-          { :vnode => vnode }
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+        begin
+          ret = {}
+          req = VNODE_STOP
+          @resource[req].post(
+            { :vnode => vnode }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def viface_create(vnode, name)
-        ret = {}
-        @resource[VIFACE_CREATE].post(
-          { :vnode => vnode, :name => name }
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+        begin
+          ret = {}
+          req = VIFACE_CREATE
+          @resource[req].post(
+            { :vnode => vnode, :name => name }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_gateway(vnode)
@@ -87,13 +125,21 @@ module Wrekavoc
       end
 
       def vnetwork_create(name, address)
-        ret = {}
-        @resource[VNETWORK_CREATE].post(
-          { :name => name, :address => address }
-        ) { |response, request, result|
-          ret = JSON.parse(check_error(result,response))
-        }
-        return ret
+        begin
+          ret = {}
+          req = VNETWORK_CREATE
+          @resource[req].post(
+            { :name => name, :address => address }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnetwork_add_vnode(vnetwork, vnode, viface)
