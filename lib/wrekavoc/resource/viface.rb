@@ -32,8 +32,14 @@ module Wrekavoc
       end
 
       def attach(vnetwork,address)
+        raise Lib::AlreadyExistingResourceError, @name if @vnetwork
         @vnetwork = vnetwork
         @address = address
+      end
+
+      def detach(vnetwork)
+        @vnetwork = nil
+        @address = IPAddress::IPv4.new("0.0.0.0/0")
       end
 
       def attached?
@@ -41,7 +47,7 @@ module Wrekavoc
       end
 
       def connected_to?(vnetwork)
-        return vnetwork.address.include?(address)
+        return (vnetwork ? vnetwork.address.include?(@address) : false)
       end
 
       def ==(viface)
@@ -53,6 +59,7 @@ module Wrekavoc
         ret['id'] = @id.to_s
         ret['name'] = @name
         ret['address'] = @address.to_string
+        ret['connected_to'] = (@vnetwork ? @vnetwork.name : 'nil')
         return ret
       end
     end

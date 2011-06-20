@@ -286,6 +286,7 @@ module Wrekavoc
       end
       end
 
+=begin
       def vnetwork_add_vnode(vnetworkname,vnodename,vifacename)
         ret = {}
 
@@ -314,39 +315,87 @@ module Wrekavoc
 
         return ret
       end
+=end
 
-      def viface_attach(vnodename,vifacename,vifaceaddress)
+      def viface_attach(vnodename,vifacename,properties)
+      begin
         ret = {}
 
         vnode = get_vnode(vnodename)
+        viface = vnode.get_viface_by_name(vifacename)
+
+        raise Lib::ResourceNotFoundError, vifacename unless viface
+        raise Lib::MissingParameterError, 'address|vnetwork' \
+          unless (properties['address'] or properties['vnetwork'])
+
+        if daemon?
+          if properties['address']
+            begin
+              address = IPAddress.parse(properties['address'])
+            rescue ArgumentError
+              raise Lib::InvalidParameterError, properties['address']
+            end
+            prop = properties['address']
+            vnetwork = @daemon_resources.get_vnetwork_by_address(prop)
+          elsif properties['vnetwork']
+            prop = properties['vnetwork']
+            vnetwork = @daemon_resources.get_vnetwork_by_name(prop)
+          end
+
+          raise Lib::ResourceNotFoundError, prop unless vnetwork
+
+          if properties['address']
+            vnetwork.add_vnode(vnode,viface,address)
+          else
+            vnetwork.add_vnode(vnode,viface)
+          end
+
+          properties['address'] = viface.address.to_string
+
+          unless target?(vnode)
+            cl = NetAPI::Client.new(vnode.host.address)
+            ret = cl.viface_attach(vnode.name,viface.name,
+                { 'address' => properties['address'] }
+            )
+          end
+        end
+
         if target?(vnode)
-          # >>> TODO: Check if VNode exists
-          # >>> TODO: Check if VIface exists
-          viface = vnode.get_viface_by_name(vifacename)
-
-          raise unless vnode
-          raise unless viface
-
-          address = IPAddress::IPv4.new(vifaceaddress)
-          vnetwork = @node_config.vplatform.get_vnetwork_by_address(address.network.to_string)
+          raise Lib::MissingParameterError, 'address' unless properties['address']
+          begin
+            address = IPAddress.parse(properties['address'])
+          rescue ArgumentError
+            raise Lib::InvalidParameterError, properties['address']
+          end
+          vnetwork = @node_config.vplatform.get_vnetwork_by_address(address)
 
           #Networks are not systematically created on every pnode
           unless vnetwork
             if daemon?
-              vnetwork = @daemon_resources.get_vnetwork_by_address(address.network.to_string)
+              vnetwork = @daemon_resources.get_vnetwork_by_address(
+                address.network.to_string
+              )
+              raise Lib::ResourceNotFoundError, address.to_string unless vnetwork
             else
               vnetwork = Resource::VNetwork.new(address.network)
             end
             @node_config.vnetwork_add(vnetwork) 
           end
 
-          viface.attach(vnetwork,address)
+          viface.attach(vnetwork,address) unless daemon?
           @node_config.vnode_configure(vnode.name)
 
           ret = viface.to_hash
         end
 
         return ret
+
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        vnetwork.remove_vnode(vnode) if vnetwork
+        raise
+      end
       end
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)

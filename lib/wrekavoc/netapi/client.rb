@@ -142,16 +142,29 @@ module Wrekavoc
         end
       end
 
-      def vnetwork_add_vnode(vnetwork, vnode, viface)
-        # >>> TODO: validate ips
-        @resource[VNETWORK_ADD_VNODE].post :vnetwork => vnetwork, \
-          :vnode => vnode, :viface => viface
-      end
+      #def vnetwork_add_vnode(vnetwork, vnode, viface)
+      #  # >>> TODO: validate ips
+      #  @resource[VNETWORK_ADD_VNODE].post :vnetwork => vnetwork, \
+      #    :vnode => vnode, :viface => viface
+      #end
 
-      def viface_attach(vnode, viface, address)
-        # >>> TODO: validate ips
-        @resource[VIFACE_ATTACH].post :vnode => vnode, :viface => viface, \
-          :address => address
+      def viface_attach(vnode, viface, properties)
+        begin
+          properties = properties.to_json if properties.is_a?(Hash)
+          ret = {}
+          req = VIFACE_ATTACH
+          @resource[req].post(
+            { :vnode => vnode, :viface => viface, :properties => properties }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vroute_create(srcnet,destnet,gateway,vnode="")

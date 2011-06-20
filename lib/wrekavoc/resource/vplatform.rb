@@ -87,7 +87,24 @@ module Wrekavoc
       end
 
       def get_vnetwork_by_address(address)
-        return (@vnetworks.has_key?(address) ? @vnetworks[address] : nil)
+        raise unless (address.is_a?(String) or address.is_a?(IPAddress))
+        ret = nil
+        begin
+          address = IPAddress.parse(address) if address.is_a?(String)
+        rescue ArgumentError
+          return nil
+        end
+
+        ret = @vnetworks[address.to_string] if @vnetworks[address]
+        unless ret
+          @vnetworks.each_value do |vnetwork|
+            if vnetwork.address.include?(address)
+              ret = vnetwork
+              break
+            end
+          end
+        end
+        return ret
       end
 
       def remove_pnode(pnode)
