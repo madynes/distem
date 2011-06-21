@@ -43,7 +43,7 @@ module Wrekavoc
         @vnode.vifaces.each do |viface|
           Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
         end
-        @vnode.status = Resource::VNode::Status::STARTED
+        @vnode.status = Resource::VNode::Status::RUNNING
       end
 
       def stop

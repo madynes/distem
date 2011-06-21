@@ -39,18 +39,18 @@ module Wrekavoc
             sleep(1)
 
             cl = NetAPI::Client.new(target)
-            ret = cl.pnode_init()
             pnode.status = Resource::PNode::STATUS_RUN
           end
         end
 
         if target?(target)
+          pnode = @node_config.pnode
           Node::Admin.init_node()
-          @node_config.pnode.status = Wrekavoc::Resource::PNode::STATUS_RUN
-          ret = @node_config.pnode.to_hash
+          @node_config.vplatform.add_pnode(pnode)
+          pnode.status = Resource::PNode::STATUS_RUN
         end
 
-        return ret
+        return pnode
       rescue Lib::AlreadyExistingResourceError
         raise
       rescue Exception
@@ -58,6 +58,25 @@ module Wrekavoc
         raise
       end
 
+      end
+
+      def pnode_get(hostname, raising = true) 
+        ret = nil
+        begin
+          address = Resolv.getaddress(hostname)
+        rescue Resolv::ResolvError
+          raise Lib::InvalidParameterError, hostname
+        end
+
+        if daemon?
+          pnode = @daemon_resources.get_pnode_by_address(address)
+        else
+          pnode = @node_config.vplatform.get_pnode_by_address(address)
+        end
+
+        raise Lib::ResourceNotFoundError, hostname if raising and !pnode
+
+        return pnode
       end
 
       def vnode_create(name,properties)
@@ -91,17 +110,15 @@ module Wrekavoc
 
           unless target?(pnode.address.to_s)
             cl = NetAPI::Client.new(pnode.address.to_s)
-            ret = cl.vnode_create(vnode.name,properties.to_json)
+            cl.vnode_create(vnode.name,properties)
           end
         end
 
         if target?(pnode.address.to_s)
           @node_config.vnode_add(vnode)
-
-          ret = vnode.to_hash
         end
 
-        return ret
+        return vnode
 
       rescue Lib::AlreadyExistingResourceError
         raise
@@ -112,46 +129,85 @@ module Wrekavoc
 
       end
 
+      def vnode_get(name, raising = true)
+        if daemon?
+          vnode = @daemon_resources.get_vnode(name)
+        else
+          vnode = @node_config.get_vnode(name)
+        end
+
+        raise Lib::ResourceNotFoundError, name if raising and !vnode
+
+        return vnode
+      end
+
+      def vnode_set_status(name,status)
+        vnode = nil
+        if status.upcase == Resource::VNode::Status::RUNNING
+          vnode = vnode_start(name)
+        elsif status.upcase == Resource::VNode::Status::STOPPED
+          vnode = vnode_stop(name)
+        else
+          raise Lib::InvalidParameterError, status
+        end
+
+        return vnode
+      end
+
       def vnode_start(name)
-        vnode = get_vnode(name)
+        vnode = vnode_get(name)
 
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = cl.vnode_start(vnode.name)
+            cl.vnode_start(vnode.name)
+            vnode.status = Resource::VNode::Status::RUNNING
           end
         end
 
         if target?(vnode)
           @node_config.vnode_start(vnode.name)
-          ret = vnode.to_hash
         end
 
-        return ret
+        return vnode
       end
 
       def vnode_stop(name)
-        vnode = get_vnode(name)
+        vnode = vnode_get(name)
 
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = cl.vnode_stop(vnode.name)
+            cl.vnode_stop(vnode.name)
+            vnode.status = Resource::VNode::Status::STOPPED
           end
         end
 
         if target?(vnode)
           @node_config.vnode_stop(vnode.name)
-          ret = vnode.to_hash
+        end
+
+        return vnode
+      end
+
+      def vnode_list_get()
+        ret = {}
+        if daemon?
+          vplatform = @daemon_resources
+        else
+          @node_config.vplatform
+        end
+
+        vplatform.vnodes.each_value do |vnode|
+          ret[vnode.name] = vnode.to_hash
         end
 
         return ret
       end
 
-
       def viface_create(vnodename,vifacename)
       begin
-        vnode = get_vnode(vnodename)
+        vnode = vnode_get(vnodename)
 
         viface = Resource::VIface.new(vifacename)
         vnode.add_viface(viface)
@@ -159,17 +215,16 @@ module Wrekavoc
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = cl.viface_create(vnode.name,viface.name)
+            cl.viface_create(vnode.name,viface.name)
           end
         end
 
         if target?(vnode)
           @node_config.viface_add(viface)
           @node_config.vnode_configure(vnode.name)
-          ret = viface.to_hash
         end
 
-        return ret
+        return viface
 
       rescue Lib::AlreadyExistingResourceError
         raise
@@ -179,8 +234,17 @@ module Wrekavoc
       end
       end
 
+      def viface_get(vnodename,vifacename,raising = true)
+        vnode = vnode_get(vnodename,raising)
+        viface = vnode.get_viface_by_name(vifacename)
+
+        raise Lib::ResourceNotFoundError, vifacename if raising and !viface
+
+        return viface
+      end
+
       def vnode_gateway(name)
-        vnode = get_vnode(name)
+        vnode = vnode_get(name)
 
         raise unless vnode
 
@@ -201,16 +265,9 @@ module Wrekavoc
         return ret
       end
 
-      def vnode_info(name)
-        # >>> TODO: Check if VNode exists
-        vnode = get_vnode(name)
-
-        return vnode.to_hash
-      end
-
       def vnode_info_rootfs(name)
         # >>> TODO: Check if VNode exists
-        vnode = get_vnode(name)
+        vnode = vnode_get(name)
 
         raise unless vnode
 
@@ -228,31 +285,11 @@ module Wrekavoc
         return ret
       end
 
-      def vnode_info_list()
-        # >>> TODO: Check if PNode is initialized
-        
-        if daemon?
-            ret = {}
-            @daemon_resources.pnodes.each_value do |pnode|
-              unless Lib::NetTools.get_default_addr == pnode.address
-                cl = NetAPI::Client.new(pnode.address)
-                ret[pnode.address.to_s] = JSON.parse(cl.vnode_info_list())
-              else
-                ret[@node_config.pnode.address.to_s] = @node_config.get_vnodes_list()
-              end
-            end
-        else
-          ret = @node_config.get_vnodes_list()
-        end
-
-        return ret
-      end
-
       def vnode_execute(vnodename,command)
         ret = {}
         if daemon?
           # >>> TODO: check if vnode exists
-          vnode = get_vnode(vnodename)
+          vnode = vnode_get(vnodename)
 
           raise unless vnode
 
@@ -265,18 +302,15 @@ module Wrekavoc
 
       def vnetwork_create(name,address)
       begin
-        ret = {}
-        if daemon?
-          vnetwork = Resource::VNetwork.new(address,name)
-          @daemon_resources.add_vnetwork(vnetwork)
+        raise Lib::NotImplementedError unless daemon?
 
-          #Add a virtual interface connected on the network
-          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
+        vnetwork = Resource::VNetwork.new(address,name)
+        @daemon_resources.add_vnetwork(vnetwork)
 
-          ret = vnetwork.to_hash
-        end
+        #Add a virtual interface connected on the network
+        Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
 
-        return ret
+        return vnetwork
 
       rescue Lib::AlreadyExistingResourceError
         raise
@@ -286,12 +320,24 @@ module Wrekavoc
       end
       end
 
+      def vnetwork_get(name,raising = true)
+        if daemon?
+          vnetwork = @daemon_resources.get_vnetwork_by_name(name)
+        else
+          vnetwork = @node_config.vplatform.get_vnetwork_by_name(name)
+        end
+
+        raise Lib::ResourceNotFoundError, name if raising and !vnetwork
+
+        return vnetwork
+      end
+
       def viface_attach(vnodename,vifacename,properties)
       begin
         ret = {}
 
-        vnode = get_vnode(vnodename)
-        viface = vnode.get_viface_by_name(vifacename)
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
 
         raise Lib::ResourceNotFoundError, vifacename unless viface
         raise Lib::MissingParameterError, 'address|vnetwork' \
@@ -369,7 +415,7 @@ module Wrekavoc
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)
         ret = {}
-        vnode = get_vnode(vnodename) if vnodename
+        vnode = vnode_get(vnodename) if vnodename
         if daemon? and !target?(vnode)
           gw = @daemon_resources.get_vnode(nodegw)
           srcnet = @daemon_resources.get_vnetwork_by_name(networksrc)
@@ -431,7 +477,7 @@ module Wrekavoc
       end
 
       def limit_net_create(vnodename,vifacename,properties)
-        vnode = get_vnode(vnodename)
+        vnode = vnode_get(vnodename)
         raise unless vnode
         viface = vnode.get_viface_by_name(vifacename)
         raise unless viface
@@ -485,18 +531,6 @@ module Wrekavoc
         else
           ret = true
         end
-        return ret
-      end
-
-      def get_vnode(name, raising = true)
-        if daemon?
-          ret = @daemon_resources.get_vnode(name)
-        else
-          ret = @node_config.get_vnode(name)
-        end
-
-        raise Lib::ResourceNotFoundError, name if raising and !ret
-
         return ret
       end
 

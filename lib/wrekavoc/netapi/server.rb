@@ -62,7 +62,7 @@ module Wrekavoc
       # ...
       
       #
-      post PNODE_INIT do
+      post '/pnodes' do
         begin 
           ret = @daemon.pnode_init(params['target'])
         rescue Lib::ParameterError => pe
@@ -76,10 +76,61 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret
+          @body = JSON.pretty_generate(ret.to_hash)
         end
 
-        return [@status,@headers,JSON.pretty_generate(@body)]
+        return [@status,@headers,@body]
+      end
+
+      ##
+      # :method: get(/pnodes/:pnodename)
+      #
+      # :call-seq:
+      #   GET /pnodes/:pnodename
+      # 
+      # Get the description of a virtual node
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      get '/pnodes/:pnode' do
+        begin
+          ret = @daemon.pnode_get(params['pnode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = JSON.pretty_generate(ret.to_hash)
+        end
+
+        return [@status,@headers,@body]
       end
 
       ##
@@ -91,9 +142,8 @@ module Wrekavoc
       # Create a virtual node using a compressed file system image.
       #
       # == Query parameters
-      # <tt>target</tt>:: the physical machine the virtual node will be created on
       # <tt>name</tt>:: the -unique- name of the virtual node to create (it will be used in a lot of methods)
-      # <tt>image</tt>:: the -local- path to the file system image to be used on that node (on the physical machine)
+      # <tt>properties</tt>:: target,image
       # 
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -110,7 +160,7 @@ module Wrekavoc
       # ...
       
       #
-      post VNODE_CREATE do
+      post '/vnodes' do
         begin
           ret = @daemon.vnode_create(params['name'], \
             JSON.parse(params['properties']) \
@@ -132,134 +182,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret
+          @body = JSON.pretty_generate(ret.to_hash)
         end
 
-        return [@status,@headers,JSON.pretty_generate(@body)]
-      end
-      
-      ##
-      # :method: put(/vnodes/:vnodename)
-      #
-      # :call-seq:
-      #   PUT /vnodes/:vnodename
-      # 
-      # Change the status of the -previously created- virtual node.
-      #
-      # == Query parameters
-      # <tt>status</tt>:: the status to set: "Run" or "Stopped"
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
-      post VNODE_START do
-        begin
-          ret = @daemon.vnode_start(params['vnode'])
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
-        end
-
-        return [@status,@headers,JSON.pretty_generate(@body)]
-      end
-
-      post VNODE_STOP do
-        begin
-          ret = @daemon.vnode_stop(params['vnode'])
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
-        end
-
-        return [@status,@headers,JSON.pretty_generate(@body)]
-      end
-      
-      ##
-      # :method: post(/vnodes/:vnodename/vifaces)
-      #
-      # :call-seq:
-      #   POST /vnodes/:vnodename/vifaces
-      # 
-      # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
-      #
-      # == Query parameters
-      # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
-      post VIFACE_CREATE do
-        begin
-          ret = @daemon.viface_create(params['vnode'],params['name'])
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
-        end
-
-        return [@status,@headers,JSON.pretty_generate(@body)]
-      end
-
-      post VNODE_GATEWAY do
-        ret = @daemon.vnode_gateway(params['vnode'])
-        return JSON.pretty_generate(ret)
-      end
-      
-      post VNODE_INFO_ROOTFS do
-        ret = @daemon.vnode_info_rootfs(params['vnode'])
-        return JSON.pretty_generate(ret)
+        return [@status,@headers,@body]
       end
       
       ##
@@ -287,9 +213,30 @@ module Wrekavoc
       # ...
       
       #
-      get VNODE_INFO + '/:vnode' do
-        ret = @daemon.vnode_info(params['vnode'])
-        return JSON.pretty_generate(ret)
+      get '/vnodes/:vnode' do
+        begin
+          ret = @daemon.vnode_get(params['vnode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = JSON.pretty_generate(ret.to_hash)
+        end
+
+        return [@status,@headers,@body]
       end
 
       ##
@@ -308,6 +255,34 @@ module Wrekavoc
       # == Status codes
       # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # 
+      # == Usage
+      # ...
+      
+      #
+      get '/vnodes' do
+        ret = @daemon.vnode_list_get()
+        @body = JSON.pretty_generate(ret)
+        return [@status,@headers,@body]
+      end
+      
+      ##
+      # :method: put(/vnodes/:vnodename)
+      #
+      # :call-seq:
+      #   PUT /vnodes/:vnodename
+      # 
+      # Change the status of the -previously created- virtual node.
+      #
+      # == Query parameters
+      # <tt>status</tt>:: the status to set: "Running" or "Stopped"
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
       # <tt>400</tt>:: Parameter error 
       # <tt>404</tt>:: Resource error
       # <tt>500</tt>:: Shell error (check the logs)
@@ -317,8 +292,91 @@ module Wrekavoc
       # ...
       
       #
-      get VNODE_INFO_LIST do
-        ret = @daemon.vnode_info_list()
+      put '/vnodes/:vnode' do
+        begin
+          ret = @daemon.vnode_set_status(params['vnode'],params['status'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = JSON.pretty_generate(ret.to_hash)
+        end
+
+        return [@status,@headers,@body]
+      end
+
+      ##
+      # :method: post(/vnodes/:vnodename/vifaces)
+      #
+      # :call-seq:
+      #   POST /vnodes/:vnodename/vifaces
+      # 
+      # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
+      #
+      # == Query parameters
+      # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      post '/vnodes/*/vifaces' do
+        begin
+          ret = @daemon.viface_create(params[:splat][0],params['name'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = JSON.pretty_generate(ret.to_hash)
+        end
+
+        return [@status,@headers,@body]
+      end
+
+      post VNODE_GATEWAY do
+        ret = @daemon.vnode_gateway(params['vnode'])
+        return JSON.pretty_generate(ret)
+      end
+      
+      post VNODE_INFO_ROOTFS do
+        ret = @daemon.vnode_info_rootfs(params['vnode'])
         return JSON.pretty_generate(ret)
       end
       
@@ -348,8 +406,8 @@ module Wrekavoc
       # ...
       
       #
-      post VNODE_EXECUTE do
-        ret = @daemon.vnode_execute(params['vnode'],params['command'])
+      post '/vnodes/*/commands' do
+        ret = @daemon.vnode_execute(params[:splat][0],params['command'])
         return JSON.pretty_generate(ret)
       end
       
@@ -380,7 +438,7 @@ module Wrekavoc
       # ...
       
       #
-      post VNETWORK_CREATE do
+      post '/vnetworks' do
         begin
           ret = @daemon.vnetwork_create(params['name'],params['address'])
         rescue Lib::ParameterError => pe
@@ -397,17 +455,68 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret
+          @body = JSON.pretty_generate(ret.to_hash)
         end
 
-        return [@status,@headers,JSON.pretty_generate(@body)]
+        return [@status,@headers,@body]
       end
 
       ##
-      # :method: put(/vnodes/:vnodename/vifaces/:vifacename/attach)
+      # :method: get(/vnetworks/:vnetworkname)
       #
       # :call-seq:
-      #   Put /vnodes/:vnodename/vifaces/:vifacename/attach
+      #   GET /vnetworks/:vnetworkname
+      # 
+      # Get the description of a virtual network
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      get '/vnetworks/:vnetwork' do
+        begin
+          ret = @daemon.vnetwork_get(params['vnetwork'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = JSON.pretty_generate(ret.to_hash)
+        end
+
+        return [@status,@headers,@body]
+      end
+
+      ##
+      # :method: put(/vnodes/:vnodename/vifaces/:vifacename)
+      #
+      # :call-seq:
+      #   PUT /vnodes/:vnodename/vifaces/:vifacename
       # 
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
@@ -429,9 +538,9 @@ module Wrekavoc
       # == Usage
       # ...
       
-      post VIFACE_ATTACH do
+      put '/vnodes/*/vifaces/*' do
         begin
-          ret = @daemon.viface_attach(params['vnode'],params['viface'],
+          ret = @daemon.viface_attach(params[:splat][0],params[:splat][1],
             JSON.parse(params['properties'])
           )
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -448,10 +557,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret
+          @body = JSON.pretty_generate(ret.to_hash)
         end
 
-        return [@status,@headers,JSON.pretty_generate(@body)]
+        return [@status,@headers,@body]
       end
 
 

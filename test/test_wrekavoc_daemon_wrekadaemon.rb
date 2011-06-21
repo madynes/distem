@@ -37,8 +37,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
 
     init_daemon unless initializeddaemon
     @vnodename = 'testvnode' + sufix
-    @daemon_d.vnode_create(@vnodename,properties)
-    @vnode = @daemon_d.daemon_resources.get_vnode(@vnodename)
+    @vnode = @daemon_d.vnode_create(@vnodename,properties)
     return @vnode
   end
 
@@ -49,8 +48,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     ### Daemon mode tests
   
     #No problems
-    @daemon_d.pnode_init(localaddr)
-    pnode = @daemon_d.daemon_resources.get_pnode_by_address(localaddr)
+    pnode = @daemon_d.pnode_init(localaddr)
     assert_not_nil(pnode)
     assert_equal(localaddr,pnode.address.to_s)
     assert_equal(pnode.status,Wrekavoc::Resource::PNode::STATUS_RUN)
@@ -59,32 +57,60 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
       @daemon_d.pnode_init(localaddr)
     }
-    pnode = @daemon_d.daemon_resources.get_pnode_by_address(localaddr)
-    assert_not_nil(pnode)
+    assert_not_nil(@daemon_d.pnode_get(localaddr))
 
     #Invalid node hostname
     tmpaddr = random_string
     assert_raise(Wrekavoc::Lib::InvalidParameterError) {
       @daemon_d.pnode_init(tmpaddr)
     }
-    pnode = @daemon_d.daemon_resources.get_pnode_by_address(tmpaddr)
-    assert_nil(pnode)
 
     #Unreachable address
     tmpaddr = '255.255.255.255'
     assert_raise(Wrekavoc::Lib::UnreachableResourceError) {
       @daemon_d.pnode_init(tmpaddr)
     }
-    pnode = @daemon_d.daemon_resources.get_pnode_by_address(tmpaddr)
-    assert_nil(pnode)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.pnode_get(tmpaddr)
+    }
 
     ### Node mode tests
 
     #No problems
-    @daemon_n.pnode_init(localaddr)
-    assert_equal(@daemon_n.node_config.pnode.status,
-      Wrekavoc::Resource::PNode::STATUS_RUN
-    )
+    pnode = @daemon_n.pnode_init(localaddr)
+    assert_not_nil(pnode)
+    assert_equal(true,Wrekavoc::Lib::NetTools.localaddr?(pnode.address.to_s))
+    assert_equal(pnode.status,Wrekavoc::Resource::PNode::STATUS_RUN)
+  end
+
+  def test_pnode_get
+    localaddr = '127.0.0.1'
+
+    ### Daemon mode tests
+
+    #No problems
+    pnode = @daemon_d.pnode_init(localaddr)
+    assert_not_nil(pnode)
+    pnodeget = @daemon_d.pnode_get(localaddr)
+    assert_not_nil(pnodeget)
+    assert_equal(pnode,pnodeget)
+
+    #Using hostname
+    pnodeget = @daemon_d.pnode_get('localhost')
+    assert_not_nil(pnodeget)
+    assert_equal(pnode,pnodeget)
+
+    #Invalid hostname
+    tmpaddr = random_string
+    assert_raise(Wrekavoc::Lib::InvalidParameterError) {
+      @daemon_d.pnode_get(tmpaddr)
+    }
+
+    #Non existing node
+    tmpaddr = '255.255.255.255'
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.pnode_get(tmpaddr)
+    }
   end
 
   def test_vnode_create
@@ -106,8 +132,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     #No problems (no target specified)
     @daemon_d.pnode_init(localaddr)
     pnode = @daemon_d.daemon_resources.get_pnode_by_address(localaddr)
-    @daemon_d.vnode_create(name,properties)
-    vnode = @daemon_d.daemon_resources.get_vnode(name)
+    vnode = @daemon_d.vnode_create(name,properties)
     assert_not_nil(vnode)
     assert_equal(vnode.name,name)
     assert_equal(vnode.host,pnode)
@@ -119,8 +144,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
       @daemon_d.vnode_create(name,properties)
     }
-    vnode = @daemon_d.daemon_resources.get_vnode(name)
-    assert_not_nil(vnode)
+    assert_not_nil(@daemon_d.vnode_get(name))
 
     #No problems (target specified)
     @daemon_d.vnode_create(name2,properties2)
@@ -133,47 +157,80 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
       @daemon_d.vnode_create(name3,properties2)
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
 
     #No image specified
     assert_raise(Wrekavoc::Lib::MissingParameterError) {
       @daemon_d.vnode_create(name3,{})
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
 
     #Invalid image path
     properties['image'] = ':.'
     assert_raise(Wrekavoc::Lib::InvalidParameterError) {
       @daemon_d.vnode_create(name3,properties)
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
 
     #Invalid path to the image
     properties['image'] = 'file:///test/test/test'
     assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
       @daemon_d.vnode_create(name3,properties)
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
     
     #Protocol not supported
     properties['image'] = 'http://public.nancy.grid5000.fr/~lsarzyniec/rootfs.tar.bz2'
     assert_raise(Wrekavoc::Lib::NotImplementedError) {
       @daemon_d.vnode_create(name3,properties)
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
 
     #File format not supported
     properties['image'] = 'file:///home/lsarzyniec/rootfs.7zip'
     assert_raise(Wrekavoc::Lib::NotImplementedError) {
       @daemon_d.vnode_create(name3,properties)
     }
-    vnode3 = @daemon_d.daemon_resources.get_vnode(name3)
-    assert_nil(vnode3)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_get(name3)
+    }
+  end
+
+  def test_vnode_set_status
+    init_testvnode()
+
+    #No problems (start)
+    status = Wrekavoc::Resource::VNode::Status::RUNNING
+    @daemon_d.vnode_set_status(@vnodename,status)
+    assert_equal(@vnode.status,status)
+
+    #No problems (stop)
+    status = Wrekavoc::Resource::VNode::Status::STOPPED
+    @daemon_d.vnode_set_status(@vnodename,status)
+    assert_equal(@vnode.status,status)
+
+    #Not authorized status
+    status = Wrekavoc::Resource::VNode::Status::STOPING
+    assert_raise(Wrekavoc::Lib::InvalidParameterError) {
+      @daemon_d.vnode_set_status(@vnodename,status)
+    }
+    assert_equal(@vnode.status,Wrekavoc::Resource::VNode::Status::STOPPED)
+
+    #Non existing vnode
+    status = Wrekavoc::Resource::VNode::Status::STOPPED
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnode_set_status(random_string,status)
+    }
   end
 
   def test_vnode_start
@@ -181,7 +238,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
 
     #No problems
     @daemon_d.vnode_start(@vnodename)
-    assert_equal(@vnode.status,Wrekavoc::Resource::VNode::Status::STARTED)
+    assert_equal(@vnode.status,Wrekavoc::Resource::VNode::Status::RUNNING)
 
     #Start an undefined vnode
     assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
@@ -208,8 +265,7 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     name = 'if0'
 
     #No problems
-    @daemon_d.viface_create(@vnodename,name)
-    viface = @vnode.get_viface_by_name(name)
+    viface = @daemon_d.viface_create(@vnodename,name)
     assert_not_nil(viface)
     assert_equal(viface.name,name)
     assert_nil(viface.vnetwork)
@@ -218,14 +274,42 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
       @daemon_d.viface_create(@vnodename,name)
     }
+    assert_not_nil(@daemon_d.viface_get(@vnodename,name))
 
+    #Invalid vnode name
+    tmpname = random_string
     assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
-      @daemon_d.viface_create(random_string,name)
+      @daemon_d.viface_create(tmpname,name)
+    }
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_get(tmpname,name)
+    }
+  end
+
+  def test_viface_get
+    init_testvnode()
+    name = 'if0'
+
+    #No problems
+    viface = @daemon_d.viface_create(@vnodename,name)
+    assert_not_nil(viface)
+    vifaceget = @daemon_d.viface_get(@vnodename,name)
+    assert_not_nil(vifaceget)
+    assert_equal(viface,vifaceget)
+
+    #Invalid vnode name
+    tmpname = random_string
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_get(tmpname,name)
     }
 
-    viface = @vnode.get_viface_by_name(random_string)
-    assert_nil(viface)
+    #Invalid viface name
+    tmpname = random_string
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_get(@vnodename,tmpname)
+    }
   end
+
 
   def test_vnetwork_create
     name = 'vnetwork'
@@ -233,17 +317,18 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
 
     #No problems
     init_daemon
-    @daemon_d.vnetwork_create(name,address)
-    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_name(name)
-    assert_not_nil(vnetwork)
-    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_address(address)
+    vnetwork = @daemon_d.vnetwork_create(name,address)
     assert_not_nil(vnetwork)
     assert_equal(vnetwork.name,name)
     assert_equal(vnetwork.address.to_string,address)
 
     #Recreate with the same address
+    tmpname = 'newname'
     assert_raise(Wrekavoc::Lib::AlreadyExistingResourceError) {
-      @daemon_d.vnetwork_create('newname',address)
+      @daemon_d.vnetwork_create(tmpname,address)
+    }
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnetwork_get(tmpname)
     }
 
     #Recreate with the same name
@@ -252,12 +337,31 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     }
 
     #Create with a wrong address
+    tmpname = 'wrongaddr'
     address = 'abcdef'
     assert_raise(Wrekavoc::Lib::InvalidParameterError) {
-      @daemon_d.vnetwork_create(name,address)
+      @daemon_d.vnetwork_create(tmpname,address)
     }
-    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_address(address)
-    assert_nil(vnetwork)
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnetwork_get(tmpname)
+    }
+  end
+
+  def test_vnetwork_get
+    init_daemon
+    vnetworkname = 'vnetwork'
+
+    #No problems
+    vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
+    assert_not_nil(vnetwork)
+    vnetworkget = @daemon_d.vnetwork_get(vnetworkname)
+    assert_not_nil(vnetworkget)
+    assert_equal(vnetwork,vnetworkget)
+
+    #Non existing vnetwork
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.vnetwork_get(random_string)
+    }
   end
 
   def test_viface_attach
@@ -270,16 +374,11 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     vnode = init_testvnode(true,'1')
     vnode2 = init_testvnode(true,'2')
     vnode3 = init_testvnode(true,'3')
-    @daemon_d.viface_create(vnode.name,vifacename)
-    viface = vnode.get_viface_by_name(vifacename)
-    @daemon_d.viface_create(vnode2.name,vifacename)
-    viface2 = vnode2.get_viface_by_name(vifacename)
-    @daemon_d.viface_create(vnode3.name,vifacename)
-    viface3 = vnode3.get_viface_by_name(vifacename)
-    @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
-    vnetwork = @daemon_d.daemon_resources.get_vnetwork_by_name(vnetworkname)
-    @daemon_d.vnetwork_create(vnetworkname2,'10.144.16.0/24')
-    vnetwork2 = @daemon_d.daemon_resources.get_vnetwork_by_name(vnetworkname2)
+    viface = @daemon_d.viface_create(vnode.name,vifacename)
+    viface2 = @daemon_d.viface_create(vnode2.name,vifacename)
+    viface3 =@daemon_d.viface_create(vnode3.name,vifacename)
+    vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
+    vnetwork2 = @daemon_d.vnetwork_create(vnetworkname2,'10.144.16.0/24')
     
     assert_not_nil(vnode)
     assert_not_nil(vnode2)
