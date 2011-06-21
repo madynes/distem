@@ -1,0 +1,161 @@
+body {
+/*	font-size: 16px;*/
+  color:black;
+  font-family:Lucida Grande,Verdana,Arial,Helvetica,sans-serif;
+  font-size:90%;
+	width: auto;
+	margin: auto;
+	padding: 20px 300px 20px 40px;
+}
+h1, h2, h3, h4, h5 {
+  position: relative;
+}
+h1 {
+  border-bottom: 1px solid #eee;
+  color:#0E3062;
+  font-size:1.8em;
+  margin:0.8em 0 0.3em;
+}
+h2 {
+  font-size: 1.4em;
+  font-family: 'Bitstream Vera Sans Mono', Monaco, monospace, courier, 'courier new';
+}
+h3 {
+  font-family: "Courier New";
+}
+pre
+{
+/*  margin: 0 0 10px 0;*/
+/*  padding: 10px;*/
+  font-size: 12px;
+  line-height: 150%;
+  font-family: 'Bitstream Vera Sans Mono', Monaco, monospace, courier, 'courier new';
+  background: #F8F8FF;
+  color: #111;
+/*  border: 1px solid #ddd;*/
+}
+pre.hidden {
+  cursor: pointer;
+}
+code, tt {
+  overflow: auto;
+  font-family: 'Bitstream Vera Sans Mono', Monaco, monospace, courier, 'courier new';
+  padding: 0 2px;
+  background: #f1f1f1;
+  font-size: .9em;
+  border-bottom: 1px solid #ddd;
+}
+
+pre.hidden:after {
+  content: 'hidden';
+  display: block; text-align: center;
+  font-size: smaller;
+  color: #000; background: white;
+  border-top: solid 1px #ccc;
+  padding-top: 0.5em;
+}
+
+pre code
+{
+  background: transparent;
+}
+
+table.code {
+  width: 100%;
+}
+
+div.code pre {
+  margin: 0;
+}
+p {
+  margin-top: 0px;
+  margin-bottom: 0.5em;
+}
+li > p:first-child:first-line {
+  background-color: #ffffe0;
+  padding: 0px 8px;
+}
+span.replace {
+  color: orange;
+}
+a > span.replace {
+  color: inherit;
+}
+
+p.page-title {
+  color: #880000;
+  font-weight: bold;
+  font-size: 2em;
+}
+.docapi-section {
+  margin-left: 15px;
+}
+.docapi-subsection {
+  padding: 5px;
+  margin-bottom: 20px;
+}
+.docapi-subsection .docapi-title {
+  padding: 3px 10px;
+  font-size: 1.4em;
+  background: #336699;
+  color: #fff;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-family: "Courier New";
+}
+.docapi-subsection .docapi-subtitle {
+  font-size: 1.1em;
+  font-weight: bold;
+  font-family: 'Bitstream Vera Sans Mono', Monaco, monospace, courier, 'courier new';
+  margin:20px 2px 5px 0px;
+  border-left: 5px solid orange;
+  padding-left: 5px;
+}
+table {
+  font-size: 0.9em;
+}
+
+/*#toc {
+  float: right;
+  font-size: 10pt;
+  width: 200px;
+  padding: 10px 10px 10px 20px;
+  background: #efffb1;
+  border: solid 1px #ccd136;
+  margin: 0 0 10px 15px;
+}*/
+
+
+
+#toc {
+	position: fixed;
+	top: 20px;
+  background: none;
+	border: none;
+	right: 20px;
+	border-left: solid 5px #ddd;
+  width: 260px;
+/*  bottom: 20px;*/
+  height: 100%;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+#toc li {
+  padding: 5px;
+}
+#toc a {
+  background: #efffb1;
+}
+a.toc-top-link {
+  -moz-background-clip:border;
+  -moz-background-inline-policy:continuous;
+  -moz-background-origin:padding;
+  background:#EEEEEE none repeat scroll 0 0;
+  font-size:8pt;
+  left:-40px;
+  padding:4px;
+  position:absolute;
+  text-align:center;
+  top:5px;
+  width:30px;
+}

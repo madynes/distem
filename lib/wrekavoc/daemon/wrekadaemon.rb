@@ -286,37 +286,6 @@ module Wrekavoc
       end
       end
 
-=begin
-      def vnetwork_add_vnode(vnetworkname,vnodename,vifacename)
-        ret = {}
-
-        if daemon?
-          # >>> TODO: Check if vnetwork exists
-          # >>> TODO: Check if VNode exists
-          # >>> TODO: Check if viface exists
-          # >>> TODO: Validate ip
-          vnode = get_vnode(vnodename)
-          vnetwork = @daemon_resources.get_vnetwork_by_name(vnetworkname)
-          viface = vnode.get_viface_by_name(vifacename)
-
-          raise unless vnetwork
-          raise unless vnode
-          raise unless viface
-
-          vnetwork.add_vnode(vnode,viface)
-
-          cl = NetAPI::Client.new(vnode.host.address)
-          ret['vnode'] = vnode.to_hash
-          ret['vnetwork'] = vnetwork.to_hash
-          ret['viface'] = JSON.parse( \
-            cl.viface_attach(vnode.name,viface.name,viface.address.to_string) \
-          )
-        end
-
-        return ret
-      end
-=end
-
       def viface_attach(vnodename,vifacename,properties)
       begin
         ret = {}

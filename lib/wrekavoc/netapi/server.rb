@@ -139,15 +139,15 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/start)
+      # :method: put(/vnodes/:vnodename)
       #
       # :call-seq:
-      #   POST /vnodes/start
+      #   PUT /vnodes/:vnodename
       # 
-      # Start the -previously created- virtual node
+      # Change the status of the -previously created- virtual node.
       #
       # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node to be started
+      # <tt>status</tt>:: the status to set: "Run" or "Stopped"
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -184,32 +184,6 @@ module Wrekavoc
         return [@status,@headers,JSON.pretty_generate(@body)]
       end
 
-      ##
-      # :method: post(/vnodes/stop)
-      #
-      # :call-seq:
-      #   POST /vnodes/stop
-      # 
-      # Stop the virtual node
-      #
-      # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node to be stoped
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       post VNODE_STOP do
         begin
           ret = @daemon.vnode_stop(params['vnode'])
@@ -231,15 +205,14 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/vifaces)
+      # :method: post(/vnodes/:vnodename/vifaces)
       #
       # :call-seq:
-      #   POST /vnodes/vifaces
+      #   POST /vnodes/:vnodename/vifaces
       # 
       # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
       #
       # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node to create the virtual interface on
       # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -290,15 +263,14 @@ module Wrekavoc
       end
       
       ##
-      # :method: get(/vnodes/:name)
+      # :method: get(/vnodes/:vnodename)
       #
       # :call-seq:
-      #   GET /vnodes
+      #   GET /vnodes/:vnodename
       # 
       # Get the description of a virtual node
       #
       # == Query parameters
-      # <tt>name</tt>:: the name of the virtual node
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -351,15 +323,15 @@ module Wrekavoc
       end
       
       ##
-      # :method: post(/vnodes/execute)
+      # :method: post(/vnodes/:vnodename/commands)
       #
       # :call-seq:
-      #   POST /vnodes/execute
+      #   POST /vnodes/:vnodename/commands
       # 
       # Execute and get the result of a command on a virtual node
       #
       # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node on which the command have to be executed
+      # <tt>command</tt>:: the command to be executed
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -432,17 +404,15 @@ module Wrekavoc
       end
 
       ##
-      # :method: post(/vnodes/vifaces/attach)
+      # :method: put(/vnodes/:vnodename/vifaces/:vifacename/attach)
       #
       # :call-seq:
-      #   POST /vnodes/vifaces/attach
+      #   Put /vnodes/:vnodename/vifaces/:vifacename/attach
       # 
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       #
       # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node to connect
-      # <tt>viface</tt>:: the virtual interface to use for the connection
       # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork)
       #
       # == Content-Types
@@ -486,17 +456,16 @@ module Wrekavoc
 
 
       ##
-      # :method: post(/vnetworks/vroutes)
+      # :method: post(/vnetworks/:networksrc/vroutes)
       #
       # :call-seq:
-      #   POST /vnetworks/vroutes
+      #   POST /vnetworks/:networksrc/vroutes
       # 
       # Create a virtual route ("go from Net1 to Net2 via NodeGW") on a virtual node
       # (this method automagically set NodeGW as a gateway if it's not already the case
       # and find the right virtual interface to set the virtual route on)
       #
       # == Query parameters
-      # <tt>networksrc</tt>:: the name of the source network
       # <tt>networkdst</tt>:: the name of the destination network
       # <tt>gatewaynode</tt>:: the name of the virtual node to use as a gateway
       # <tt>vnode</tt>:: the virtual node to set the virtual route on (optional)
@@ -593,7 +562,7 @@ module Wrekavoc
 
       protected
 
-      def get_http_err_desc(except)
+      def get_http_err_desc(except) #:nodoc:
         except.class.name.split('::').last + " " + except.message
       end
     end
