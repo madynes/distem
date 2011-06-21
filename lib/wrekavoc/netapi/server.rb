@@ -48,10 +48,15 @@ module Wrekavoc
       # <tt>target</tt>:: the name/address of the physical machine
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -91,10 +96,15 @@ module Wrekavoc
       # <tt>image</tt>:: the -local- path to the file system image to be used on that node (on the physical machine)
       # 
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -140,10 +150,15 @@ module Wrekavoc
       # <tt>vnode</tt>:: the name of the virtual node to be started
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -181,10 +196,15 @@ module Wrekavoc
       # <tt>vnode</tt>:: the name of the virtual node to be stoped
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -222,10 +242,15 @@ module Wrekavoc
       # <tt>vnode</tt>:: the name of the virtual node to create the virtual interface on
       # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -279,7 +304,12 @@ module Wrekavoc
       # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -304,7 +334,12 @@ module Wrekavoc
       # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -327,10 +362,15 @@ module Wrekavoc
       # <tt>vnode</tt>:: the name of the virtual node on which the command have to be executed
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -354,10 +394,15 @@ module Wrekavoc
       # <tt>address</tt>:: the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -387,36 +432,33 @@ module Wrekavoc
       end
 
       ##
-      # :method: post(/vnetworks/vnodes/add)
+      # :method: post(/vnodes/vifaces/attach)
       #
       # :call-seq:
-      #   POST /vnetworks/vnodes/add
+      #   POST /vnodes/vifaces/attach
       # 
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       #
       # == Query parameters
-      # <tt>vnetwork</tt>:: the name of the virtual network to connect the virtual node on
       # <tt>vnode</tt>:: the name of the virtual node to connect
       # <tt>viface</tt>:: the virtual interface to use for the connection
+      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork)
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
       
-      #
-      #post VNETWORK_ADD_VNODE do
-      #  ret = @daemon.vnetwork_add_vnode(params['vnetwork'],params['vnode'], \
-      #    params['viface'] \
-      #  )
-      #  return JSON.pretty_generate(ret)
-      #end
-
       post VIFACE_ATTACH do
         begin
           ret = @daemon.viface_attach(params['vnode'],params['viface'],
@@ -460,10 +502,15 @@ module Wrekavoc
       # <tt>vnode</tt>:: the virtual node to set the virtual route on (optional)
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -489,10 +536,15 @@ module Wrekavoc
       # == Query parameters
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # ...
@@ -517,10 +569,15 @@ module Wrekavoc
       # <tt>properties</tt>:: the properties of the limitation in JSON format
       #
       # == Content-Types
-      # <tt>application/??</tt>:: ??
+      # <tt>application/json</tt>:: JSON
       #
       # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
       # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
       # properties sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
