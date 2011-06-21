@@ -45,17 +45,17 @@ module Wrekavoc
             unless @address.include?(address)
 
           raise Lib::UnavailableResourceError, address.to_s \
-            if @@alreadyusedaddr.include?(address)
+            if @@alreadyusedaddr.include?(address.to_s)
 
           addr = address.clone
         else
-          inc_curaddress() if @@alreadyusedaddr.include?(@curaddress)
+          inc_curaddress() if @@alreadyusedaddr.include?(@curaddress.to_s)
           addr = @curaddress.clone
           inc_curaddress()
         end
 
         @vnodes[vnode] = viface
-        @@alreadyusedaddr << addr
+        @@alreadyusedaddr << addr.to_s
         viface.attach(self,addr)
       end
 
@@ -125,7 +125,7 @@ module Wrekavoc
           tmpaddr = IPAddress::IPv4.parse_u32(tmp,@curaddress.prefix)
           raise Lib::UnavailableRessourceError, "IP/#{@name}" \
             if tmpaddr == @address.last
-        end while @@alreadyusedaddr.include?(tmpaddr)
+        end while @@alreadyusedaddr.include?(tmpaddr.to_s)
         @curaddress = tmpaddr
       end
     end
