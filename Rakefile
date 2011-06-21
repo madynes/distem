@@ -43,6 +43,7 @@ task :doc_netapi do
   require 'docapi'
   require 'rdoc/generator/docapi'
   Docapi::CLI.new.generate(["lib/wrekavoc/netapi/server.rb"], "doc/netapi")
+  system('scripts/gendoc-netapi.sh')
 end
 
 desc "Builds a Debian package"
