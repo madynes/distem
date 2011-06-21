@@ -7,6 +7,7 @@ module Wrekavoc
     class VNetwork
       attr_reader :address, :name, :vnodes, :vroutes
       @@id = 0
+      @@alreadyusedaddr = Array.new
 
       #address = ip/mask or ip/cidr
       def initialize(address,name="")
@@ -15,7 +16,11 @@ module Wrekavoc
         if address.is_a?(IPAddress)
           @address = address.network
         else
-          @address = IPAddress::IPv4.new(address).network
+          begin
+            @address = IPAddress.parse(address).network
+          rescue ArgumentError
+            raise Lib::InvalidParameterError, address
+          end
         end
         @vnodes = {}
         @vroutes = {}
@@ -24,12 +29,40 @@ module Wrekavoc
         @@id += 1
       end 
 
-      def add_vnode(vnode,viface)
-        #To clone if modifications in inc_curaddress
+      def add_vnode(vnode,viface,address=nil)
         #Atm one VNode can only be attached one time to a VNetwork
+        raise Lib::AlreadyExistingResourceError, vnode.name if @vnodes[vnode]
+
+        addr = nil
+        if address
+          begin
+            address = IPAddress.parse(address) unless address.is_a?(IPAddress)
+            address.prefix = @address.prefix.to_i
+          rescue ArgumentError
+            raise Lib::InvalidParameterError, address
+          end
+          raise Lib::InvalidParameterError, address.to_s \
+            unless @address.include?(address)
+
+          raise Lib::UnavailableResourceError, address.to_s \
+            if @@alreadyusedaddr.include?(address)
+
+          addr = address.clone
+        else
+          inc_curaddress() if @@alreadyusedaddr.include?(@curaddress)
+          addr = @curaddress.clone
+          inc_curaddress()
+        end
+
         @vnodes[vnode] = viface
-        viface.attach(self,@curaddress)
-        inc_curaddress()
+        @@alreadyusedaddr << addr
+        viface.attach(self,addr)
+      end
+
+      def remove_vnode(vnode)
+        #Atm one VNode can only be attached one time to a VNetwork
+        @vnodes[vnode].detach(self) if @vnodes[vnode]
+        @vnodes[vnode] = nil
       end
 
       def add_vroute(vroute)
@@ -87,8 +120,13 @@ module Wrekavoc
       protected
       def inc_curaddress
         tmp = @curaddress.u32
-        tmp += 1
-        @curaddress = IPAddress::IPv4.parse_u32(tmp,@curaddress.prefix)
+        begin
+          tmp += 1
+          tmpaddr = IPAddress::IPv4.parse_u32(tmp,@curaddress.prefix)
+          raise Lib::UnavailableRessourceError, "IP/#{@name}" \
+            if tmpaddr == @address.last
+        end while @@alreadyusedaddr.include?(tmpaddr)
+        @curaddress = tmpaddr
       end
     end
 

@@ -56,32 +56,32 @@ module Wrekavoc
 
       def vnode_configure(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].configure()
       end
 
       def vnode_start(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].start()
       end
 
       def vnode_stop(vnodename)
         raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.vnodes.has_key?(vnodename)
+           unless @vplatform.get_vnode(vnodename)
         @containers[vnodename].stop()
       end
 
-      def vnode_destroy(vnode)
+      def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        @vplatform.destroy_vnode(vnode)
+        @vplatform.remove_vnode(vnode)
         @containers[vnode.name].destroy if @containers[vnode.name]
         @containers[vnode.name] = nil
       end
 
       def destroy(resource)
         if resource.is_a?(Resource::VNode)
-          vnode_destroy(resource)
+          vnode_remove(resource)
         end
       end
 

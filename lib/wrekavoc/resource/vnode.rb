@@ -87,7 +87,13 @@ module Wrekavoc
       #   vnode.add_viface(viface)
       def add_viface(viface)
         raise unless viface.is_a?(VIface)
+        raise Lib::AlreadyExistingResourceError, viface.name \
+          if @vifaces.include?(viface)
         @vifaces << viface
+      end
+
+      def remove_viface(viface)
+        @vifaces.delete(viface)
       end
 
       def gateway?
@@ -129,6 +135,10 @@ module Wrekavoc
           end
         end
         return ret
+      end
+
+      def ==(vnode)
+        vnode.is_a?(VNode) and (@name == vnode.name)
       end
 
       def to_hash()
