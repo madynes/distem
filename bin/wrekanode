@@ -4,6 +4,7 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'wrekavoc'
 require 'optparse'
 require 'pathname'
+require 'pp'
 
 USAGE="Usage: #{$0} <vnode_name> [options]"
 
@@ -19,7 +20,7 @@ def errorcheck(errid,optvar,msg="")
       else
 	errmsg = msg
     end
-    puts errmsg
+    pp errmsg
     exit
   end
 end
@@ -40,7 +41,7 @@ options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
-    puts opts
+    pp opts
     exit
   end
   opts.on( '-p', '--port NUMBER', \
@@ -81,7 +82,7 @@ end
 optparse.parse!
 
 unless ARGV.length == 1
-  puts USAGE
+  pp USAGE
   exit
 end
 
@@ -91,15 +92,15 @@ if (options['f_shell'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pnode = cl.vnode_info_pnode(ARGV[0])
-  system("ssh -t #{options['ssh_user']}@#{pnode} 'lxc-console -n #{ARGV[0]}'")
+  vnode = cl.vnode_info(ARGV[0])
+  system("ssh -t #{options['ssh_user']}@#{vnode['host']} 'lxc-console -n #{ARGV[0]}'")
 end
 
 if (options['f_exec'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  puts cl.vnode_execute(ARGV[0],options['exec_cmd'])
+  puts cl.vnode_execute(ARGV[0],options['exec_cmd'])['result']
 end
 
 if options['f_file_send'] or options['f_file_get']
@@ -107,7 +108,8 @@ if options['f_file_send'] or options['f_file_get']
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   rootfs = cl.vnode_info_rootfs(ARGV[0])
-  pnode = cl.vnode_info_pnode(ARGV[0])
+  vnode = cl.vnode_info(ARGV[0])
+  pnode = vnode['host']
   if (options['f_file_send'])
     vfile = options['file_dest']
   else

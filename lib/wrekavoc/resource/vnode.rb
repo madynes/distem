@@ -18,6 +18,9 @@ module Wrekavoc
         BUSY="BUSY"
       end
 
+      MODE_GATEWAY = "GATEWAY"
+      MODE_NORMAL = "NORMAL"
+
       # The unique id of this Node
       attr_reader :id
       # The URI to the -bootstrapped and compressed- image file

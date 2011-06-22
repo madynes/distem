@@ -32,7 +32,13 @@ module Wrekavoc
         @status = HTTP_STATUS_OK
         @headers = {}
         @body = {}
+        @result = []
         content_type 'application/json', :charset => 'utf-8'
+      end
+
+      not_found do
+        #response.headers[HTTP_HEADER_ERR] = \
+          "ServerResourceError #{request.request_method} #{request.url}"
       end
 
       ##
@@ -76,10 +82,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -127,10 +133,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -162,8 +168,8 @@ module Wrekavoc
       #
       post '/vnodes' do
         begin
-          ret = @daemon.vnode_create(params['name'], \
-            JSON.parse(params['properties']) \
+          ret = @daemon.vnode_create(params['name'], 
+            JSON.parse(params['properties']) 
           )
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
@@ -182,10 +188,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
       
       ##
@@ -233,10 +239,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -261,9 +267,8 @@ module Wrekavoc
       
       #
       get '/vnodes' do
-        ret = @daemon.vnode_list_get()
-        @body = JSON.pretty_generate(ret)
-        return [@status,@headers,@body]
+        @body = @daemon.vnode_list_get()
+        return result!
       end
       
       ##
@@ -312,10 +317,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -344,9 +349,9 @@ module Wrekavoc
       # ...
       
       #
-      post '/vnodes/*/vifaces' do
+      post '/vnodes/:vnode/vifaces' do
         begin
-          ret = @daemon.viface_create(params[:splat][0],params['name'])
+          ret = @daemon.viface_create(params['vnode'],params['name'])
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -364,20 +369,67 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
-      post VNODE_GATEWAY do
-        ret = @daemon.vnode_gateway(params['vnode'])
-        return JSON.pretty_generate(ret)
+      ##
+      # :method: put(/vnodes/:vnodename/mode)
+      #
+      # :call-seq:
+      #   PUT /vnodes/:vnodename/mode
+      # 
+      # Change the mode of a virtual node (normal or gateway)
+      #
+      # == Query parameters
+      # <tt>mode</tt>:: "Normal" or "Gateway"
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      put '/vnodes/:vnode/mode' do
+        begin
+          ret = @daemon.vnode_set_mode(params['vnode'],params['mode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret.to_hash
+        end
+
+        return result!
       end
       
-      post VNODE_INFO_ROOTFS do
+      post '/vnodes/infos/rootfs' do
         ret = @daemon.vnode_info_rootfs(params['vnode'])
-        return JSON.pretty_generate(ret)
+        return ret
       end
       
       ##
@@ -406,8 +458,8 @@ module Wrekavoc
       # ...
       
       #
-      post '/vnodes/*/commands' do
-        ret = @daemon.vnode_execute(params[:splat][0],params['command'])
+      post '/vnodes/:vnode/commands' do
+        ret = @daemon.vnode_execute(params['vnode'],params['command'])
         return JSON.pretty_generate(ret)
       end
       
@@ -455,10 +507,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -506,10 +558,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
       ##
@@ -538,9 +590,9 @@ module Wrekavoc
       # == Usage
       # ...
       
-      put '/vnodes/*/vifaces/*' do
+      put '/vnodes/:vnode/vifaces/:viface' do |vnode,viface|
         begin
-          ret = @daemon.viface_attach(params[:splat][0],params[:splat][1],
+          ret = @daemon.viface_attach(params['vnode'],params['viface'],
             JSON.parse(params['properties'])
           )
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -557,10 +609,10 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = JSON.pretty_generate(ret.to_hash)
+          @body = ret.to_hash
         end
 
-        return [@status,@headers,@body]
+        return result!
       end
 
 
@@ -594,7 +646,7 @@ module Wrekavoc
       # ...
       
       #
-      post VROUTE_CREATE do
+      post '/vnetworks/vroutes' do
         ret = @daemon.vroute_create(params['networksrc'],params['networkdst'], \
           params['gatewaynode'], params['vnode'] \
         )
@@ -628,7 +680,7 @@ module Wrekavoc
       # ...
       
       #
-      post VROUTE_COMPLETE do
+      post '/vnetworks/vroutes/complete' do
         ret = @daemon.vroute_complete()
         return JSON.pretty_generate(ret)
       end
@@ -662,14 +714,53 @@ module Wrekavoc
       #
       
       #
-      post LIMIT_NET_CREATE do
-        ret = @daemon.limit_net_create(params['vnode'],params['viface'], \
-          JSON.parse(params['properties']) \
-        )
-        return JSON.pretty_generate(ret)
+      post '/limitations/network' do
+        begin
+          ret = @daemon.limit_net_create(params['vnode'],params['viface'], \
+            JSON.parse(params['properties']) \
+          )
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return result!
       end
 
       protected
+
+      def result! #:nodoc:
+          if @body.is_a?(Array) or @body.is_a?(Hash)
+            tmpbody = @body
+            begin
+              @body = JSON.pretty_generate(@body)
+            rescue JSON::GeneratorError
+              @body = tmpbody
+            end
+          elsif @body.is_a?(String)
+          else
+            raise Lib::InvalidParameterError, "INTERNAL #{@body.class.name}"
+          end
+
+        @result = [@status,@headers,@body]
+
+        return @result
+      end
 
       def get_http_err_desc(except) #:nodoc:
         except.class.name.split('::').last + " " + except.message

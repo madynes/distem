@@ -19,7 +19,7 @@ module Wrekavoc
       def pnode_init(target = NetAPI::TARGET_SELF)
         begin
           ret = {}
-          req = PNODE_INIT
+          req = "/pnodes"
           @resource[req].post(
             {:target => target}
           ) { |response, request, result|
@@ -141,18 +141,32 @@ module Wrekavoc
       end
 
       def vnode_gateway(vnode)
-        @resource[VNODE_GATEWAY].post :vnode => vnode
+        begin
+          ret = {}
+          req = "/vnodes/#{vnode}/mode"
+          @resource[req].put(
+            { :mode => Resource::VNode::MODE_GATEWAY }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_info_rootfs(vnode)
-        @resource[VNODE_INFO_ROOTFS].post :vnode => vnode
+        @resource['/vnodes/infos/rootfs'].post :vnode => vnode
       end
 
       def vnode_info_list()
         begin
           ret = {}
           req = "/vnodes"
-          @resource[req].get { |response, request, result|
+          @resource[req].get({}) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
           return ret
@@ -218,23 +232,75 @@ module Wrekavoc
       end
 
       def vroute_create(srcnet,destnet,gateway,vnode="")
-        @resource[VROUTE_CREATE].post :networksrc => srcnet, \
-          :networkdst => destnet, :gatewaynode => gateway, :vnode => vnode
+        begin
+          ret = {}
+          req = "/vnetworks/vroutes"
+          @resource[req].post(
+            { :networksrc => srcnet, :networkdst => destnet,
+               :gatewaynode => gateway, :vnode => vnode }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vroute_complete()
-        @resource[VROUTE_COMPLETE].post ""
+        begin
+          ret = {}
+          req = "/vnetworks/vroutes/complete"
+          @resource[req].post({}) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def vnode_execute(vnode, command)
-        # >>> TODO: validate ips
-        @resource[VNODE_EXECUTE].post :vnode => vnode, :command => command
+        begin
+          ret = {}
+          req = "/vnodes/#{vnode}/commands"
+          @resource[req].post(
+            { :command => command }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       def limit_net_create(vnode,viface,properties)
         properties = properties.to_json if properties.is_a?(Hash)
-        @resource[LIMIT_NET_CREATE].post :vnode => vnode, :viface => viface, \
-          :properties => properties
+        begin
+          ret = {}
+          req = "/limitations/network"
+          @resource[req].post(
+            { :vnode => vnode, :viface => viface, :properties => properties }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       protected
@@ -243,10 +309,16 @@ module Wrekavoc
         case result.code.to_i
           when HTTP_STATUS_OK
           else
+            begin
+              body = JSON.parse(response)
+            rescue JSON::ParserError
+              body = response
+            end
+
             raise Lib::ClientError.new(
               result.code.to_i,
               response.headers[:x_application_error_code],
-              response
+              body
             )
         end
         return response

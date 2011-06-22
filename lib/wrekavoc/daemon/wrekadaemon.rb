@@ -32,15 +32,16 @@ module Wrekavoc
           pnode = Resource::PNode.new(target) unless pnode
 
           @daemon_resources.add_pnode(pnode)
-          @node_config.pnode = pnode
 
-          unless target?(target)
+          if target?(target)
+            @node_config.pnode = pnode
+          else
             Admin.pnode_run_server(pnode)
             sleep(1)
-
             cl = NetAPI::Client.new(target)
-            pnode.status = Resource::PNode::STATUS_RUN
+            cl.pnode_init(target)
           end
+          pnode.status = Resource::PNode::STATUS_RUN
         end
 
         if target?(target)
@@ -94,7 +95,7 @@ module Wrekavoc
 
         #Checking args
         if pnode
-          raise Lib::UnintializedResourceError, pnode.address.to_s \
+          raise Lib::UninitializedResourceError, pnode.address.to_s + @node_config.pnode.address.to_s \
             unless pnode.status == Resource::PNode::STATUS_RUN
         else
           hostname = properties['target']
@@ -243,26 +244,27 @@ module Wrekavoc
         return viface
       end
 
-      def vnode_gateway(name)
+      def vnode_set_mode(name,mode)
+        # >>> TODO: Ability to unset gateway mode
         vnode = vnode_get(name)
-
-        raise unless vnode
-
-        if daemon?
-          unless target?(vnode)
-            cl = Client.new(vnode.host.address)
-            ret = JSON.parse(cl.vnode_gateway(vnode.name))
+        if mode.upcase == Resource::VNode::MODE_GATEWAY
+          if daemon?
+            unless target?(vnode)
+              cl = Client.new(vnode.host.address)
+              cl.vnode_gateway(vnode.name)
+            end
           end
+
+          if target?(vnode)
+            vnode.gateway = true
+            @node_config.vnode_configure(vnode.name)
+          end
+        elsif mode.upcase == Resource::VNode::MODE_NORMAL
+        else
+          raise Lib::InvalidParameterError, mode
         end
 
-        if target?(vnode)
-          vnode.gateway = true
-          @node_config.vnode_configure(vnode.name)
-
-          ret = vnode.to_hash
-        end
-
-        return ret
+        return vnode
       end
 
       def vnode_info_rootfs(name)
@@ -294,7 +296,7 @@ module Wrekavoc
           raise unless vnode
 
           ret['command'] = command
-          ret['result'] = Daemon::Admin.vnode_run(vnode,params['command'])
+          ret['result'] = Daemon::Admin.vnode_run(vnode,command)
         end
 
         return ret
@@ -357,7 +359,7 @@ module Wrekavoc
             vnetwork = @daemon_resources.get_vnetwork_by_name(prop)
           end
 
-          raise Lib::ResourceNotFoundError, prop unless vnetwork
+          raise Lib::ResourceNotFoundError, "network:#{prop}" unless vnetwork
 
           if properties['address']
             vnetwork.add_vnode(vnode,viface,address)
@@ -489,9 +491,8 @@ module Wrekavoc
           @daemon_vnetlimit.add_limitations(limits)
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = JSON.parse( \
-              cl.limit_net_create(vnode.name,viface.name,properties.to_json) \
-            )
+            ret = \
+              cl.limit_net_create(vnode.name,viface.name,properties.to_json) 
           end
         end
 

@@ -43,7 +43,7 @@ module Wrekavoc
       end
 
       def to_s
-        return "Command '#{@cmd}' failed on #{@hostname} with result '#{@ret}'"
+        return "cmd:'#{@cmd}' host:'#{@hostname}' result:'#{@ret}'"
       end
     end
 
