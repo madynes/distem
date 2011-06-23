@@ -54,9 +54,12 @@ module LXCWrapper
                 frclocal.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
                 froute.puts("\tnetmask #{viface.address.netmask.to_s}")
                 froute.puts("\tnetwork #{viface.vnetwork.address.to_s}")
+
+                #compute all routes
                 viface.vnetwork.vroutes.each_value do |vroute|
                   frclocal.puts("ip route add #{vroute.dstnet.address.to_string} via #{vroute.gw.address.to_s} dev #{viface.name}") unless vroute.gw.address.to_s == viface.address.to_s
                 end
+
               end
               frclocal.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
             end

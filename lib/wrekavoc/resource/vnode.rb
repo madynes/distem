@@ -135,6 +135,10 @@ module Wrekavoc
         @vifaces.each { |viface| ret['ifaces']["#{viface.name}"] = viface.to_hash }
         return ret
       end
+
+      def to_s
+        return @name
+      end
     end
 
   end

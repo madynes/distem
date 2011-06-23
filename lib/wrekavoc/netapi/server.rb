@@ -3,6 +3,7 @@ require 'sinatra/base'
 require 'socket'
 require 'ipaddress'
 require 'json'
+require 'cgi'
 
 module Wrekavoc
   module NetAPI
@@ -17,6 +18,7 @@ module Wrekavoc
 
       set :environment, :developpement
       set :run, true
+      set :verbose, true
 
       def initialize() #:nodoc:
         super
@@ -617,19 +619,19 @@ module Wrekavoc
 
 
       ##
-      # :method: post(/vnetworks/:networksrc/vroutes)
+      # :method: post(/vnetworks/:networkname/vroutes)
       #
       # :call-seq:
-      #   POST /vnetworks/:networksrc/vroutes
+      #   POST /vnetworks/:networkname/vroutes
       # 
-      # Create a virtual route ("go from Net1 to Net2 via NodeGW") on a virtual node
-      # (this method automagically set NodeGW as a gateway if it's not already the case
-      # and find the right virtual interface to set the virtual route on)
+      # Create a virtual route ("go from <networkname> to <destnetwork> via <gatewaynode>").
+      # The virtual route is applied to all the vnodes of <networkname>.
+      # This method automagically set <gatewaynode> in gateway mode (if it's not already the case) and find the right virtual interface to set the virtual route on
       #
       # == Query parameters
-      # <tt>networkdst</tt>:: the name of the destination network
+      # <tt>destnetwork</tt>:: the name of the destination network
       # <tt>gatewaynode</tt>:: the name of the virtual node to use as a gateway
-      # <tt>vnode</tt>:: the virtual node to set the virtual route on (optional)
+      # Deprecated: <tt>vnode</tt>:: the virtual node to set the virtual route on (optional)
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -646,11 +648,31 @@ module Wrekavoc
       # ...
       
       #
-      post '/vnetworks/vroutes' do
-        ret = @daemon.vroute_create(params['networksrc'],params['networkdst'], \
-          params['gatewaynode'], params['vnode'] \
-        )
-        return JSON.pretty_generate(ret)
+      post '/vnetworks/:vnetwork/vroutes' do
+        begin
+          ret = @daemon.vroute_create(
+            params['vnetwork'],
+            params['destnetwork'],
+            params['gatewaynode'], params['vnode'] 
+          )
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret.to_hash
+        end
+
+        return result!
       end
       
       ##
@@ -681,8 +703,26 @@ module Wrekavoc
       
       #
       post '/vnetworks/vroutes/complete' do
-        ret = @daemon.vroute_complete()
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vroute_complete()
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret.to_hash
+        end
+
+        return result!
       end
       
       ##
@@ -763,7 +803,8 @@ module Wrekavoc
       end
 
       def get_http_err_desc(except) #:nodoc:
-        except.class.name.split('::').last + " " + except.message
+        except.class.name.split('::').last + " " + except.message.to_s \
+          + (settings.verbose ? except.backtrace.inspect : " ")
       end
     end
 

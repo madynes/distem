@@ -1,6 +1,7 @@
 require 'wrekavoc'
 require 'rest_client'
 require 'json'
+require 'cgi'
 require 'pp'
 
 module Wrekavoc
@@ -234,10 +235,10 @@ module Wrekavoc
       def vroute_create(srcnet,destnet,gateway,vnode="")
         begin
           ret = {}
-          req = "/vnetworks/vroutes"
+          req = "/vnetworks/#{srcnet}/vroutes"
           @resource[req].post(
-            { :networksrc => srcnet, :networkdst => destnet,
-               :gatewaynode => gateway, :vnode => vnode }
+            { :destnetwork => destnet,
+              :gatewaynode => gateway, :vnode => vnode }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }

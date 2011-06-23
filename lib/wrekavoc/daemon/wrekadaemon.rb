@@ -304,13 +304,13 @@ module Wrekavoc
 
       def vnetwork_create(name,address)
       begin
-        raise Lib::NotImplementedError unless daemon?
-
         vnetwork = Resource::VNetwork.new(address,name)
-        @daemon_resources.add_vnetwork(vnetwork)
-
-        #Add a virtual interface connected on the network
-        Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
+        if daemon?
+          @daemon_resources.add_vnetwork(vnetwork)
+          #Add a virtual interface connected on the network
+          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
+        end
+        @node_config.vnetwork_add(vnetwork)
 
         return vnetwork
 
@@ -372,7 +372,8 @@ module Wrekavoc
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
             ret = cl.viface_attach(vnode.name,viface.name,
-                { 'address' => properties['address'] }
+                { 'vnetwork' => vnetwork.name,
+                  'address' => properties['address'] }
             )
           end
         end
@@ -385,6 +386,7 @@ module Wrekavoc
             raise Lib::InvalidParameterError, properties['address']
           end
           vnetwork = @node_config.vplatform.get_vnetwork_by_address(address)
+          vnetwork = @node_config.vplatform.get_vnetwork_by_name(properties['vnetwork']) unless vnetwork
 
           #Networks are not systematically created on every pnode
           unless vnetwork
@@ -393,10 +395,13 @@ module Wrekavoc
                 address.network.to_string
               )
               raise Lib::ResourceNotFoundError, address.to_string unless vnetwork
+              @node_config.vnetwork_add(vnetwork)
             else
-              vnetwork = Resource::VNetwork.new(address.network)
+              raise MissingParameterError, 'vnetwork' unless properties['vnetwork']
+              vnetwork = vnetwork_create(properties['vnetwork'],
+                address.network.to_string
+              )
             end
-            @node_config.vnetwork_add(vnetwork) 
           end
 
           viface.attach(vnetwork,address) unless daemon?
@@ -416,7 +421,8 @@ module Wrekavoc
       end
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)
-        ret = {}
+      begin
+        vnode = nil
         vnode = vnode_get(vnodename) if vnodename
         if daemon? and !target?(vnode)
           gw = @daemon_resources.get_vnode(nodegw)
@@ -424,18 +430,25 @@ module Wrekavoc
           destnet = @daemon_resources.get_vnetwork_by_name(networkdst)
           gwaddr = gw.get_viface_by_network(srcnet).address
         else
-          gw = IPAddress::IPv4.new(nodegw)
+          begin
+            gw = IPAddress.parse(nodegw)
+          rescue ArgumentError
+            raise InvalidParameterError, nodegw
+          end
           gwaddr = gw
-          srcnet = @node_config.vplatform.get_vnetwork_by_address(networksrc)
+          srcnet = @node_config.vplatform.get_vnetwork_by_name(networksrc)
           destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst)
           destnet = Resource::VNetwork.new(networkdst) unless destnet
         end
 
-        raise unless srcnet
-        raise unless destnet
+        raise Lib::ResourceNotFoundError, networksrc unless srcnet
+        raise Lib::ResourceNotFoundError, networkdst unless destnet
 
-        vroute = Resource::VRoute.new(srcnet,destnet,gwaddr)
-        srcnet.add_vroute(vroute)
+        vroute = srcnet.get_vroute(destnet)
+        unless vroute
+          vroute = Resource::VRoute.new(srcnet,destnet,gwaddr)
+          srcnet.add_vroute(vroute)
+        end
 
         if daemon? and !target?(vnode)
           cl = NetAPI::Client.new(gw.host.address)
@@ -443,18 +456,24 @@ module Wrekavoc
           
           srcnet.vnodes.each_key do |vnode|
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vroute_create(srcnet.address.to_string, \
+            cl.vroute_create(srcnet.name, 
               destnet.address.to_string,gwaddr.to_s, vnode.name)
           end
-          @daemon_resources.add_vroute(vroute)
-          ret = vroute.to_hash
+          #@daemon_resources.add_vroute(vroute)
         end
 
-        if target?(vnode)
+        if vnode and target?(vnode)
+          #@node_config.vroute_add(vroute)
           @node_config.vnode_configure(vnode.name)
         end
 
-        return ret
+        return vroute
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        destroy(vroute) if srcnet
+        raise
+      end
       end
 
       def vroute_complete()
@@ -462,13 +481,12 @@ module Wrekavoc
 
         if daemon?
           i = 0
-          ret = {}
           @daemon_resources.vnetworks.each_value do |srcnet|
             @daemon_resources.vnetworks.each_value do |destnet|
               next if srcnet == destnet
               gw = srcnet.get_vroute(destnet)
               if gw
-                ret[i] = vroute_create(srcnet.name, destnet.name,gw.name)
+                ret[i] = vroute_create(srcnet.name,destnet.name,gw.name)
                 i += 1
               end
             end

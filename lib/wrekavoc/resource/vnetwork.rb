@@ -10,11 +10,11 @@ module Wrekavoc
       @@alreadyusedaddr = Array.new
 
       #address = ip/mask or ip/cidr
-      def initialize(address,name="")
-        name = "vnetwork#{@@id}" if name.empty?
+      def initialize(address,name=nil)
+        name = "vnetwork#{@@id}" unless name
         @name = name
         if address.is_a?(IPAddress)
-          @address = address.network
+          @address = address.network.clone
         else
           begin
             @address = IPAddress.parse(address).network
@@ -66,9 +66,20 @@ module Wrekavoc
       end
 
       def add_vroute(vroute)
-        #Replace the route if it already exists
-        raise unless vroute.dstnet
-        @vroutes[vroute.dstnet] = vroute
+        raise unless vroute.is_a?(VRoute)
+        raise Lib::AlreadyExistingResourceError, vroute.to_s \
+          if @vroutes[vroute.dstnet]
+        @vroutes[vroute.dstnet.address.to_string] = vroute
+      end
+
+      def remove_vroute(vroute)
+        raise unless vroute.is_a?(VRoute)
+        @vroutes[vroute.dstnet.address.to_string] = nil
+      end
+
+      def get_vroute(dstnet)
+        raise unless dstnet.is_a?(VNetwork)
+        return @vroutes[dstnet.address.to_string]
       end
 
       def get_list
@@ -107,7 +118,20 @@ module Wrekavoc
       end
 
       def ==(vnetwork)
-        return ((vnetwork.is_a?(VNetwork)) and (vnetwork.address.to_string == @address.to_string))
+        ret = false
+        if vnetwork.is_a?(VNetwork)
+          ret = (vnetwork.address.to_string == @address.to_string)
+        elsif vnetwork.is_a?(String)
+          begin
+            addr = IPAddress.parse(vnetwork)
+            ret = (addr.to_string == @address.to_string)
+          rescue ArgumentError
+            ret = false
+          end
+        else
+          ret = false
+        end
+        return ret
       end
 
       def to_hash()
@@ -115,6 +139,10 @@ module Wrekavoc
         ret['name'] = @name
         ret['address'] = @address.to_string
         return ret
+      end
+
+      def to_s()
+        return "#{name}(#{address.to_string})"
       end
 
       protected

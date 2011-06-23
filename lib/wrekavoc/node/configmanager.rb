@@ -45,13 +45,11 @@ module Wrekavoc
         @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
       end
 
-      def viface_add(viface)
-        raise 'Maximum ifaces numbre reached' if viface.id >= Admin::MAX_IFACES
-        Lib::Shell.run("ip link set dev ifb#{viface.id} up")
-      end
-
-      def vnetwork_add(vnetwork)
-        @vplatform.add_vnetwork(vnetwork)
+      def vnode_remove(vnode)
+        raise unless vnode.is_a?(Resource::VNode)
+        @vplatform.remove_vnode(vnode)
+        @containers[vnode.name].destroy if @containers[vnode.name]
+        @containers[vnode.name] = nil
       end
 
       def vnode_configure(vnodename)
@@ -72,26 +70,40 @@ module Wrekavoc
         @containers[vnodename].stop()
       end
 
-      def vnode_remove(vnode)
-        raise unless vnode.is_a?(Resource::VNode)
-        @vplatform.remove_vnode(vnode)
-        @containers[vnode.name].destroy if @containers[vnode.name]
-        @containers[vnode.name] = nil
+      def viface_add(viface)
+        raise 'Maximum ifaces numbre reached' if viface.id >= Admin::MAX_IFACES
+        Lib::Shell.run("ip link set dev ifb#{viface.id} up")
       end
 
-      def destroy(resource)
-        if resource.is_a?(Resource::VNode)
-          vnode_remove(resource)
-        end
+      def vnetwork_add(vnetwork)
+        @vplatform.add_vnetwork(vnetwork)
+      end
+
+      def vnetwork_remove(vnetwork)
+        @vplatform.remove_vnetwork(vnetwork)
       end
 
       def vroute_add(vroute)
-        @vroutes << vroute
+        @vplatform.add_vroute(vroute)
+      end
+
+      def vroute_remove(vroute)
+        @vplatform.remove_vroute(vroute)
       end
 
       def network_limitation_add(limitations)
         @vnetlimit.add_limitations(limitations)
         NetworkLimitation.apply(limitations)
+      end
+
+      def destroy(resource)
+        if resource.is_a?(Resource::VNode)
+          vnode_remove(resource)
+        elsif resource.is_a?(Resource::VNetwork)
+          vnetwork_remove(resource)
+        elsif resource.is_a?(Resource::VRoute)
+          vroute_remove(resource)
+        end
       end
     end
 
