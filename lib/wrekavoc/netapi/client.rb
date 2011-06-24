@@ -285,25 +285,6 @@ module Wrekavoc
         end
       end
 
-      def limit_net_create(vnode,viface,properties)
-        properties = properties.to_json if properties.is_a?(Hash)
-        begin
-          ret = {}
-          req = "/limitations/network"
-          @resource[req].post(
-            { :vnode => vnode, :viface => viface, :properties => properties }
-          ) { |response, request, result|
-            ret = JSON.parse(check_error(result,response))
-          }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        end
-      end
-
       protected
 
       def check_error(result,response)

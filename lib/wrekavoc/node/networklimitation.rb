@@ -4,20 +4,9 @@ module Wrekavoc
   module Node
 
     class NetworkLimitation
-      def self.apply(limitations)
-        #case limitation.algorithm
-        #  when Limitation::Network::Algorithm::TBF
-        if limitations.is_a?(Limitation::Network::Rule)
-          apply_tbf(limitations)
-        else
-          raise unless limitations.is_a?(Array)
-          limitations.each { |limit| apply_tbf(limit) }
-        end
-        #  when Limitation::Network::Algorithm::HTB
-        #    apply_htb(limitation)
-        #  else
-        #    apply_tbf(limitation)
-        #end
+      def self.apply(viface)
+        apply_tbf(viface.limit_output) if viface.limit_output
+        apply_tbf(viface.limit_input) if viface.limit_input
       end
 
       def self.apply_tbf(limitation)

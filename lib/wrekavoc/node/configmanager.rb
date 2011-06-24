@@ -12,7 +12,6 @@ module Wrekavoc
       def initialize
         @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
         @vplatform = Wrekavoc::Resource::VPlatform.new
-        @vnetlimit = Wrekavoc::Limitation::Network::Manager.new
         @containers = {}
         Container.stop_all()
       end
@@ -53,15 +52,21 @@ module Wrekavoc
       end
 
       def vnode_configure(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.get_vnode(vnodename)
+        vnode = @vplatform.get_vnode(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename unless vnode
         @containers[vnodename].configure()
       end
 
       def vnode_start(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.get_vnode(vnodename)
+        vnode = @vplatform.get_vnode(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename unless vnode
         @containers[vnodename].start()
+        vnode.vifaces.each do |viface|
+          unless viface.limited?
+            NetworkLimitation.apply(viface)
+            viface.limited = true
+          end
+        end
       end
 
       def vnode_stop(vnodename)
@@ -71,7 +76,7 @@ module Wrekavoc
       end
 
       def viface_add(viface)
-        raise 'Maximum ifaces numbre reached' if viface.id >= Admin::MAX_IFACES
+        raise Lib::ShellError, 'Maximum ifaces numbre reached' if viface.id >= Admin::MAX_IFACES
         Lib::Shell.run("ip link set dev ifb#{viface.id} up")
       end
 
@@ -89,11 +94,6 @@ module Wrekavoc
 
       def vroute_remove(vroute)
         @vplatform.remove_vroute(vroute)
-      end
-
-      def network_limitation_add(limitations)
-        @vnetlimit.add_limitations(limitations)
-        NetworkLimitation.apply(limitations)
       end
 
       def destroy(resource)

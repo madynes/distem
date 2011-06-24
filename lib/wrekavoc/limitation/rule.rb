@@ -60,10 +60,8 @@ module Wrekavoc
           ret['viface'] = @viface.name
           ret['direction'] = Direction.to_string(@direction)
           ret['properties'] = {}
-          i = 0
           @properties.each do |prop|
-            ret['properties'][i.to_s] = prop.to_hash
-            i += 1
+            ret['properties'][prop.class.name] = prop.to_hash
           end
           return ret
         end

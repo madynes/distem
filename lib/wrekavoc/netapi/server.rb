@@ -84,7 +84,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -135,7 +135,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -190,7 +190,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -241,7 +241,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -319,7 +319,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -371,7 +371,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -423,7 +423,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -509,7 +509,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -560,7 +560,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -576,7 +576,7 @@ module Wrekavoc
       # The IP address is auto assigned to the virtual interface
       #
       # == Query parameters
-      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork)
+      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the limitations to apply on the interface (JSON, 'limitation', INPUT/OUTPUT/FULLDUPLEX)
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -590,9 +590,9 @@ module Wrekavoc
       # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
-      # ...
+      # properties['limitation'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       
-      put '/vnodes/:vnode/vifaces/:viface' do |vnode,viface|
+      put '/vnodes/:vnode/vifaces/:viface' do 
         begin
           ret = @daemon.viface_attach(params['vnode'],params['viface'],
             JSON.parse(params['properties'])
@@ -611,7 +611,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -669,7 +669,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -719,7 +719,7 @@ module Wrekavoc
           @headers[HTTP_HEADER_ERR] = ce.desc
           @body = ce.body
         else
-          @body = ret.to_hash
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
         end
 
         return result!
@@ -750,10 +750,10 @@ module Wrekavoc
       # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
-      # properties sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       #
       
       #
+=begin
       post '/limitations/network' do
         begin
           ret = @daemon.limit_net_create(params['vnode'],params['viface'], \
@@ -781,6 +781,7 @@ module Wrekavoc
 
         return result!
       end
+=end
 
       protected
 

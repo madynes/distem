@@ -11,7 +11,7 @@ module Wrekavoc
       MODE_NODE=1
 
       # >>> TODO: To be removed
-      attr_reader :daemon_resources, :daemon_vnetlimit, :node_config
+      attr_reader :daemon_resources, :node_config
 
       def initialize(mode=MODE_NODE)
         @node_name = Socket::gethostname
@@ -21,7 +21,6 @@ module Wrekavoc
 
         if @mode == MODE_DAEMON
           @daemon_resources = Resource::VPlatform.new
-          @daemon_vnetlimit = Limitation::Network::Manager.new
         end
       end
 
@@ -210,7 +209,7 @@ module Wrekavoc
       begin
         vnode = vnode_get(vnodename)
 
-        viface = Resource::VIface.new(vifacename)
+        viface = Resource::VIface.new(vifacename,vnode)
         vnode.add_viface(viface)
 
         if daemon?
@@ -336,12 +335,12 @@ module Wrekavoc
 
       def viface_attach(vnodename,vifacename,properties)
       begin
-        ret = {}
-
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
+        limits = nil
 
         raise Lib::ResourceNotFoundError, vifacename unless viface
+        raise Lib::AlreadyExistingResource, 'attach' if viface.attached?
         raise Lib::MissingParameterError, 'address|vnetwork' \
           unless (properties['address'] or properties['vnetwork'])
 
@@ -370,11 +369,9 @@ module Wrekavoc
           properties['address'] = viface.address.to_string
 
           unless target?(vnode)
+            properties['vnetwork'] = vnetwork.name
             cl = NetAPI::Client.new(vnode.host.address)
-            ret = cl.viface_attach(vnode.name,viface.name,
-                { 'vnetwork' => vnetwork.name,
-                  'address' => properties['address'] }
-            )
+            cl.viface_attach(vnode.name,viface.name,properties)
           end
         end
 
@@ -406,16 +403,28 @@ module Wrekavoc
 
           viface.attach(vnetwork,address) unless daemon?
           @node_config.vnode_configure(vnode.name)
-
-          ret = viface.to_hash
         end
 
-        return ret
+        #Set the limitations if there is some
+        if properties['limitation']
+          limits = Limitation::Network::Manager.parse_limitations(
+            vnode,viface,properties['limitation']
+          ) 
+          viface.add_limitation(limits)
+        end
+
+        if target?(vnode)
+          @node_config.vnode_configure(vnode.name) if limits
+        end
+
+        return viface
 
       rescue Lib::AlreadyExistingResourceError
         raise
       rescue Exception
         vnetwork.remove_vnode(vnode) if vnetwork
+        viface.remove_limitation(properties['limitation']) \
+          if properties['limitation']
         raise
       end
       end
@@ -459,11 +468,9 @@ module Wrekavoc
             cl.vroute_create(srcnet.name, 
               destnet.address.to_string,gwaddr.to_s, vnode.name)
           end
-          #@daemon_resources.add_vroute(vroute)
         end
 
         if vnode and target?(vnode)
-          #@node_config.vroute_add(vroute)
           @node_config.vnode_configure(vnode.name)
         end
 
@@ -477,18 +484,14 @@ module Wrekavoc
       end
 
       def vroute_complete()
-        ret = {}
+        ret = []
 
         if daemon?
-          i = 0
           @daemon_resources.vnetworks.each_value do |srcnet|
             @daemon_resources.vnetworks.each_value do |destnet|
               next if srcnet == destnet
               gw = srcnet.get_vroute(destnet)
-              if gw
-                ret[i] = vroute_create(srcnet.name,destnet.name,gw.name)
-                i += 1
-              end
+              ret << vroute_create(srcnet.name,destnet.name,gw.name) if gw
             end
           end
         end
@@ -496,14 +499,17 @@ module Wrekavoc
         return ret
       end
 
+=begin
       def limit_net_create(vnodename,vifacename,properties)
         vnode = vnode_get(vnodename)
-        raise unless vnode
-        viface = vnode.get_viface_by_name(vifacename)
-        raise unless viface
+        viface = viface_get(vnodename,vifacename)
+
+        raise Lib::MissingParameterError, 'limitation' \
+          unless properties['limitation']
 
         limits = Limitation::Network::Manager.parse_limitations(vnode,viface, \
-          properties)
+          properties['limitation'])
+        viface.add_limitation(limits)
         
         if daemon?
           @daemon_vnetlimit.add_limitations(limits)
@@ -516,16 +522,12 @@ module Wrekavoc
 
         if target?(vnode)
           @node_config.network_limitation_add(limits)
-          i = 0
-          ret = {}
-          limits.each do |limit|
-            ret[i.to_s] = limit.to_hash
-            i += 1
-          end
+          @node_config.configure(vnode.name)
         end
 
-        return ret
+        return viface
       end
+=end
 
       protected
       
