@@ -6,7 +6,8 @@ require 'pp'
 IMAGE='file:///home/lsarzyniec/rootfs.tar.bz2'
 
 
-machines = ['graphene-9','graphene-90','graphene-96']
+machines = ['griffon-78','griffon-81','griffon-91']
+#machines = ['graphene-75','graphene-80','graphene-81']
 
 coord = machines[0]
 networks = ['network1', 'network2']
@@ -25,15 +26,37 @@ end
 
 node = 'node1'
 machine = machines[0]
+ifprops = {
+	'vnetwork' => networks[0],
+	'limitation' => { 
+		"OUTPUT" => { 
+			"bandwidth" => {"rate" => "20mbps"},
+			"latency" => {"delay" => "5ms"}
+		},
+		"INPUT" => { 
+			"bandwidth" => {"rate" => "100mbps"},
+			"latency" => {"delay" => "2ms"}
+		}
+	}
+}
 pp client.vnode_create(node, { 'image' => IMAGE })
 pp client.viface_create(node, 'if0')
-pp client.viface_attach(node, 'if0', { 'vnetwork' => networks[0] })
+pp client.viface_attach(node, 'if0', ifprops)
 nodes << node
 
 node = 'node2'
+ifprops['network'] = nil
+ifprops['address'] = '10.144.3.7'
+ifprops['limitation']['OUTPUT'] = nil
+ifprops['limitation']['INPUT'] = nil
+ifprops['limitation']['FULLDUPLEX'] = { 
+	"bandwidth" => {"rate" => "2mbps"},
+	"latency" => {"delay" => "50ms"}
+}
+
 pp client.vnode_create(node, { 'image' => IMAGE })
 pp client.viface_create(node, 'if0')
-pp client.viface_attach(node, 'if0', { 'address' => '10.144.3.7' })
+pp client.viface_attach(node, 'if0', ifprops)
 nodes << node
 
 node = 'node3'
@@ -64,6 +87,6 @@ nodes.each do |node|
   pp client.vnode_start(node)
 end
 
-pp client.limit_net_create('nodegw','if0','{ "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }')
-pp client.limit_net_create('nodegw','if0','{ "INPUT" : { "bandwidth" : {"rate" : "10mbps"}, "latency" : {"delay" : "15ms"} } }')
-pp client.limit_net_create('nodegw','if1','{ "FULLDUPLEX" : { "bandwidth" : {"rate" : "2mbps"}, "latency" : {"delay" : "50ms"} } }')
+#pp client.limit_net_create('nodegw','if0','{ "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }')
+#pp client.limit_net_create('nodegw','if0','{ "INPUT" : { "bandwidth" : {"rate" : "10mbps"}, "latency" : {"delay" : "15ms"} } }')
+#pp client.limit_net_create('nodegw','if1','{ "FULLDUPLEX" : { "bandwidth" : {"rate" : "2mbps"}, "latency" : {"delay" : "50ms"} } }')

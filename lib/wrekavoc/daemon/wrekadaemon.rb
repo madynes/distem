@@ -499,36 +499,6 @@ module Wrekavoc
         return ret
       end
 
-=begin
-      def limit_net_create(vnodename,vifacename,properties)
-        vnode = vnode_get(vnodename)
-        viface = viface_get(vnodename,vifacename)
-
-        raise Lib::MissingParameterError, 'limitation' \
-          unless properties['limitation']
-
-        limits = Limitation::Network::Manager.parse_limitations(vnode,viface, \
-          properties['limitation'])
-        viface.add_limitation(limits)
-        
-        if daemon?
-          @daemon_vnetlimit.add_limitations(limits)
-          unless target?(vnode)
-            cl = NetAPI::Client.new(vnode.host.address)
-            ret = \
-              cl.limit_net_create(vnode.name,viface.name,properties.to_json) 
-          end
-        end
-
-        if target?(vnode)
-          @node_config.network_limitation_add(limits)
-          @node_config.configure(vnode.name)
-        end
-
-        return viface
-      end
-=end
-
       protected
       
       def daemon? #:nodoc:

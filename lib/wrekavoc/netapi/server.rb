@@ -725,64 +725,6 @@ module Wrekavoc
         return result!
       end
       
-      ##
-      # :method: post(/limitations/network)
-      #
-      # :call-seq:
-      #   POST /limitations/network
-      # 
-      # Create a new network limitation on a specific interface of a virtual node
-      #
-      # == Query parameters
-      # <tt>vnode</tt>:: the name of the virtual node to set the limitation on
-      # <tt>viface</tt>:: the name of the virtual interface targeted
-      # <tt>properties</tt>:: the properties of the limitation in JSON format
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      #
-      
-      #
-=begin
-      post '/limitations/network' do
-        begin
-          ret = @daemon.limit_net_create(params['vnode'],params['viface'], \
-            JSON.parse(params['properties']) \
-          )
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
-        end
-
-        return result!
-      end
-=end
-
       protected
 
       def result! #:nodoc:
