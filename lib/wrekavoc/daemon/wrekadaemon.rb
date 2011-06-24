@@ -79,6 +79,21 @@ module Wrekavoc
         return pnode
       end
 
+      def pnodes_get()
+        ret = []
+        if daemon?
+          vplatform = @daemon_resources
+        else
+          @node_config.vplatform
+        end
+
+        vplatform.pnodes.each_value do |pnode|
+          ret << pnode.to_hash
+        end
+
+        return ret
+      end
+
       def vnode_create(name,properties)
       begin
         if daemon?
@@ -190,8 +205,8 @@ module Wrekavoc
         return vnode
       end
 
-      def vnode_list_get()
-        ret = {}
+      def vnodes_get()
+        ret = []
         if daemon?
           vplatform = @daemon_resources
         else
@@ -199,7 +214,7 @@ module Wrekavoc
         end
 
         vplatform.vnodes.each_value do |vnode|
-          ret[vnode.name] = vnode.to_hash
+          ret << vnode.to_hash
         end
 
         return ret
@@ -332,6 +347,21 @@ module Wrekavoc
 
         return vnetwork
       end
+
+      def vnetworks_get()
+        ret = []
+        if daemon?
+          vplatform = @daemon_resources
+        else
+          @node_config.vplatform
+        end
+
+        vplatform.vnetworks.each_value do |vnetwork|
+          ret << vnetwork.to_hash
+        end
+
+        return ret
+     end
 
       def viface_attach(vnodename,vifacename,properties)
       begin

@@ -51,6 +51,22 @@ module Wrekavoc
         end
       end
 
+      def pnodes_info()
+        begin
+          ret = {}
+          req = "/pnodes"
+          @resource[req].get { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def vnode_create(name, properties)
         begin
           properties = properties.to_json if properties.is_a?(Hash)
@@ -141,6 +157,23 @@ module Wrekavoc
         end
       end
 
+      def viface_info(vnodename, vifacename)
+        begin
+          ret = {}
+          req = "/vnodes/#{vnodename}/vifaces/#{vifacename}"
+          @resource[req].get(
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def vnode_gateway(vnode)
         begin
           ret = {}
@@ -163,7 +196,7 @@ module Wrekavoc
         @resource['/vnodes/infos/rootfs'].post :vnode => vnode
       end
 
-      def vnode_info_list()
+      def vnodes_info()
         begin
           ret = {}
           req = "/vnodes"
@@ -201,6 +234,22 @@ module Wrekavoc
         begin
           ret = {}
           req = "/vnetworks/#{vnetworkname}"
+          @resource[req].get { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
+      def vnetworks_info()
+        begin
+          ret = {}
+          req = "/vnetworks"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }

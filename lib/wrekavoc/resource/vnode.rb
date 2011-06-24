@@ -131,8 +131,8 @@ module Wrekavoc
         ret['image'] = @image
         ret['status'] = @status
         ret['gateway'] = @gateway.to_s
-        ret['ifaces'] = {}
-        @vifaces.each { |viface| ret['ifaces']["#{viface.name}"] = viface.to_hash }
+        ret['ifaces'] = []
+        @vifaces.each { |viface| ret['ifaces'] << viface.name }
         return ret
       end
 
