@@ -36,10 +36,6 @@ options = {}
 
 options['f_pnode_init'] = false
 options['f_vnode_create'] = false
-options['f_vnode_start'] = false
-options['f_vnode_stop'] = false
-options['f_vnode_attach'] = false
-options['f_vnode_list'] = false
 options['f_viface_create'] = false
 options['f_vnetwork_create'] = false
 
@@ -48,7 +44,6 @@ options['pnode_addr'] = false
 options['vnode_name'] = false
 options['vnode_image'] = false
 options['viface_name'] = false
-options['viface_address'] = false
 options['vnetwork_name'] = false
 options['vnetwork_address'] = false
 
@@ -78,10 +73,6 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The name of the Virtual Network' ) do |n|
     options['vnetwork_name'] = n
   end
-  opts.on( '-l', '--vnodes-list', \
-    'The list of the Virtual Nodes managed by the daemon' ) do
-    options['f_vnode_list'] = true
-  end
   opts.on( '-i', '--init-pnode HOSTNAME', \
     'Initialize the physical node (start daemons, ...)' ) do |h|
     options['f_pnode_init'] = true
@@ -93,21 +84,6 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_vnode_create'] = true
     options['vnode_name'] = array[0]
     options['vnode_image'] = array[1]
-  end
-  opts.on( '-A', '--attach-viface [address]', \
-    'Connect the Virtual Node to the Virtual Network with the Virtual Interface using an address or a network name' ) do |a| \
-    options['f_vnode_attach'] = true
-    options['viface_address'] = a || false
-  end
-  opts.on( '-s', '--start-vnode',\
-    'Start the virtual node' ) \
-    do 
-    options['f_vnode_start'] = true
-  end
-  opts.on( '-S', '--stop-vnode',\
-    'Stop the virtual node' ) \
-    do |array|
-    options['f_vnode_stop'] = true
   end
   opts.on( '-f', '--create-viface NAME', \
     'Create the virtual interface <NAME> on the Virtual Node' ) \
@@ -161,42 +137,4 @@ if (options['f_viface_create'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
   pp cl.viface_create(options['vnode_name'], options['viface_name'])
-end
-
-if options['f_vnode_attach']
-  errorcheck(ERR_VNODE,options['vnode_name'])
-  errorcheck(ERR_VIFACE,options['viface_name'])
-
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  if options['vnetwork_name']
-    pp cl.viface_attach(options['vnode_name'],options['viface_name'], \
-      { 'vnetwork' => options['vnetwork_name']} \
-    )
-  elsif options['viface_address']
-    pp cl.viface_attach(options['vnode_name'],options['viface_name'], \
-      { 'address' => options['viface_address']} \
-    )
-  else
-    pp "You must specify a network (-N) or an address (-A []) for the viface"
-    exit 1
-  end
-end
-
-if (options['f_vnode_start'])
-  errorcheck(ERR_VNODE,options['vnode_name'])
-
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  pp cl.vnode_start(options['vnode_name'])
-end
-
-if (options['f_vnode_stop'])
-  errorcheck(ERR_VNODE,options['vnode_name'])
-
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  pp cl.vnode_stop(options['vnode_name'])
-end
-
-if (options['f_vnode_list'])
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vnode_info_list()
 end

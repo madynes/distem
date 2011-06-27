@@ -35,6 +35,7 @@ options = {}
 options['f_vnetwork_create'] = false
 options['f_vroute_create'] = false
 options['f_vroute_complete'] = false
+options['f_vnode_attach'] = false
 options['f_limitation_create'] = false
 options['f_limitation_latency'] = false
 options['f_limitation_bandwidth'] = false
@@ -42,6 +43,7 @@ options['f_vnetwork_list'] = false
 
 options['vnode_name'] = false
 options['viface_name'] = false
+options['viface_address'] = false
 options['vnetwork_name'] = false
 options['vnetwork_address'] = false
 options['vroute_srcnet'] = false
@@ -74,14 +76,6 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The name of the Virtual Interface' ) do |i|
     options['viface_name'] = i
   end
-  opts.on( '-i', '--input-limitation', \
-    'Set an input limitation' ) do |i|
-    options['lim_direction'] = 'INPUT'
-  end
-  opts.on( '-o', '--output-limitation', \
-    'Set an output limitation' ) do |i|
-    options['lim_direction'] = 'OUTPUT'
-  end
   opts.on( '-c', '--create-vnetwork NAME,ADDRESS', Array, \
     'Create the VNetwork NAME with the ADDRESS (ip/mask or ip/prefix)' ) do |array|
     options['f_vnetwork_create'] = true
@@ -98,6 +92,19 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-X', '--complete-vroute', \
     'Create every possible VRoute possible for each VNode' ) do 
     options['f_vroute_complete'] = true
+  end
+  opts.on( '-A', '--attach-viface [address]', \
+    'Connect the Virtual Node to the Virtual Network with the Virtual Interface using an address or a network name' ) do |a| \
+    options['f_vnode_attach'] = true
+    options['viface_address'] = a || false
+  end
+  opts.on( '-i', '--input-limitation', \
+    'Set an input limitation' ) do |i|
+    options['lim_direction'] = 'INPUT'
+  end
+  opts.on( '-o', '--output-limitation', \
+    'Set an output limitation' ) do |i|
+    options['lim_direction'] = 'OUTPUT'
   end
   opts.on( '-L', '--create-limitation PARAMS',
     'Create a limitation on VIface of VNode, following a Direction  (option -i or -o) and with <PARAMS> (JSON)') do |p|
@@ -131,37 +138,57 @@ if options['f_vnetwork_create']
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
+  pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
 end
 
 if options['f_vroute_create']
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vroute_create(options['vroute_srcnet'],options['vroute_destnet'],options['vroute_gateway'])
+  pp cl.vroute_create(options['vroute_srcnet'],options['vroute_destnet'],options['vroute_gateway'])
 end
 
 if options['f_vroute_complete']
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.vroute_complete()
+  pp cl.vroute_complete()
 end
 
-if options['f_limitation_create']
+if options['f_vnode_attach']
   errorcheck(ERR_VNODE,options['vnode_name'])
   errorcheck(ERR_VIFACE,options['viface_name'])
-  errorcheck(ERR_LIM_DIR,options['lim_direction'])
 
-  if options['lim_params']
-    params = options['lim_params']
-  else
-    params = {}
-    if options['f_limitation_latency']
-      params["#{options['lim_direction']}"] = { "latency" => { "delay" => options['lim_latency'] } }
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+
+  if options['f_limitation_create']
+    plimit = {}
+
+    if options['lim_direction']
+      direction = options['lim_direction']
+    else
+      direction = 'FULLDUPLEX'
     end
-    if options['f_limitation_bandwidth']
-      params["#{options['lim_direction']}"] = { "bandwidth" => { "rate" => options['lim_bandwidth'] } }
+
+    if options['lim_params']
+      plimit = options['lim_params']
+    else
+      plimit[direction] = {}
+      if options['f_limitation_latency']
+        plimit[direction]['latency'] = { "delay" => options['lim_latency'] }
+      end
+      if options['f_limitation_bandwidth']
+        plimit[direction]['bandwidth'] = { "rate" => options['lim_bandwidth'] }
+      end
     end
   end
-  
-  errorcheck(ERR_VNODE,options['vnode_name'])
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
-  puts cl.limit_net_create(options['vnode_name'],options['viface_name'],params)
+
+  params = {}
+  params['limitation'] = plimit if plimit
+  if options['vnetwork_name']
+    params['vnetwork'] = options['vnetwork_name']
+  elsif options['viface_address']
+    params['address'] = options['viface_address']
+  else
+    pp "You must specify a network (-N) or an address (-A []) for the viface"
+    exit 1
+  end
+  pp cl.viface_attach(options['vnode_name'],options['viface_name'],params)
 end
+

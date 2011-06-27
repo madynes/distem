@@ -9,7 +9,7 @@ require 'pp'
 USAGE="Usage: #{$0} <vnode_name> [options]"
 
 DEFAULT_COPY_PATH="/tmp"
-ERR_NONE=0
+ERR_VNONE=0
 ERR_DAEMON=1
 
 def errorcheck(errid,optvar,msg="")
@@ -31,6 +31,8 @@ options['f_exec'] = false
 options['f_shell'] = false
 options['f_file_send'] = false
 options['f_file_get'] = false
+options['f_vnode_start'] = false
+options['f_vnode_stop'] = false
 
 options['ssh_user'] = 'root'
 options['file_src'] = false
@@ -56,7 +58,17 @@ optparse = OptionParser.new(USAGE) do |opts|
     'The address of the daemon' ) do |h|
     options['daemon_addr'] = h
   end
-  opts.on( '-s', '--shell', \
+  opts.on( '-s', '--start-vnode',\
+    'Start the virtual node' ) \
+    do 
+    options['f_vnode_start'] = true
+  end
+  opts.on( '-t', '--stop-vnode',\
+    'Stop the virtual node' ) \
+    do |array|
+    options['f_vnode_stop'] = true
+  end
+  opts.on( '-S', '--shell', \
     'Open a terminal on a Virtual Node (close it with <C-a q>)' ) do 
     options['f_shell'] = true
   end
@@ -124,4 +136,18 @@ if options['f_file_send'] or options['f_file_get']
   else
     system("scp -r #{options['ssh_user']}@#{pnode}:#{path} #{options['file_dest']}")
   end
+end
+
+if (options['f_vnode_start'])
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  pp cl.vnode_start(ARGV[0])
+end
+
+if (options['f_vnode_stop'])
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  pp cl.vnode_stop(ARGV[0])
 end
