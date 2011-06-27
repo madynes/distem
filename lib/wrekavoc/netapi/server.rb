@@ -477,8 +477,29 @@ module Wrekavoc
       
       #
       post '/vnodes/:vnode/commands' do
-        ret = @daemon.vnode_execute(params['vnode'],params['command'])
-        return JSON.pretty_generate(ret)
+        begin
+          ret = @daemon.vnode_execute(params['vnode'],params['command'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
       end
 
       ##
@@ -913,8 +934,7 @@ module Wrekavoc
       end
 
       def get_http_err_desc(except) #:nodoc:
-        except.class.name.split('::').last + " " + except.message.to_s \
-          + (settings.verbose ? except.backtrace.inspect : " ")
+        "#{except.class.name.split('::').last} #{except.message.to_s} | #{(settings.verbose ? except.backtrace.inspect : " ")}"
       end
     end
 
