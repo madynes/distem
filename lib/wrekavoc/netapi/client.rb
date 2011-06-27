@@ -17,6 +17,12 @@ module Wrekavoc
         @resource = RestClient::Resource.new(@serverurl)
       end
 
+      # Initialize a physical node (create cgroups structure, set up the network interfaces, ...)
+      # This step is required to be able to set up some virtual node on a physical one
+      # ==== Attributes
+      # * +target+ The hostname/address of the physical node
+      # ==== Returns
+      # The physical node which have been initialized (Hash)
       def pnode_init(target = NetAPI::TARGET_SELF)
         begin
           ret = {}
@@ -67,6 +73,14 @@ module Wrekavoc
         end
       end
 
+      # Create a virtual node using a specific filesystem compressed image (if no physical node is specified, a random one is selected)
+      # ==== Attributes
+      # * +name+ The name of the virtual node which should be unique
+      # * +properties+ A Hash (or a JSON string) with the parameters used to set up the virtual node
+      # * * +image+ The URI to the (compressed) image file used to set up the file system
+      # * * +target+ (optional) The hostname/address of the physical node to set up the virtual one on
+      # ==== Returns
+      # The virtual node which have been created (Hash)
       def vnode_create(name, properties)
         begin
           properties = properties.to_json if properties.is_a?(Hash)
@@ -103,6 +117,11 @@ module Wrekavoc
         end
       end
 
+      # Start a virtual node 
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # ==== Returns
+      # The virtual node (Hash)
       def vnode_start(vnode)
         begin
           ret = {}
@@ -121,6 +140,11 @@ module Wrekavoc
         end
       end
 
+      # Stop a virtual node 
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # ==== Returns
+      # The virtual node (Hash)
       def vnode_stop(vnode)
         begin
           ret = {}
@@ -139,6 +163,12 @@ module Wrekavoc
         end
       end
 
+      # Create a virtual interface on the virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +vifacename+ The name of the virtual interface to be created (have to be unique on that virtual node)
+      # ==== Returns
+      # The virtual interface which have been created (Hash)
       def viface_create(vnode, name)
         begin
           ret = {}
@@ -174,6 +204,11 @@ module Wrekavoc
         end
       end
 
+      # Set a virtual node in gateway mode (add the ability to forward traffic)
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # ==== Returns
+      # The virtual node (Hash)
       def vnode_gateway(vnode)
         begin
           ret = {}
@@ -212,6 +247,12 @@ module Wrekavoc
         end
       end
 
+      # Create a new vitual network
+      # ==== Attributes
+      # * +name+ The name of the virtual network (unique)
+      # * +address+ The address (CIDR format: 10.0.8.0/24) the virtual network will work with 
+      # ==== Returns
+      # The virtual network which have been created (Hash)
       def vnetwork_create(name, address)
         begin
           ret = {}
@@ -262,6 +303,17 @@ module Wrekavoc
         end
       end
 
+      # Connect a virtual interface on a network with (optionally) some limitations
+      # ==== Attributes
+      # * +vnode+ The name of the virtual node
+      # * +viface+ The name of the virtual interface
+      # * +properties+ An Hash (or a JSON string) containing the parameters to set up the connection
+      # * * +vnetwork+ The name of the virtual network to connect the interface on
+      # * * +address+ The address of the virtual interface
+      # One of this two parameters have to be set (if it's vnetwork, the address is automatically set)
+      # * * +limitations+ ...
+      # ==== Returns
+      # The virtual interface (Hash)
       def viface_attach(vnode, viface, properties)
         begin
           properties = properties.to_json if properties.is_a?(Hash)
@@ -280,6 +332,14 @@ module Wrekavoc
           raise Lib::UnavailableResourceError, @serverurl
         end
       end
+
+      # Create a new virtual route between two virtual networks ("NetDestination is accessible from NetSource using NodeGateway")
+      # ==== Attributes
+      # * +srcnet+ The name of the source virtual network
+      # * +destnet+ The name of the destination virtual network
+      # * +gateway+ The name of the virtual node to use as gateway (this node have to be connected on both of the previously mentioned networks), the node is automatically set in gateway mode
+      # ==== Returns
+      # The virtual route which have been created (Hash)
 
       def vroute_create(srcnet,destnet,gateway,vnode="")
         begin
@@ -300,6 +360,10 @@ module Wrekavoc
         end
       end
 
+      # Create all possible virtual routes between all the virtual networks, automagically choosing the virtual nodes to use as gateway
+      # ==== Returns
+      # All the virtual routes which have been created (Array of Hashes)
+
       def vroute_complete()
         begin
           ret = {}
@@ -315,6 +379,13 @@ module Wrekavoc
           raise Lib::UnavailableResourceError, @serverurl
         end
       end
+
+      # Execute the specified command on the virtual node
+      # ==== Attributes
+      # * +vnode+ The name of the virtual node
+      # * +command+ The command to be executed
+      # ==== Returns
+      # A Hash with the command which have been performed and the resold of it
 
       def vnode_execute(vnode, command)
         begin
