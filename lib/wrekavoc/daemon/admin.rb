@@ -8,14 +8,23 @@ module Wrekavoc
       PATH_WREKAD_LOG_OUT=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.out")
       PATH_WREKAD_LOG_ERR=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.err")
       PATH_BIN_RUBY='/usr/bin/ruby'
-      PATH_SSH_KEY='/root/.ssh/id_rsa'
+      PATH_SSH_KEY=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
 
       def self.pnode_run_server(pnode)
         raise unless pnode.is_a?(Resource::PNode)
+        
+        sshkeypath = nil
+        PATH_SSH_KEY.each do |filename|
+          if File.exist?(filename)
+            sshkeypath = filename
+            break
+          end
+        end
+        raise Lib::MissingResourceError, 'SSH_KEY_FILE' unless sshkeypath
 
         if pnode.status == Resource::PNode::STATUS_INIT
           begin
-            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEY, :password => pnode.ssh_password) do |ssh|
+            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => sshkeypath, :password => pnode.ssh_password) do |ssh|
               ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
 
