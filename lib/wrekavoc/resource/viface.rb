@@ -58,6 +58,7 @@ module Wrekavoc
       end
 
       def connected_to?(vnetwork)
+        raise unless vnetwork.is_a?(VNetwork)
         return (vnetwork ? vnetwork.address.include?(@address) : false)
       end
 

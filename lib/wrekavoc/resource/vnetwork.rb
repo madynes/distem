@@ -90,17 +90,17 @@ module Wrekavoc
         return ret
       end
 
-      def get_vroute(vnetwork,excludelist=[])
+      def perform_vroute(vnetwork,excludelist=[])
         ret = nil
         excludelist << self
         found = false
 
-        vnodes.each_key do |vnode|
+        @vnodes.each_key do |vnode|
           vnode.vifaces.each do |viface|
             found = true if viface.connected_to?(vnetwork)
 
-            unless excludelist.include?(viface.vnetwork)
-              found = true if viface.vnetwork.get_vroute(vnetwork,excludelist) 
+            if viface.vnetwork and !excludelist.include?(viface.vnetwork)
+              found = true if viface.vnetwork.perform_vroute(vnetwork,excludelist) 
             end
 
             break if found

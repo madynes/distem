@@ -4,13 +4,16 @@ module Wrekavoc
     class VRoute
       @@ids = 0
       attr_reader :srcnet, :dstnet, :gw
-      def initialize(srcnet,dstnet,gwnode)
+      def initialize(srcnet,dstnet,gwaddr)
         raise unless srcnet.is_a?(VNetwork)
         raise unless dstnet.is_a?(VNetwork)
+        raise unless gwaddr.is_a?(IPAddress)
+        raise Lib::InvalidParameterError, gwaddr.to_string \
+          unless srcnet.address.include?(gwaddr)
 
         @srcnet = srcnet
         @dstnet = dstnet
-        @gw = gwnode
+        @gw = gwaddr
         @id = @@ids
         @@ids += 1
       end

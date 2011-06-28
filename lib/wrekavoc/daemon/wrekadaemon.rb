@@ -264,7 +264,7 @@ module Wrekavoc
         if mode.upcase == Resource::VNode::MODE_GATEWAY
           if daemon?
             unless target?(vnode)
-              cl = Client.new(vnode.host.address)
+              cl = NetAPI::Client.new(vnode.host.address)
               cl.vnode_gateway(vnode.name)
             end
           end
@@ -370,7 +370,7 @@ module Wrekavoc
         limits = nil
 
         raise Lib::ResourceNotFoundError, vifacename unless viface
-        raise Lib::AlreadyExistingResource, 'attach' if viface.attached?
+        raise Lib::AlreadyExistingResourceError, 'attach' if viface.attached?
         raise Lib::MissingParameterError, 'address|vnetwork' \
           unless (properties['address'] or properties['vnetwork'])
 
@@ -463,11 +463,12 @@ module Wrekavoc
       begin
         vnode = nil
         vnode = vnode_get(vnodename) if vnodename
+        srcnet = vnetwork_get(networksrc)
+        destnet = vnetwork_get(networkdst,false)
         if daemon? and !target?(vnode)
-          gw = @daemon_resources.get_vnode(nodegw)
-          srcnet = @daemon_resources.get_vnetwork_by_name(networksrc)
-          destnet = @daemon_resources.get_vnetwork_by_name(networkdst)
-          gwaddr = gw.get_viface_by_network(srcnet).address
+          gw = vnode_get(nodegw)
+          gwaddr = gw.get_viface_by_network(srcnet)
+          gwaddr = gwaddr.address if gwaddr
         else
           begin
             gw = IPAddress.parse(nodegw)
@@ -475,13 +476,15 @@ module Wrekavoc
             raise InvalidParameterError, nodegw
           end
           gwaddr = gw
-          srcnet = @node_config.vplatform.get_vnetwork_by_name(networksrc)
-          destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst)
+          destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst) \
+            unless destnet
           destnet = Resource::VNetwork.new(networkdst) unless destnet
         end
 
         raise Lib::ResourceNotFoundError, networksrc unless srcnet
         raise Lib::ResourceNotFoundError, networkdst unless destnet
+        raise Lib::ResourceNotFoundError, nodegw unless gw
+        raise Lib::InvalidParameterError, nodegw unless gwaddr
 
         vroute = srcnet.get_vroute(destnet)
         unless vroute
@@ -489,14 +492,25 @@ module Wrekavoc
           srcnet.add_vroute(vroute)
         end
 
-        if daemon? and !target?(vnode)
-          cl = NetAPI::Client.new(gw.host.address)
-          cl.vnode_gateway(gw.name)
-          
-          srcnet.vnodes.each_key do |vnode|
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.vroute_create(srcnet.name, 
-              destnet.address.to_string,gwaddr.to_s, vnode.name)
+        if daemon? 
+          unless target?(vnode)
+            raise Lib::InvalidParameterError, "#{gw.name} #{srcnet} " \
+              unless gw.connected_to?(srcnet)
+            vnode_set_mode(gw.name,Resource::VNode::MODE_GATEWAY) \
+              unless gw.gateway
+          end
+
+          unless vnode
+            srcnet.vnodes.each_key do |vnode|
+              if target?(vnode)
+                vroute_create(srcnet.name, 
+                  destnet.address.to_string,gwaddr.to_s,vnode.name)
+              else
+                cl = NetAPI::Client.new(vnode.host.address)
+                cl.vroute_create(srcnet.name, 
+                  destnet.address.to_string,gwaddr.to_s, vnode.name)
+              end
+            end
           end
         end
 
@@ -517,10 +531,11 @@ module Wrekavoc
         ret = []
 
         if daemon?
+          # >>> TODO: Use vnetworks_get
           @daemon_resources.vnetworks.each_value do |srcnet|
             @daemon_resources.vnetworks.each_value do |destnet|
               next if srcnet == destnet
-              gw = srcnet.get_vroute(destnet)
+              gw = srcnet.perform_vroute(destnet)
               ret << vroute_create(srcnet.name,destnet.name,gw.name) if gw
             end
           end

@@ -525,4 +525,68 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_equal(false,viface.connected_to?(vnetwork))
     assert_equal(false,vnode.connected_to?(vnetwork))
   end
+
+  def test_vroute_create
+      init_daemon
+      vifacename = 'if0'
+      vifacename2 = 'if1'
+      vnetworkname = 'vnetwork'
+      vnetworkname2 = 'vnetwork2'
+
+      vnode = init_testvnode(true,'1')
+      vnode2 = init_testvnode(true,'2')
+      vnodegw = init_testvnode(true,'3')
+      viface = @daemon_d.viface_create(vnode.name,vifacename)
+      viface2 = @daemon_d.viface_create(vnode2.name,vifacename)
+      vifacegw1 = @daemon_d.viface_create(vnodegw.name,vifacename)
+      vifacegw2 = @daemon_d.viface_create(vnodegw.name,vifacename2)
+      vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.4.0/24')
+      vnetwork2 = @daemon_d.vnetwork_create(vnetworkname2,'10.144.8.0/24')
+
+      @daemon_d.viface_attach(vnode.name,vifacename,{'vnetwork' => vnetworkname})
+      @daemon_d.viface_attach(vnode2.name,vifacename,{'vnetwork' => vnetworkname2})
+      @daemon_d.viface_attach(vnodegw.name,vifacename2,{'vnetwork' => vnetworkname2})
+
+      ### Daemon mode
+
+      #Nodegw not connected on vnetwork1
+      vroute = nil
+      assert_raise(Wrekavoc::Lib::InvalidParameterError) {
+        vroute = @daemon_d.vroute_create(vnetwork.name,vnetwork2.name,vnodegw.name)
+      }
+      assert_nil(vroute)
+      assert_nil(vnetwork.get_vroute(vnetwork2))
+      @daemon_d.viface_attach(vnodegw.name,vifacename,{'vnetwork' => vnetworkname})
+      assert_equal(false,vnodegw.gateway)
+
+      #No problems
+      vroute = @daemon_d.vroute_create(vnetwork.name,vnetwork2.name,vnodegw.name)
+      assert_not_nil(vroute)
+      assert_equal(vnetwork,vroute.srcnet)
+      assert_equal(vnetwork2,vroute.dstnet)
+      assert_equal(vifacegw1.address.to_s,vroute.gw.to_s)
+      assert_not_nil(vnetwork.get_vroute(vnetwork2))
+      assert_not_nil(viface.vnetwork.get_vroute(vnetwork2))
+      assert_equal(true,vnodegw.gateway)
+
+      #Already existing ressource, no throws
+      vroute = @daemon_d.vroute_create(vnetwork.name,vnetwork2.name,vnodegw.name)
+      assert_not_nil(vroute)
+      assert_equal(vnetwork,vroute.srcnet)
+      assert_equal(vnetwork2,vroute.dstnet)
+      assert_equal(vifacegw1.address.to_s,vroute.gw.to_s)
+
+      #Invalid vnetwork name
+      assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+        @daemon_d.vroute_create(random_string,vnetwork2.name,vnodegw.name)
+      }
+      assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+        @daemon_d.vroute_create(vnetwork.name,random_string,vnodegw.name)
+      }
+
+      #Invalid gateway name
+      assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+        @daemon_d.vroute_create(vnetwork.name,vnetwork2.name,random_string)
+      }
+  end
 end
