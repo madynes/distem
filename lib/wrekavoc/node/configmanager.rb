@@ -70,8 +70,14 @@ module Wrekavoc
       end
 
       def vnode_stop(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename \
-           unless @vplatform.get_vnode(vnodename)
+        vnode = @vplatform.get_vnode(vnodename)
+        raise Lib::ResourceNotFoundError, vnodename unless vnode
+        vnode.vifaces.each do |viface|
+          unless viface.limited?
+            NetworkLimitation.undo(viface)
+            viface.limited = false
+          end
+        end
         @containers[vnodename].stop()
       end
 
@@ -80,11 +86,24 @@ module Wrekavoc
         Lib::Shell.run("ip link set dev ifb#{viface.id} up")
       end
 
+      def viface_remove(viface)
+        viface_dettach(viface)
+      end
+
+      def viface_detach(viface)
+        NetworkLimitation.undo(viface)
+        viface.detach()
+      end
+
       def vnetwork_add(vnetwork)
         @vplatform.add_vnetwork(vnetwork)
       end
 
       def vnetwork_remove(vnetwork)
+        vnetwork.vnodes.each_pair do |vnode,viface|
+          viface_dettach(viface,vnetwork)
+          vnode_configure(vnode)
+        end
         @vplatform.remove_vnetwork(vnetwork)
       end
 

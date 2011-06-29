@@ -101,6 +101,29 @@ module Wrekavoc
         end
       end
 
+      # Remove a vnode
+      # ==== Attributes
+      # * +name+ The name of the virtual node
+      # ==== Returns
+      # The virtual node which have been removed (Hash)
+      def vnode_remove(name)
+        begin
+          ret = {}
+          req = "/vnodes/#{name}"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def vnode_info(vnodename)
         begin
           ret = {}
@@ -321,6 +344,31 @@ module Wrekavoc
           req = "/vnodes/#{vnode}/vifaces/#{viface}"
           @resource[req].put(
             { :properties => properties }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
+      # Disconnect a virtual interface from the network it's connected to
+      # ==== Attributes
+      # * +vnode+ The name of the virtual node
+      # * +viface+ The name of the virtual interface
+      # * * +limitations+ ...
+      # ==== Returns
+      # The virtual interface (Hash)
+      def viface_detach(vnode, viface)
+        begin
+          ret = {}
+          req = "/vnodes/#{vnode}/vifaces/#{viface}"
+          @resource[req].put(
+            {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }

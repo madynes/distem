@@ -59,9 +59,25 @@ module Wrekavoc
         viface.attach(self,addr)
       end
 
-      def remove_vnode(vnode)
+      def get_vnode(vnodename)
+        ret = nil
+        @vnodes.each_pair do |vnode,viface|
+          if vnode.name == vnodename and viface
+            ret = vnode
+            break
+          end
+        end
+        return ret
+      end
+
+      def get_vnode_viface(vnode)
+        raise unless vnode.is_a?(VNode)
+        return @vnodes[vnode]
+      end
+
+      def remove_vnode(vnode,detach = true)
         #Atm one VNode can only be attached one time to a VNetwork
-        @vnodes[vnode].detach(self) if @vnodes[vnode]
+        @vnodes[vnode].detach(self) if @vnodes[vnode] and detach
         @vnodes[vnode] = nil
       end
 
@@ -117,6 +133,12 @@ module Wrekavoc
         return ret
       end
 
+      def destroy()
+        @vnodes.each_key do |vnode|
+          remove_vnode(vnode)
+        end
+      end
+
       def ==(vnetwork)
         ret = false
         if vnetwork.is_a?(VNetwork)
@@ -138,6 +160,10 @@ module Wrekavoc
         ret = {}
         ret['name'] = @name
         ret['address'] = @address.to_string
+        ret['vnodes'] = []
+        @vnodes.each_pair do |vnode,viface|
+          ret['vnodes'] << vnode.name if viface
+        end
         return ret
       end
 

@@ -53,9 +53,8 @@ module Wrekavoc
         @vnode.status = Resource::VNode::Status::STOPPED
       end
 
-      def destroy
+      def remove
         stop()
-
         #check if the lxc container name is already taken
         lxcls = Lib::Shell.run("lxc-ls")
         if (lxcls.split().include?(@vnode.name))
@@ -63,9 +62,16 @@ module Wrekavoc
         end
       end
 
+      def destroy
+        stop()
+
+        remove()
+        Lib::Shell.run("rm -R #{@rootfspath}")
+      end
+
       #To configure or reconfigure (if the vnode has changed)
       def configure
-        destroy()
+        remove()
 
         @vnode.status = Resource::VNode::Status::CONFIGURING
         @curname = "#{@vnode.name}-#{@id}"

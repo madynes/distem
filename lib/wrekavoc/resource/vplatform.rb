@@ -59,6 +59,18 @@ module Wrekavoc
 
       def remove_vnode(vnode)
         raise unless vnode.is_a?(VNode)
+        # Remove the vnode on each vnetwork it's connected
+        @vnetworks.each_value do |vnetwork|
+          if vnetwork.get_vnode(vnode.name)
+            # Remove every vroute vnode have a role on
+            vnetwork.vroutes.each_value do |vroute|
+                if vnetwork.get_vnode_viface(vnode).address.to_s == vroute.gw.to_s
+                  vnetwork.remove_vroute(vroute)
+                end
+            end
+            vnetwork.remove_vnode(vnode)
+          end
+        end
         @vnodes[vnode.name] = nil
       end
 
@@ -80,6 +92,14 @@ module Wrekavoc
 
       def remove_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
+        # Remove all associated vroutes
+        @vnetworks.each_value do |vnet|
+          next if vnet == vnetwork
+          vnet.vroutes.each_value do |vroute|
+            vnet.remove_vroute(vroute) if vroute.dstnet == vnetwork
+          end
+        end
+        vnetwork.destroy()
         @vnodes[vnetwork.address.to_string] = nil
       end
 

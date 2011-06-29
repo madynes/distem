@@ -189,6 +189,55 @@ module Wrekavoc
       end
 
       ##
+      # :method: delete(/vnodes/:vnodename)
+      #
+      # :call-seq:
+      #   DELETE /vnodes/:vnodename
+      # 
+      # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
+      #
+      # == Query parameters
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/vnodes/:vnode' do
+        begin
+          ret = @daemon.vnode_remove(params['vnode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+
+      ##
       # :method: post(/vnodes)
       #
       # :call-seq:
@@ -762,6 +811,7 @@ module Wrekavoc
       # 
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
+      # Dettach the virtual interface if properties is empty
       #
       # == Query parameters
       # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the limitations to apply on the interface (JSON, 'limitation', INPUT/OUTPUT/FULLDUPLEX)
@@ -782,9 +832,12 @@ module Wrekavoc
       
       put '/vnodes/:vnode/vifaces/:viface' do 
         begin
-          ret = @daemon.viface_attach(params['vnode'],params['viface'],
-            JSON.parse(params['properties'])
-          )
+          props = JSON.parse(params['properties']) if params['properties']
+          if props and !props.empty?
+            ret = @daemon.viface_attach(params['vnode'],params['viface'],props)
+          else
+            ret = @daemon.viface_detach(params['vnode'],params['viface'])
+          end
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)

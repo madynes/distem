@@ -144,6 +144,23 @@ module Wrekavoc
 
       end
 
+      def vnode_remove(name)
+        vnode = vnode_get(name)
+        if daemon?
+          @daemon_resources.remove_vnode(vnode)
+          unless target?(vnode)
+            cl = NetAPI::Client.new(vnode.host.address)
+            cl.vnode_remove(vnode.name)
+          end
+        end
+
+        if target?(vnode)
+          @node_config.vnode_remove(vnode)
+        end
+
+        return vnode
+      end
+
       def vnode_get(name, raising = true)
         if daemon?
           vnode = @daemon_resources.get_vnode(name)
@@ -244,7 +261,7 @@ module Wrekavoc
       rescue Lib::AlreadyExistingResourceError
         raise
       rescue Exception
-        vnode.remove_iface(viface) if vnode and viface
+        vnode.remove_viface(viface) if vnode and viface
         raise
       end
       end
@@ -457,6 +474,25 @@ module Wrekavoc
           if properties['limitation']
         raise
       end
+      end
+
+      def viface_detach(vnodename,vifacename)
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
+        viface.detach()
+        if daemon?
+          unless target?(vnode)
+            cl = NetAPI::Client.new(vnode.host.address)
+            cl.viface_detach(vnode.name,viface.name)
+          end
+        end
+
+        if target?(vnode)
+          @node_config.viface_detach(viface)
+          @node_config.vnode_configure(vnode.name)
+        end
+
+        return viface
       end
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)

@@ -48,9 +48,14 @@ module Wrekavoc
         @address = address
       end
 
-      def detach(vnetwork)
-        @vnetwork = nil
-        @address = IPAddress::IPv4.new("0.0.0.0/0")
+      def detach()
+        if (attached?)
+          @vnetwork.remove_vnode(@vnode,false)
+          @vnetwork = nil
+          @limit_input = nil
+          @limit_output = nil
+          @address = IPAddress::IPv4.new("0.0.0.0/0")
+        end
       end
 
       def attached?

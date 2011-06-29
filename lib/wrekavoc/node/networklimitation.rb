@@ -9,6 +9,20 @@ module Wrekavoc
         apply_tbf(viface.limit_input) if viface.limit_input
       end
 
+      def self.undo(viface)
+        if viface.limit_input
+          iface = "ifb#{viface.id}"
+          tmproot = TCWrapper::QdiscRoot.new(iface)
+          Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
+        end
+
+        if viface.limit_output
+          iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
+          outputroot = TCWrapper::QdiscRoot.new(iface)
+          Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
+        end
+      end
+
       def self.apply_tbf(limitation)
         iface = Lib::NetTools::get_iface_name(limitation.vnode,limitation.viface)
         baseiface = iface
