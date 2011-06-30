@@ -77,8 +77,8 @@ module Wrekavoc
 
       def remove_vnode(vnode,detach = true)
         #Atm one VNode can only be attached one time to a VNetwork
-        @vnodes[vnode].detach(self) if @vnodes[vnode] and detach
-        @vnodes[vnode] = nil
+        @vnodes[vnode].detach() if @vnodes[vnode] and detach
+        @vnodes.delete(vnode)
       end
 
       def add_vroute(vroute)
@@ -90,7 +90,7 @@ module Wrekavoc
 
       def remove_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
-        @vroutes[vroute.dstnet.address.to_string] = nil
+        @vroutes.delete(vroute.dstnet.address.to_string)
       end
 
       def get_vroute(dstnet)

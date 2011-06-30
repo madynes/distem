@@ -23,7 +23,7 @@ module Wrekavoc
 
       def remove_pnode(pnode)
         raise unless pnode.is_a?(PNode)
-        @pnodes[pnode.address] = nil
+        @pnodes.delete(pnode.address)
       end
 
       def get_pnode_by_address(address)
@@ -71,7 +71,7 @@ module Wrekavoc
             vnetwork.remove_vnode(vnode)
           end
         end
-        @vnodes[vnode.name] = nil
+        @vnodes.delete(vnode.name)
       end
 
       def get_vnode(name)
@@ -100,7 +100,7 @@ module Wrekavoc
           end
         end
         vnetwork.destroy()
-        @vnodes[vnetwork.address.to_string] = nil
+        @vnetworks.delete(vnetwork.address.to_string)
       end
 
       def get_vnetwork_by_name(name)

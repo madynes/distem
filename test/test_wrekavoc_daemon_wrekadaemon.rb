@@ -18,6 +18,8 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
 
   def teardown
     super
+    localaddr = '127.0.0.1'
+    #@daemon_d.pnode_quit(localaddr)
   end
 
   def random_string(maxsize = 8)
@@ -526,6 +528,39 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
     assert_equal(false,vnode.connected_to?(vnetwork))
   end
 
+  def test_viface_detach
+    init_daemon
+    vifacename = 'if0'
+    vnetworkname = 'vnetwork'
+
+    init_testvnode
+    viface = @daemon_d.viface_create(@vnodename,vifacename)
+    vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
+    
+    assert_not_nil(viface)
+    assert_not_nil(vnetwork)
+
+    @daemon_d.viface_attach(@vnodename,vifacename,{'vnetwork' => vnetworkname})
+
+    #No problems (automatic address)
+    @daemon_d.viface_detach(@vnodename,vifacename)
+    assert_equal(false,viface.attached?)
+    assert_equal(false,viface.connected_to?(vnetwork))
+    assert_equal(false,vnode.connected_to?(vnetwork))
+    assert_nil(viface.vnetwork)
+    assert_nil(vnetwork.vnodes[vnode])
+
+    #Wrong node name
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_detach(random_string,vifacename)
+    }
+
+    #Wrong iface name
+    assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
+      @daemon_d.viface_detach(@vnodename,random_string)
+    }
+  end
+
   def test_vroute_create
       init_daemon
       vifacename = 'if0'
@@ -588,5 +623,17 @@ class TestWrekavocDaemonWrekaDaemon < Test::Unit::TestCase
       assert_raise(Wrekavoc::Lib::ResourceNotFoundError) {
         @daemon_d.vroute_create(vnetwork.name,vnetwork2.name,random_string)
       }
+  end
+
+  def test_pnode_quit
+  end
+
+  def test_vnode_remove
+  end
+
+  def test_viface_remove
+  end
+
+  def test_vnetwork_remove
   end
 end

@@ -41,6 +41,30 @@ module Wrekavoc
         end
       end
 
+      # Quit Wrekavoc on a physical machine
+      #
+      # ==== Attributes
+      # * +target+ The hostname/address of the physical node
+      # ==== Returns
+      # The physical node which have been initialized (Hash)
+      def pnode_quit(target)
+        begin
+          ret = {}
+          req = "/pnodes/#{target}"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def pnode_info(pnodename)
         begin
           ret = {}
@@ -57,6 +81,27 @@ module Wrekavoc
         end
       end
 
+      # Quit Wrekavoc on every physical machines
+      #
+      # ==== Attributes
+      # ==== Returns
+      def pnodes_quit()
+        begin
+          ret = {}
+          req = "/pnodes"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
       def pnodes_info()
         begin
           ret = {}
@@ -210,6 +255,30 @@ module Wrekavoc
         end
       end
 
+      # Remove a virtual interface
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +vifacename+ The name of the virtual interface
+      # ==== Returns
+      # The virtual node which have been removed (Hash)
+      def viface_remove(vnodename,vifacename)
+        begin
+          ret = {}
+          req = "/vnodes/#{vnodename}/vifaces/#{vifacename}"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def viface_info(vnodename, vifacename)
         begin
           ret = {}
@@ -254,6 +323,27 @@ module Wrekavoc
         @resource['/vnodes/infos/rootfs'].post :vnode => vnode
       end
 
+      # Remove every vnodes
+      # ==== Attributes
+      # ==== Returns
+      # Virtual nodes that have been removed (Array of Hash)
+      def vnodes_remove()
+        begin
+          ret = {}
+          req = "/vnodes"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
       def vnodes_info()
         begin
           ret = {}
@@ -294,6 +384,29 @@ module Wrekavoc
         end
       end
 
+      # Remove a virtual network
+      # ==== Attributes
+      # * +name+ The name of the virtual network
+      # ==== Returns
+      # The virtual network which have been removed (Hash)
+      def vnetwork_remove(name)
+        begin
+          ret = {}
+          req = "/vnetworks/#{name}"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       def vnetwork_info(vnetworkname)
         begin
           ret = {}
@@ -310,6 +423,27 @@ module Wrekavoc
         end
       end
 
+      # Remove every virtual networks
+      # ==== Attributes
+      # ==== Returns
+      # Virtual networks that have been removed (Hash)
+      def vnetworks_remove()
+        begin
+          ret = {}
+          req = "/vnetworks"
+          @resource[req].delete(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
       def vnetworks_info()
         begin
           ret = {}

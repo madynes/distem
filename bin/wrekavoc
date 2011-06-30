@@ -35,6 +35,7 @@ end
 options = {}
 
 options['f_pnode_init'] = false
+options['f_pnodes_quit'] = false
 options['f_vnode_create'] = false
 options['f_viface_create'] = false
 options['f_vnetwork_create'] = false
@@ -98,6 +99,9 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnetwork_name'] = array[0]
     options['vnetwork_address'] = array[1]
   end
+  opts.on( '-q', '--quit', 'Close the application' ) do
+    options['f_pnodes_quit'] = true
+  end
 end
 optparse.parse!
 
@@ -114,6 +118,11 @@ if (options['f_pnode_init'])
 
   cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
   pp cl.pnode_init(options['pnode_addr'])
+end
+
+if (options['f_pnodes_quit'])
+  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  pp cl.pnodes_quit()
 end
 
 if (options['f_vnode_create'])

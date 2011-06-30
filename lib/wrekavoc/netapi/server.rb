@@ -91,6 +91,51 @@ module Wrekavoc
       end
 
       ##
+      # :method: delete(/pnodes/:pnodename)
+      #
+      # :call-seq:
+      #   DELETE /pnodes/:pnodename
+      # 
+      # Quit wrekavoc on a physical machine (remove everything that was created)
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/pnodes/:pnode' do
+        begin 
+          ret = @daemon.pnode_quit(params['pnode'])
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
       # :method: get(/pnodes/:pnodename)
       #
       # :call-seq:
@@ -141,6 +186,50 @@ module Wrekavoc
         return result!
       end
 
+      ##
+      # :method: delete(/pnodes)
+      #
+      # :call-seq:
+      #   DELETE /pnodes
+      # 
+      # Quit wrekavoc on all the physical machines (remove everything that was created)
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/pnodes' do
+        begin 
+          ret = @daemon.pnodes_quit()
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
       ##
       # :method: get(/pnodes)
       #
@@ -320,6 +409,54 @@ module Wrekavoc
       get '/vnodes/:vnode' do
         begin
           ret = @daemon.vnode_get(params['vnode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
+      # :method: delete(/vnodes)
+      #
+      # :call-seq:
+      #   DELETE /vnodes
+      # 
+      # Remove every virtual nodes
+      #
+      # == Query parameters
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/vnodes' do
+        begin
+          ret = @daemon.vnodes_remove()
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -604,6 +741,57 @@ module Wrekavoc
       end
 
       ##
+      # :method: delete(/vnodes/:vnodename/vifaces/:vifacename)
+      #
+      # :call-seq:
+      #   DELETE /vnodes/:vnodename/vifaces/:vifacename
+      # 
+      # Remove the virtual interface
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/vnodes/:vnode/vifaces/:viface' do
+        begin
+          ret = @daemon.viface_remove(params['vnode'],params['viface'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
       # :method: get(/vnodes/:vnodename/vifaces/:vifacename)
       #
       # :call-seq:
@@ -706,6 +894,54 @@ module Wrekavoc
       end
 
       ##
+      # :method: delete(/vnetworks/:vnetworkname)
+      #
+      # :call-seq:
+      #   DELETE /vnetworks/:vnetworkname
+      # 
+      # Delete the virtual network
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/vnetworks/:vnetwork' do
+        begin
+          ret = @daemon.vnetwork_remove(params['vnetwork'])
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
       # :method: get(/vnetworks/:vnetworkname)
       #
       # :call-seq:
@@ -742,6 +978,54 @@ module Wrekavoc
         rescue Lib::NotImplementedError => ni
           @status = HTTP_STATUS_NOT_IMPLEMENTED
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
+      # :method: delete(/vnetworks)
+      #
+      # :call-seq:
+      #   DELETE /vnetworks
+      # 
+      # Delete every virtual networks
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      delete '/vnetworks' do
+        begin
+          ret = @daemon.vnetworks_remove()
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
         rescue Lib::ShellError => se
           @status = HTTP_STATUS_INTERN_SERV_ERROR
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)

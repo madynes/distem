@@ -10,8 +10,8 @@ module Wrekavoc
       PATH_WREKAVOC_BIN=File.expand_path('../../../bin/',PATH_CURRENT)
       PATH_WREKAVOC_LOGS=File.expand_path('../../../logs/',PATH_CURRENT)
 
-      PATH_DEFAULT_DOWNLOAD="/tmp/"
-      PATH_DEFAULT_CACHE="/tmp/extractcache/"
+      PATH_DEFAULT_DOWNLOAD="/tmp/wrekavoc/downloads/"
+      PATH_DEFAULT_CACHE="/tmp/wrekavoc/extractcache/"
 
       BIN_TAR="tar"
       BIN_GUNZIP="gunzip"

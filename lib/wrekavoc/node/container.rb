@@ -4,7 +4,7 @@ module Wrekavoc
   module Node
 
     class Container
-      PATH_DEFAULT_CONFIGFILE="/tmp/config/"
+      PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
 
       attr_reader :rootfspath
 
@@ -36,21 +36,26 @@ module Wrekavoc
       end
 
       def start
-        stop()
-        @vnode.status = Resource::VNode::Status::STARTING
-        Lib::Shell::run("lxc-start -d -n #{@vnode.name}")
-        Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
-        @vnode.vifaces.each do |viface|
-          Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
+        #stop()
+        configure()
+        unless @vnode.status == Resource::VNode::Status::RUNNING
+          @vnode.status = Resource::VNode::Status::STARTING
+          Lib::Shell::run("lxc-start -d -n #{@vnode.name}")
+          Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
+          @vnode.vifaces.each do |viface|
+            Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
+          end
+          @vnode.status = Resource::VNode::Status::RUNNING
         end
-        @vnode.status = Resource::VNode::Status::RUNNING
       end
 
       def stop
-        Lib::Shell::run("lxc-stop -n #{@vnode.name}")
-        @vnode.status = Resource::VNode::Status::STOPING
-        Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
-        @vnode.status = Resource::VNode::Status::STOPPED
+        unless @vnode.status == Resource::VNode::Status::STOPPED
+          Lib::Shell::run("lxc-stop -n #{@vnode.name}")
+          @vnode.status = Resource::VNode::Status::STOPING
+          Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
+          @vnode.status = Resource::VNode::Status::STOPPED
+        end
       end
 
       def remove
@@ -64,7 +69,6 @@ module Wrekavoc
 
       def destroy
         stop()
-
         remove()
         Lib::Shell.run("rm -R #{@rootfspath}")
       end

@@ -25,7 +25,7 @@ module Wrekavoc
       end
 
       def pnode_init(target)
-        begin
+      begin
         if daemon?
           pnode = @daemon_resources.get_pnode_by_address(target)
           pnode = Resource::PNode.new(target) unless pnode
@@ -57,7 +57,53 @@ module Wrekavoc
         destroy(pnode) if pnode
         raise
       end
+      end
 
+      def pnode_quit(target)
+        pnode = pnode_get(target)
+        if daemon?
+          @daemon_resources.vnodes.each_value do |vnode|
+            if vnode.host == pnode
+              vnode_remove(vnode.name)
+            end
+          end
+          if target?(target)
+            raise Lib::InvalidParameterError, target \
+              if @daemon_resources.pnodes.size > 1
+          else
+            cl = NetAPI::Client.new(target)
+            cl.pnode_quit(target)
+          end
+          @daemon_resources.remove_pnode(pnode)
+        end
+
+        if target?(target)
+          #vnodes_remove()
+          #vnetworks_remove()
+          Node::Admin.quit_node()
+          Thread.new do
+            sleep(2)
+            exit!
+          end
+        end
+
+        return pnode
+      end
+
+      def pnodes_quit()
+        ret = []
+        if daemon?
+          me = nil
+          @daemon_resources.pnodes.each_value do |pnode|
+            if target?(pnode.address.to_s)
+              me = pnode.address.to_s
+              next
+            end
+            ret << pnode_quit(pnode.address.to_s).to_hash
+          end
+          ret << pnode_quit(me).to_hash
+        end
+        return ret
       end
 
       def pnode_get(hostname, raising = true) 
@@ -146,6 +192,8 @@ module Wrekavoc
 
       def vnode_remove(name)
         vnode = vnode_get(name)
+        vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
+
         if daemon?
           @daemon_resources.remove_vnode(vnode)
           unless target?(vnode)
@@ -237,6 +285,23 @@ module Wrekavoc
         return ret
       end
 
+      def vnodes_remove()
+        ret = []
+        vnodes = nil
+        if daemon?
+          vnodes = @daemon_resources.vnodes
+        else
+          vnodes = @node_config.vplatform.vnodes
+        end
+
+        vnodes.each_value do |vnode|
+          ret << vnode.to_hash
+          vnode_remove(vnode.name)
+        end
+
+        return ret
+      end
+
       def viface_create(vnodename,vifacename)
       begin
         vnode = vnode_get(vnodename)
@@ -253,7 +318,7 @@ module Wrekavoc
 
         if target?(vnode)
           @node_config.viface_add(viface)
-          @node_config.vnode_configure(vnode.name)
+          #@node_config.vnode_configure(vnode.name)
         end
 
         return viface
@@ -264,6 +329,27 @@ module Wrekavoc
         vnode.remove_viface(viface) if vnode and viface
         raise
       end
+      end
+
+      def viface_remove(vnodename,vifacename)
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
+        viface.detach()
+        vnode.remove_viface(viface)
+
+        if daemon?
+          unless target?(vnode)
+            cl = NetAPI::Client.new(vnode.host.address)
+            cl.viface_remove(vnode.name,viface.name)
+          end
+        end
+
+        if target?(vnode)
+          @node_config.viface_remove(viface)
+          #@node_config.vnode_configure(vnode.name)
+        end
+
+        return viface
       end
 
       def viface_get(vnodename,vifacename,raising = true)
@@ -288,7 +374,7 @@ module Wrekavoc
 
           if target?(vnode)
             vnode.gateway = true
-            @node_config.vnode_configure(vnode.name)
+            #@node_config.vnode_configure(vnode.name)
           end
         elsif mode.upcase == Resource::VNode::MODE_NORMAL
         else
@@ -353,6 +439,47 @@ module Wrekavoc
       end
       end
 
+      def vnetwork_remove(name)
+        vnetwork = vnetwork_get(name)
+
+        if daemon?
+          hosts = []
+          vnetwork.vnodes.each_pair do |vnode,viface|
+            hosts << vnode.host.address.to_s \
+              unless hosts.include?(vnode.host.address.to_s)
+            viface_detach(vnode.name,viface.name)
+          end
+
+          @daemon_resources.remove_vnetwork(vnetwork)
+          hosts.each do |pnodeaddr|
+            next if target?(pnodeaddr)
+            cl = NetAPI::Client.new(pnodeaddr)
+            cl.vnetwork_remove(vnetwork.name)
+          end
+        end
+
+        @node_config.vnetwork_remove(vnetwork)
+
+        return vnetwork
+      end
+
+      def vnetworks_remove()
+        ret = []
+        vnetworks = nil
+        if daemon?
+          vnetworks = @daemon_resources.vnetworks
+        else
+          vnetworks = @node_config.vplatform.vnetworks
+        end
+
+        vnetworks.each_value do |vnetwork|
+          ret << vnetwork.to_hash
+          vnetwork_remove(vnetwork.name)
+        end
+
+        return ret
+      end
+
       def vnetwork_get(name,raising = true)
         if daemon?
           vnetwork = @daemon_resources.get_vnetwork_by_name(name)
@@ -384,10 +511,11 @@ module Wrekavoc
       begin
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
+        viface_detach(vnodename,vifacename) if viface.attached?
         limits = nil
 
         raise Lib::ResourceNotFoundError, vifacename unless viface
-        raise Lib::AlreadyExistingResourceError, 'attach' if viface.attached?
+        #raise Lib::AlreadyExistingResourceError, 'attach' if viface.attached?
         raise Lib::MissingParameterError, 'address|vnetwork' \
           unless (properties['address'] or properties['vnetwork'])
 
@@ -449,7 +577,7 @@ module Wrekavoc
           end
 
           viface.attach(vnetwork,address) unless daemon?
-          @node_config.vnode_configure(vnode.name)
+          #@node_config.vnode_configure(vnode.name)
         end
 
         #Set the limitations if there is some
@@ -461,7 +589,7 @@ module Wrekavoc
         end
 
         if target?(vnode)
-          @node_config.vnode_configure(vnode.name) if limits
+          #@node_config.vnode_configure(vnode.name) if limits
         end
 
         return viface
@@ -489,7 +617,7 @@ module Wrekavoc
 
         if target?(vnode)
           @node_config.viface_detach(viface)
-          @node_config.vnode_configure(vnode.name)
+          #@node_config.vnode_configure(vnode.name)
         end
 
         return viface
@@ -551,7 +679,7 @@ module Wrekavoc
         end
 
         if vnode and target?(vnode)
-          @node_config.vnode_configure(vnode.name)
+          #@node_config.vnode_configure(vnode.name)
         end
 
         return vroute

@@ -49,7 +49,7 @@ module Wrekavoc
       end
 
       def detach()
-        if (attached?)
+        if attached?
           @vnetwork.remove_vnode(@vnode,false)
           @vnetwork = nil
           @limit_input = nil

@@ -53,8 +53,16 @@ module Wrekavoc
         end
       end
 
+      # >>> TODO: do unset_bridge 
+      def self.unset_bridge
+      end
+
       def self.set_ifb(nb=8)
         Shell.run("modprobe ifb numifbs=#{nb}")
+      end
+
+      def self.unset_ifb()
+        Shell.run("rmmod ifb")
       end
 
       def self.set_new_nic(address)

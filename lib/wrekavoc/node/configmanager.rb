@@ -4,7 +4,7 @@ module Wrekavoc
   module Node
 
     class ConfigManager
-      PATH_DEFAULT_ROOTFS="/tmp/rootfs/"
+      PATH_DEFAULT_ROOTFS="/tmp/wrekavoc/rootfs/"
 
       attr_reader :pnode, :vplatform
       attr_writer :pnode
@@ -48,7 +48,7 @@ module Wrekavoc
         raise unless vnode.is_a?(Resource::VNode)
         @vplatform.remove_vnode(vnode)
         @containers[vnode.name].destroy if @containers[vnode.name]
-        @containers[vnode.name] = nil
+        @containers.delete(vnode.name)
       end
 
       def vnode_configure(vnodename)
@@ -87,7 +87,7 @@ module Wrekavoc
       end
 
       def viface_remove(viface)
-        viface_dettach(viface)
+        viface_detach(viface)
       end
 
       def viface_detach(viface)
@@ -100,11 +100,11 @@ module Wrekavoc
       end
 
       def vnetwork_remove(vnetwork)
-        vnetwork.vnodes.each_pair do |vnode,viface|
-          viface_dettach(viface,vnetwork)
+        vnodes = vnetwork.vnodes.clone
+        @vplatform.remove_vnetwork(vnetwork)
+        vnodes.each_pair do |vnode,viface|
           vnode_configure(vnode)
         end
-        @vplatform.remove_vnetwork(vnetwork)
       end
 
       def vroute_add(vroute)
