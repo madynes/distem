@@ -54,6 +54,7 @@ module Wrekavoc
       #
       # == Query parameters
       # <tt>target</tt>:: the name/address of the physical machine
+      # <tt>properties</tt>:: async
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -72,7 +73,9 @@ module Wrekavoc
       #
       post '/pnodes' do
         begin 
-          ret = @daemon.pnode_init(params['target'])
+          props = {}
+          props = JSON.parse(params['properties']) if params['properties']
+          ret = @daemon.pnode_init(params['target'],props)
         rescue Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -336,7 +339,7 @@ module Wrekavoc
       #
       # == Query parameters
       # <tt>name</tt>:: the -unique- name of the virtual node to create (it will be used in a lot of methods)
-      # <tt>properties</tt>:: target,image
+      # <tt>properties</tt>:: target,image,async
       # 
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -355,9 +358,9 @@ module Wrekavoc
       #
       post '/vnodes' do
         begin
-          ret = @daemon.vnode_create(params['name'], 
-            JSON.parse(params['properties']) 
-          )
+          props = {}
+          props = JSON.parse(params['properties']) if params['properties']
+          ret = @daemon.vnode_create(params['name'],props)
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -536,7 +539,8 @@ module Wrekavoc
       # Change the status of the -previously created- virtual node.
       #
       # == Query parameters
-      # <tt>status</tt>:: the status to set: "Running" or "Stopped"
+      # <tt>status</tt>:: the status to set: "Running" or "Ready"
+      # <tt>properties</tt>:: async
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -555,7 +559,9 @@ module Wrekavoc
       #
       put '/vnodes/:vnode' do
         begin
-          ret = @daemon.vnode_set_status(params['vnode'],params['status'])
+          props = {}
+          props = JSON.parse(params['properties']) if params['properties']
+          ret = @daemon.vnode_set_status(params['vnode'],params['status'],props)
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)

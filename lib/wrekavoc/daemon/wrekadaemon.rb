@@ -1,4 +1,5 @@
 require 'wrekavoc'
+require 'thread'
 require 'socket'
 require 'ipaddress'
 require 'json'
@@ -16,6 +17,11 @@ module Wrekavoc
       def initialize(mode=MODE_NODE)
         @node_name = Socket::gethostname
         @mode = mode
+        @threads = {}
+        @threads['pnode_init'] = {}
+        @threads['vnode_create'] = {}
+        @threads['vnode_start'] = {}
+        @threads['vnode_stop'] = {}
 
         @node_config = Node::ConfigManager.new
 
@@ -24,30 +30,46 @@ module Wrekavoc
         end
       end
 
-      def pnode_init(target)
+      def pnode_init(target,properties={})
       begin
+        pnode = nil
+
+        nodemodeblock = Proc.new {
+          pnode = @node_config.pnode
+          Node::Admin.init_node()
+          @node_config.vplatform.add_pnode(pnode)
+          pnode.status = Resource::Status::RUNNING
+        }
         if daemon?
           pnode = @daemon_resources.get_pnode_by_address(target)
           pnode = Resource::PNode.new(target) unless pnode
 
           @daemon_resources.add_pnode(pnode)
 
-          if target?(target)
-            @node_config.pnode = pnode
-          else
-            Admin.pnode_run_server(pnode)
-            sleep(1)
-            cl = NetAPI::Client.new(target)
-            cl.pnode_init(target)
-          end
-          pnode.status = Resource::PNode::STATUS_RUN
-        end
+          block = Proc.new {
+            if target?(target)
+              @node_config.pnode = pnode
+              nodemodeblock.call
+            else
+                Admin.pnode_run_server(pnode)
+                sleep(1)
+                cl = NetAPI::Client.new(target)
+                cl.pnode_init(target)
+            end
+            pnode.status = Resource::Status::RUNNING
+          }
 
-        if target?(target)
-          pnode = @node_config.pnode
-          Node::Admin.init_node()
-          @node_config.vplatform.add_pnode(pnode)
-          pnode.status = Resource::PNode::STATUS_RUN
+          if properties['async']
+            @threads['pnode_init'][pnode.address.to_s] = Thread.new {
+              block.call
+            }
+          else
+            block.call
+          end
+        else
+          if target?(target)
+            nodemodeblock.call
+          end
         end
 
         return pnode
@@ -57,6 +79,13 @@ module Wrekavoc
         destroy(pnode) if pnode
         raise
       end
+      end
+
+      def pnode_wait(target)
+        pnode = pnode_get(target)
+
+        @threads['pnode_init'][pnode.address.to_s].join \
+          if @threads['pnode_init'][pnode.address.to_s]
       end
 
       def pnode_quit(target)
@@ -156,7 +185,7 @@ module Wrekavoc
         #Checking args
         if pnode
           raise Lib::UninitializedResourceError, pnode.address.to_s + @node_config.pnode.address.to_s \
-            unless pnode.status == Resource::PNode::STATUS_RUN
+            unless pnode.status == Resource::Status::RUNNING
         else
           hostname = properties['target']
           raise Lib::ResourceNotFoundError, (hostname ? hostname : 'Any')
@@ -166,17 +195,37 @@ module Wrekavoc
         #Create the resource
         vnode = Resource::VNode.new(pnode,name,properties['image'])
 
+        nodemodeblock = Proc.new {
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_add(vnode)
+          vnode.status = Resource::Status::READY
+        }
+
         if daemon?
           @daemon_resources.add_vnode(vnode)
 
-          unless target?(pnode.address.to_s)
-            cl = NetAPI::Client.new(pnode.address.to_s)
-            cl.vnode_create(vnode.name,properties)
-          end
-        end
+          block = Proc.new {
+            if target?(pnode.address.to_s)
+              nodemodeblock.call
+            else
+              vnode.status = Resource::Status::CONFIGURING
+              cl = NetAPI::Client.new(pnode.address.to_s)
+              cl.vnode_create(vnode.name,properties)
+              vnode.status = Resource::Status::READY
+            end
+          }
 
-        if target?(pnode.address.to_s)
-          @node_config.vnode_add(vnode)
+          if properties['async']
+            @threads['vnode_create'][vnode.name] = Thread.new {
+              block.call
+            }
+          else
+            block.call
+          end
+        else
+          if target?(pnode.address.to_s)
+            nodemodeblock.call
+          end
         end
 
         return vnode
@@ -209,6 +258,17 @@ module Wrekavoc
         return vnode
       end
 
+      def vnode_wait(name)
+        vnode = vnode_get(name)
+
+        @threads['vnode_create'][vnode.name].join \
+          if @threads['vnode_create'][vnode.name]
+        @threads['vnode_start'][vnode.name].join \
+          if @threads['vnode_start'][vnode.name]
+        @threads['vnode_stop'][vnode.name].join \
+          if @threads['vnode_stop'][vnode.name]
+      end
+
       def vnode_get(name, raising = true)
         if daemon?
           vnode = @daemon_resources.get_vnode(name)
@@ -221,12 +281,14 @@ module Wrekavoc
         return vnode
       end
 
-      def vnode_set_status(name,status)
+      def vnode_set_status(name,status,properties)
         vnode = nil
-        if status.upcase == Resource::VNode::Status::RUNNING
-          vnode = vnode_start(name)
-        elsif status.upcase == Resource::VNode::Status::STOPPED
-          vnode = vnode_stop(name)
+        raise Lib::InvalidParameterError, status \
+          unless Resource::Status.valid?(status)
+        if status.upcase == Resource::Status::RUNNING
+          vnode = vnode_start(name,properties)
+        elsif status.upcase == Resource::Status::READY
+          vnode = vnode_stop(name,properties)
         else
           raise Lib::InvalidParameterError, status
         end
@@ -234,37 +296,83 @@ module Wrekavoc
         return vnode
       end
 
-      def vnode_start(name)
+      def vnode_start(name,properties = {})
         vnode = vnode_get(name)
+        raise Lib::BusyResourceError, vnode.name \
+          if vnode.status == Resource::Status::CONFIGURING
+        raise Lib::UnitializedResourceError, vnode.name \
+          if vnode.status == Resource::Status::INIT
+        raise Lib::ResourceError, "#{vnode.name} already running" \
+          if vnode.status == Resource::Status::RUNNING
+
+        nodemodeblock = Proc.new {
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_start(vnode.name)
+          vnode.status = Resource::Status::RUNNING
+        }
 
         if daemon?
-          unless target?(vnode)
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.vnode_start(vnode.name)
-            vnode.status = Resource::VNode::Status::RUNNING
+          block = Proc.new {
+            if target?(vnode)
+              nodemodeblock.call
+            else
+              vnode.status = Resource::Status::CONFIGURING
+              cl = NetAPI::Client.new(vnode.host.address)
+              cl.vnode_start(vnode.name)
+              vnode.status = Resource::Status::RUNNING
+            end
+          }
+          if properties['async']
+            @threads['vnode_start'][vnode.name] = Thread.new {
+              block.call
+            }
+          else
+            block.call
           end
-        end
-
-        if target?(vnode)
-          @node_config.vnode_start(vnode.name)
+        else
+          if target?(vnode)
+            nodemodeblock.call
+          end
         end
 
         return vnode
       end
 
-      def vnode_stop(name)
+      def vnode_stop(name, properties = {})
         vnode = vnode_get(name)
+        raise Lib::BusyResourceError, vnode.name \
+          if vnode.status == Resource::Status::CONFIGURING
+        raise Lib::UnitializedResourceError, vnode.name \
+          if vnode.status == Resource::Status::INIT
+
+        nodemodeblock = Proc.new {
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_stop(vnode.name)
+          vnode.status = Resource::Status::READY
+        }
 
         if daemon?
-          unless target?(vnode)
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.vnode_stop(vnode.name)
-            vnode.status = Resource::VNode::Status::STOPPED
+          block = Proc.new {
+            if target?(vnode)
+              nodemodeblock.call
+            else
+              vnode.status = Resource::Status::CONFIGURING
+              cl = NetAPI::Client.new(vnode.host.address)
+              cl.vnode_stop(vnode.name)
+              vnode.status = Resource::Status::READY
+            end
+          }
+          if properties['async']
+            @threads['vnode_stop'][vnode.name] = Thread.new {
+              block.call
+            }
+          else
+            block.call
           end
-        end
-
-        if target?(vnode)
-          @node_config.vnode_stop(vnode.name)
+        else
+          if target?(vnode)
+            nodemodeblock.call
+          end
         end
 
         return vnode
@@ -409,6 +517,8 @@ module Wrekavoc
         if daemon?
           # >>> TODO: check if vnode exists
           vnode = vnode_get(vnodename)
+          raise Lib::UnitializedResourceError, vnode.name \
+            unless vnode.status == Resource::Status::RUNNING
 
           raise unless vnode
 

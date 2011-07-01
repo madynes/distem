@@ -5,11 +5,6 @@ module Wrekavoc
 
     # Wrekavoc Physical Node (the physical machine used to deploy Virtual Nodes)
     class PNode
-      # The Physical Node was just created 
-      STATUS_INIT=0
-      # The Physical Node was initialized
-      STATUS_RUN=1
-
       @@ids = 0
       # The unique id of the Node
       attr_reader :id
@@ -36,7 +31,7 @@ module Wrekavoc
         end
         @ssh_user = ssh_user
         @ssh_password = ssh_password
-        @status = STATUS_INIT
+        @status = Status::INIT
 
         @@ids += 1
       end
@@ -50,7 +45,7 @@ module Wrekavoc
         ret = {}
         ret['id'] = @id.to_s
         ret['address'] = @address
-        ret['status'] = (@status == STATUS_INIT ? 'INIT' : 'RUN')
+        ret['status'] = @status
         return ret
       end
     end

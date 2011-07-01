@@ -51,11 +51,11 @@ module Wrekavoc
         @containers.delete(vnode.name)
       end
 
-      def vnode_configure(vnodename)
-        vnode = @vplatform.get_vnode(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename unless vnode
-        @containers[vnodename].configure()
-      end
+      #def vnode_configure(vnodename)
+      #  vnode = @vplatform.get_vnode(vnodename)
+      #  raise Lib::ResourceNotFoundError, vnodename unless vnode
+      #  @containers[vnodename].configure()
+      #end
 
       def vnode_start(vnodename)
         vnode = @vplatform.get_vnode(vnodename)
@@ -102,9 +102,9 @@ module Wrekavoc
       def vnetwork_remove(vnetwork)
         vnodes = vnetwork.vnodes.clone
         @vplatform.remove_vnetwork(vnetwork)
-        vnodes.each_pair do |vnode,viface|
-          vnode_configure(vnode)
-        end
+        #vnodes.each_pair do |vnode,viface|
+        #  vnode_configure(vnode)
+        #end
       end
 
       def vroute_add(vroute)

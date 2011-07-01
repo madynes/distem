@@ -9,15 +9,6 @@ module Wrekavoc
     class VNode
       @@ids = 0
 
-      class Status
-        STOPING="STOPING"
-        STOPPED="STOPPED"
-        STARTING="STARTING"
-        RUNNING="RUNNING"
-        CONFIGURING="CONFIGURING"
-        BUSY="BUSY"
-      end
-
       MODE_GATEWAY = "GATEWAY"
       MODE_NORMAL = "NORMAL"
 
@@ -57,7 +48,7 @@ module Wrekavoc
         @image = URI.encode(image)
         @gateway = false
         @vifaces = []
-        @status = Status::STOPPED
+        @status = Status::INIT
         @@ids += 1
       end
 

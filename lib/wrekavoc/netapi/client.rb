@@ -21,14 +21,18 @@ module Wrekavoc
       # This step is required to be able to set up some virtual node on a physical one
       # ==== Attributes
       # * +target+ The hostname/address of the physical node
+      # * +properties+ A Hash (or a JSON string) with the parameters used to set up the physical machine
+      # * * +async+ Do not block waiting for the machine to install
       # ==== Returns
       # The physical node which have been initialized (Hash)
-      def pnode_init(target = NetAPI::TARGET_SELF)
+      def pnode_init(target = NetAPI::TARGET_SELF, properties = {})
         begin
+          properties = properties.to_json if properties.is_a?(Hash)
+
           ret = {}
           req = "/pnodes"
           @resource[req].post(
-            {:target => target}
+            { :target => target, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -39,6 +43,12 @@ module Wrekavoc
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
         end
+      end
+
+      # Same as pnode_init but in asynchronious mode
+      def pnode_init!(name, properties = {})
+        properties['async'] = true
+        return pnode_init(name,properties)
       end
 
       # Quit Wrekavoc on a physical machine
@@ -124,6 +134,7 @@ module Wrekavoc
       # * +properties+ A Hash (or a JSON string) with the parameters used to set up the virtual node
       # * * +image+ The URI to the (compressed) image file used to set up the file system
       # * * +target+ (optional) The hostname/address of the physical node to set up the virtual one on
+      # * * +async+ Do not block waiting for the node to install
       # ==== Returns
       # The virtual node which have been created (Hash)
       def vnode_create(name, properties)
@@ -144,6 +155,12 @@ module Wrekavoc
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
         end
+      end
+
+      # Same as vnode_create but in asynchronious mode
+      def vnode_create!(name, properties)
+        properties['async'] = true
+        return vnode_create(name,properties)
       end
 
       # Remove a vnode
@@ -190,12 +207,13 @@ module Wrekavoc
       # * +vnodename+ The name of the virtual node
       # ==== Returns
       # The virtual node (Hash)
-      def vnode_start(vnode)
+      def vnode_start(vnode, properties = {})
         begin
+          properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
           req = "/vnodes/#{vnode}"
           @resource[req].put(
-            { :status => Resource::VNode::Status::RUNNING }
+            { :status => Resource::Status::RUNNING, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -208,17 +226,24 @@ module Wrekavoc
         end
       end
 
+      # Same as vnode_start but in asynchronious mode
+      def vnode_start!(name, properties = {})
+        properties['async'] = true
+        return vnode_start(name,properties)
+      end
+
       # Stop a virtual node 
       # ==== Attributes
       # * +vnodename+ The name of the virtual node
       # ==== Returns
       # The virtual node (Hash)
-      def vnode_stop(vnode)
+      def vnode_stop(vnode, properties = {})
         begin
+          properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
           req = "/vnodes/#{vnode}"
           @resource[req].put(
-            { :status => Resource::VNode::Status::STOPPED }
+            { :status => Resource::Status::READY, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -229,6 +254,12 @@ module Wrekavoc
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
         end
+      end
+
+      # Same as vnode_stop but in asynchronious mode
+      def vnode_stop!(name, properties = {})
+        properties['async'] = true
+        return vnode_stop(name,properties)
       end
 
       # Create a virtual interface on the virtual node

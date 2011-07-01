@@ -19,6 +19,9 @@ module Wrekavoc
     class UnavailableResourceError < ResourceError
     end
 
+    class BusyResourceError < ResourceError
+    end
+
     class ParameterError < WrekavocError
     end
 
