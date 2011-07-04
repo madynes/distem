@@ -38,15 +38,16 @@ module Wrekavoc
     end
 
     class ShellError < WrekavocError
-      attr_reader :cmd, :ret, :hostname
-      def initialize(cmd, ret)
+      attr_reader :cmd, :ret, :err, :hostname
+      def initialize(cmd, ret, err = "")
         @hostname = Socket.gethostname
         @cmd = cmd
         @ret = ret
+        @err = err
       end
 
       def to_s
-        return "cmd:'#{@cmd}' host:'#{@hostname}' result:'#{@ret}'"
+        return "cmd:'#{@cmd}' host:'#{@hostname}' result:'#{@ret}' err:'#{@err}'"
       end
     end
 

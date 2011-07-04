@@ -60,6 +60,7 @@ module Wrekavoc
       def vnode_start(vnodename)
         vnode = @vplatform.get_vnode(vnodename)
         raise Lib::ResourceNotFoundError, vnodename unless vnode
+        @containers[vnodename].configure()
         @containers[vnodename].start()
         vnode.vifaces.each do |viface|
           unless viface.limited?

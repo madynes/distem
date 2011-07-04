@@ -78,7 +78,7 @@ puts 'done'
 
 nodes.shuffle!
 nodes.each do |node|
-  pp client.vnode_start(node)
+  pp client.vnode_start!(node)
 end
 puts 'Starting the VNodes ...'
 nodes.each do |node|
@@ -86,6 +86,20 @@ nodes.each do |node|
     ret = client.vnode_info(node)
     sleep(0.2)
   end until ret['status'] == Wrekavoc::Resource::Status::RUNNING
+  puts "\t#{node} OK"
+end
+puts 'done'
+
+nodes.shuffle!
+nodes.each do |node|
+  pp client.vnode_stop!(node)
+end
+puts 'Stoping the VNodes ...'
+nodes.each do |node|
+  begin
+    ret = client.vnode_info(node)
+    sleep(0.2)
+  end until ret['status'] == Wrekavoc::Resource::Status::READY
   puts "\t#{node} OK"
 end
 puts 'done'

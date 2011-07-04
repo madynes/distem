@@ -12,6 +12,7 @@ module Wrekavoc
         ret = ""
         log = ""
         error = false
+        err = ""
 
         if simple
           ret = `#{cmd}`

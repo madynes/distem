@@ -1,10 +1,12 @@
 require 'wrekavoc'
+require 'thread'
 
 module Wrekavoc
   module Node
 
     class Container
       PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
+      @@lxclock = Mutex.new
 
       attr_reader :rootfspath
 
@@ -24,8 +26,6 @@ module Wrekavoc
         @curname = ""
         @configfile = ""
         @id = 0
-
-        configure()
       end
       
       def self.stop_all
@@ -38,35 +38,49 @@ module Wrekavoc
       def start
         #stop()
         #unless @vnode.status == Resource::Status::RUNNING
-          configure()
-          @vnode.status = Resource::Status::CONFIGURING
-          Lib::Shell::run("lxc-start -d -n #{@vnode.name}")
-          Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING")
+          #configure()
+          #@vnode.status = Resource::Status::CONFIGURING
+          lxcls = Lib::Shell.run("lxc-ls")
+          if (lxcls.split().include?(@vnode.name))
+            @@lxclock.synchronize {
+              Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
+              Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
+            }
+          else
+            raise Lib::ResourceNotFoundError, @vnode.name
+          end
+
           @vnode.vifaces.each do |viface|
             Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
           end
-          @vnode.status = Resource::Status::RUNNING
+
+          #@vnode.status = Resource::Status::RUNNING
         #end
       end
 
       def stop
         #unless @vnode.status == Resource::Status::READY
-          @vnode.status = Resource::Status::CONFIGURING
-          Lib::Shell::run("lxc-stop -n #{@vnode.name}")
-          Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED")
-          @vnode.status = Resource::Status::READY
+          #@vnode.status = Resource::Status::CONFIGURING
+          lxcls = Lib::Shell.run("lxc-ls")
+          if (lxcls.split().include?(@vnode.name))
+            @@lxclock.synchronize {
+              Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
+              Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
+            }
+          end
+          #@vnode.status = Resource::Status::READY
         #end
       end
 
       def remove
         stop()
         #check if the lxc container name is already taken
-        @vnode.status = Resource::Status::CONFIGURING
+        #@vnode.status = Resource::Status::CONFIGURING
         lxcls = Lib::Shell.run("lxc-ls")
         if (lxcls.split().include?(@vnode.name))
           Lib::Shell.run("lxc-destroy -n #{@vnode.name}")
         end
-        @vnode.status = Resource::Status::READY
+        #@vnode.status = Resource::Status::READY
       end
 
       def destroy
@@ -81,7 +95,7 @@ module Wrekavoc
       def configure
         remove()
 
-        @vnode.status = Resource::Status::CONFIGURING
+        #@vnode.status = Resource::Status::CONFIGURING
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
@@ -90,7 +104,7 @@ module Wrekavoc
         Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
 
         @id += 1
-        @vnode.status = Resource::Status::READY
+        #@vnode.status = Resource::Status::READY
       end
     end
 

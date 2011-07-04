@@ -15,6 +15,7 @@ module Wrekavoc
       attr_reader :daemon_resources, :node_config
 
       def initialize(mode=MODE_NODE)
+        Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @mode = mode
         @threads = {}
@@ -216,9 +217,10 @@ module Wrekavoc
           }
 
           if properties['async']
-            @threads['vnode_create'][vnode.name] = Thread.new {
+            thr = @threads['vnode_create'][vnode.name] = Thread.new {
               block.call
             }
+            thr.abort_on_exception = true
           else
             block.call
           end
@@ -323,9 +325,10 @@ module Wrekavoc
             end
           }
           if properties['async']
-            @threads['vnode_start'][vnode.name] = Thread.new {
+            thr = @threads['vnode_start'][vnode.name] = Thread.new {
               block.call
             }
+            thr.abort_on_exception = true
           else
             block.call
           end
@@ -363,9 +366,10 @@ module Wrekavoc
             end
           }
           if properties['async']
-            @threads['vnode_stop'][vnode.name] = Thread.new {
+            thr = @threads['vnode_stop'][vnode.name] = Thread.new {
               block.call
             }
+            thr.abort_on_exception = true
           else
             block.call
           end
