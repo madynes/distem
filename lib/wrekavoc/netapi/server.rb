@@ -1198,6 +1198,7 @@ module Wrekavoc
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       # Dettach the virtual interface if properties is empty
+      # You can change the limitations on the fly specifying only the limitation property
       #
       # == Query parameters
       # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the limitations to apply on the interface (JSON, 'limitation', INPUT/OUTPUT/FULLDUPLEX)
@@ -1220,7 +1221,12 @@ module Wrekavoc
         begin
           props = JSON.parse(params['properties']) if params['properties']
           if props and !props.empty?
-            ret = @daemon.viface_attach(params['vnode'],params['viface'],props)
+            if !props['address'] and !props['vnetwork'] and props['limitation']
+              ret = @daemon.viface_configure_limitations(params['vnode'],params['viface'],props['limitation'])
+            else
+              
+              ret = @daemon.viface_attach(params['vnode'],params['viface'],props)
+            end
           else
             ret = @daemon.viface_detach(params['vnode'],params['viface'])
           end

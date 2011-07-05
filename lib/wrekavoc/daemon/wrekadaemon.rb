@@ -629,11 +629,10 @@ module Wrekavoc
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnodename,vifacename) if viface.attached?
-        limits = nil
 
         raise Lib::ResourceNotFoundError, vifacename unless viface
         #raise Lib::AlreadyExistingResourceError, 'attach' if viface.attached?
-        raise Lib::MissingParameterError, 'address|vnetwork' \
+        raise Lib::MissingParameterError, "address|vnetwork" \
           unless (properties['address'] or properties['vnetwork'])
 
         if daemon?
@@ -697,17 +696,9 @@ module Wrekavoc
           #@node_config.vnode_configure(vnode.name)
         end
 
-        #Set the limitations if there is some
-        if properties['limitation']
-          limits = Limitation::Network::Manager.parse_limitations(
-            vnode,viface,properties['limitation']
-          ) 
-          viface.add_limitation(limits)
-        end
-
-        if target?(vnode)
-          #@node_config.vnode_configure(vnode.name) if limits
-        end
+        viface_configure_limitations(vnode.name,viface.name,
+          properties['limitation']
+        )
 
         return viface
 
@@ -715,8 +706,6 @@ module Wrekavoc
         raise
       rescue Exception
         vnetwork.remove_vnode(vnode) if vnetwork
-        viface.remove_limitation(properties['limitation']) \
-          if properties['limitation']
         raise
       end
       end
@@ -738,6 +727,45 @@ module Wrekavoc
         end
 
         return viface
+      end
+
+      def viface_configure_limitations(vnodename,vifacename,limitations)
+      begin
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
+
+        if daemon?
+          unless target?(vnode)
+            props = {}
+            props['limitation'] = limitations
+            cl = NetAPI::Client.new(vnode.host.address)
+            cl.viface_attach(vnode.name,viface.name,props)
+          end
+        end
+
+        #Set the limitations if there is some
+        if limitations
+          limits = Limitation::Network::Manager.parse_limitations(
+            vnode,viface,limitations
+          ) 
+          viface.add_limitation(limits)
+        end
+
+        if target?(vnode)
+          if vnode.status == Resource::Status::RUNNING
+            vnode.status = Resource::Status::CONFIGURING
+            @node_config.viface_reconfigure(viface) if limits
+            vnode.status = Resource::Status::RUNNING
+          end
+        end
+        return viface
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        viface.remove_limitation(limitations) \
+          if limitations
+        raise
+      end
       end
 
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)

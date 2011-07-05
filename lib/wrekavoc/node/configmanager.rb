@@ -71,6 +71,18 @@ module Wrekavoc
         end
       end
 
+      def viface_reconfigure(viface)
+        raise Lib::ResourceNotFoundError, viface unless viface
+
+        if viface.limited?
+          NetworkLimitation.undo(viface)
+          viface.limited = false
+        end
+
+        NetworkLimitation.apply(viface)
+        viface.limited = true
+      end
+
       def vnode_stop(vnodename)
         vnode = @vplatform.get_vnode(vnodename)
         raise Lib::ResourceNotFoundError, vnodename unless vnode
