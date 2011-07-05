@@ -36,12 +36,13 @@ module Wrekavoc
       def vnode_add(vnode)
         @vplatform.add_vnode(vnode)
 
-        rootfsfile = Lib::FileManager.download(vnode.image)
+        rootfsfile = Lib::FileManager.download(vnode.filesystem.image)
         rootfspath = File.join(PATH_DEFAULT_ROOTFS,vnode.name)
 
         rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
+        vnode.filesystem.path = rootfspath
 
-        @containers[vnode.name] = Node::Container.new(vnode,rootfspath)
+        @containers[vnode.name] = Node::Container.new(vnode)
       end
 
       def vnode_remove(vnode)

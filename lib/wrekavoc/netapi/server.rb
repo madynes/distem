@@ -637,9 +637,105 @@ module Wrekavoc
         return result!
       end
       
-      post '/vnodes/infos/rootfs' do
-        ret = @daemon.vnode_info_rootfs(params['vnode'])
-        return ret
+      ##
+      # :method: get(/vnodes/:vnodename/filesystem)
+      #
+      # :call-seq:
+      #   GET /vnodes/:vnodename/filesystem
+      # 
+      # Retrieve informations about the virtual node filesystem
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      get '/vnodes/:vnode/filesystem' do
+        begin
+          ret = @daemon.vnode_filesystem_get(params['vnode'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = (ret.is_a?(Hash) or ret.is_a?(Array) ? ret : ret.to_hash)
+        end
+
+        return result!
+      end
+
+      ##
+      # :method: get(/vnodes/:vnodename/filesystem/image)
+      #
+      # :call-seq:
+      #   GET /vnodes/:vnodename/filesystem/image
+      # 
+      # Get a compressed archive of the current filesystem (tgz)
+      # WARNING: You have to contact the physical node the vnode is hosted on directly
+      #
+      # == Query parameters
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+
+      get '/vnodes/:vnode/filesystem/image' do
+        begin
+          ret = @daemon.vnode_filesystem_image_get(params['vnode'])
+          send_file(ret, :filename => "#{params['vnode']}-fsimage.tar.gz")
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        end
       end
       
       ##

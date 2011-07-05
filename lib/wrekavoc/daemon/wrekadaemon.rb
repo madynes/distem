@@ -211,7 +211,8 @@ module Wrekavoc
             else
               vnode.status = Resource::Status::CONFIGURING
               cl = NetAPI::Client.new(pnode.address.to_s)
-              cl.vnode_create(vnode.name,properties)
+              ret = cl.vnode_create(vnode.name,properties)
+              vnode.filesystem.path = ret['filesystem']['path']
               vnode.status = Resource::Status::READY
             end
           }
@@ -496,24 +497,26 @@ module Wrekavoc
         return vnode
       end
 
-      def vnode_info_rootfs(name)
-        # >>> TODO: Check if VNode exists
-        vnode = vnode_get(name)
+      def vnode_filesystem_get(vnodename)
+        vnode = vnode_get(vnodename)
 
-        raise unless vnode
+        raise Lib::UninitializedResourceError, "filesystem" \
+          unless vnode.filesystem
 
-        if daemon?
-          unless target?(vnode)
-            cl = NetAPI::Client.new(vnode.host.address)
-            ret = cl.vnode_info_rootfs(vnode.name)
-          end
-        end
+        return vnode.filesystem
+      end
+
+      def vnode_filesystem_image_get(vnodename)
+        vnode = vnode_get(vnodename)
+        archivepath = nil
 
         if target?(vnode)
-          ret = @node_config.get_container(vnode.name).rootfspath
+          archivepath = Lib::FileManager::compress(vnode.filesystem.path)
+        else
+          raise Lib::ResourceError, "Contact the right PNode" \
         end
 
-        return ret
+        return archivepath
       end
 
       def vnode_execute(vnodename,command)

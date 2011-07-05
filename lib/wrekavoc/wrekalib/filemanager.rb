@@ -12,6 +12,7 @@ module Wrekavoc
 
       PATH_DEFAULT_DOWNLOAD="/tmp/wrekavoc/downloads/"
       PATH_DEFAULT_CACHE="/tmp/wrekavoc/extractcache/"
+      PATH_DEFAULT_COMPRESS="/tmp/wrekavoc/files/"
 
       BIN_TAR="tar"
       BIN_GUNZIP="gunzip"
@@ -111,6 +112,20 @@ module Wrekavoc
         end
 
         return cachedir
+      end
+
+      def self.compress(filepath)
+        raise Lib::ResourceNotFoundError, filepath \
+          unless File.exists?(filepath)
+        unless File.exists?(PATH_DEFAULT_COMPRESS)
+          Lib::Shell.run("mkdir -p #{PATH_DEFAULT_COMPRESS}")
+        end
+
+        basename = File.basename(filepath)
+        respath = "#{File.join(PATH_DEFAULT_COMPRESS,basename)}.tar.gz"
+        Lib::Shell.run("#{BIN_TAR} czf #{respath} -C #{filepath} .")
+        
+        return respath
       end
 
       def self.file_hash(filename)

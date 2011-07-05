@@ -350,8 +350,60 @@ module Wrekavoc
         end
       end
 
-      def vnode_info_rootfs(vnode)
-        @resource['/vnodes/infos/rootfs'].post :vnode => vnode
+      # Retrieve informations about a virtual node filesystem
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # ==== Returns
+      # The virtual node filesystem informations (Hash)
+      def vnode_filesystem_info(vnode)
+        begin
+          ret = {}
+          req = "/vnodes/#{vnode}/filesystem"
+          @resource[req].get(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
+      # Retrieve compressed image of the filesystem of a node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +targetpath+ The path to save the file
+      # ==== Returns
+      # The path where the compressed image was retrieved
+      def vnode_filesystem_get(vnode,target='.')
+        begin
+          raise Lib::ResourceNotFoundError, File.dirname(target) \
+            unless File.exists?(File.dirname(target))
+          if File.directory?(target)
+            target = File.join(target,"#{vnode}-fsimage.tar.gz")
+          end
+
+          ret = {}
+          req = "/vnodes/#{vnode}/filesystem/image"
+          @resource[req].get(
+            {}
+          ) { |response, request, result|
+            ret = check_error(result,response)
+            f = File.new(target,'w')
+            f.syswrite(ret)
+            f.close()
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
       end
 
       # Remove every vnodes
@@ -629,7 +681,6 @@ module Wrekavoc
             rescue JSON::ParserError
               body = response
             end
-
             raise Lib::ClientError.new(
               result.code.to_i,
               response.headers[:x_application_error_code],

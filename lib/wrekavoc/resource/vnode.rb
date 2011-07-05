@@ -14,8 +14,8 @@ module Wrekavoc
 
       # The unique id of this Node
       attr_reader :id
-      # The URI to the -bootstrapped and compressed- image file
-      attr_reader :image
+      # The filesystem informations of the vnode
+      attr_reader :filesystem
       attr_reader :name, :host, :vifaces
       # The status of the Virtual node (Started|Stopped|Booting|Installing)
       attr_accessor :status
@@ -45,7 +45,7 @@ module Wrekavoc
         end
 
         @host = host
-        @image = URI.encode(image)
+        @filesystem = FileSystem.new(self,image)
         @gateway = false
         @vifaces = []
         @status = Status::INIT
@@ -119,7 +119,7 @@ module Wrekavoc
         ret['id'] = @id.to_s
         ret['name'] = @name
         ret['host'] = @host.address.to_s
-        ret['image'] = @image
+        ret['filesystem'] = @filesystem.to_hash
         ret['status'] = @status
         ret['gateway'] = @gateway.to_s
         ret['ifaces'] = []

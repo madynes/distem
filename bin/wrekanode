@@ -33,11 +33,13 @@ options['f_file_send'] = false
 options['f_file_get'] = false
 options['f_vnode_start'] = false
 options['f_vnode_stop'] = false
+options['f_image_get'] = false
 
 options['ssh_user'] = 'root'
 options['file_src'] = false
 options['file_dest'] = false
-options['exec_cmd'] = 4567
+options['exec_cmd'] = false
+options['image_path'] = false
 options['daemon_addr'] = false
 options['daemon_port'] = 4567
 
@@ -89,6 +91,11 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['file_src'] = array[0]
     options['file_dest'] = array[1]
   end
+  opts.on( '-I', '--get-image [DEST_PATH]', \
+    'Get a compressed image file of the filesystem of the vnode' ) do |i| \
+    options['f_image_get'] = true
+    options['image_path'] = i || '.'
+  end
 end
 
 optparse.parse!
@@ -119,9 +126,9 @@ if options['f_file_send'] or options['f_file_get']
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  rootfs = cl.vnode_info_rootfs(ARGV[0])
   vnode = cl.vnode_info(ARGV[0])
   pnode = vnode['host']
+  rootfs = vnode['filesystem']['path']
   if (options['f_file_send'])
     vfile = options['file_dest']
   else
@@ -150,4 +157,13 @@ if (options['f_vnode_stop'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_stop(ARGV[0])
+end
+
+if options['f_image_get']
+  errorcheck(ERR_DAEMON,options['daemon_addr'])
+
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  vnode = cl.vnode_info(ARGV[0])
+  cl2 = Wrekavoc::NetAPI::Client.new(vnode['host'])
+  cl2.vnode_filesystem_get(vnode['name'],options['image_path'])
 end

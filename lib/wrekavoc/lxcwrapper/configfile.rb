@@ -20,21 +20,21 @@ module LXCWrapper
       # rtc
       lxc.cgroup.devices.allow = c 254:0 rwm"
 
-      def self.generate(vnode,filepath,rootfspath)
+      def self.generate(vnode,filepath)
         File.open(filepath, 'w') do |f| 
           f.puts DEFAULT_CONFIG
           f.puts "lxc.utsname = #{vnode.name}"
-          f.puts "lxc.rootfs = #{rootfspath}"
+          f.puts "lxc.rootfs = #{vnode.filesystem.path}"
           f.puts "# mounts point"
-          f.puts "lxc.mount.entry=proc #{rootfspath}/proc " \
+          f.puts "lxc.mount.entry=proc #{vnode.filesystem.path}/proc " \
             "proc nodev,noexec,nosuid 0 0"
-          f.puts "lxc.mount.entry=devpts #{rootfspath}/dev/pts " \
+          f.puts "lxc.mount.entry=devpts #{vnode.filesystem.path}/dev/pts " \
             "devpts defaults 0 0"
-          f.puts "lxc.mount.entry=sysfs #{rootfspath}/sys " \
+          f.puts "lxc.mount.entry=sysfs #{vnode.filesystem.path}/sys " \
             "sysfs defaults  0 0"
 
-          open("#{rootfspath}/etc/network/interfaces", "w") do |froute|
-          open("#{rootfspath}/etc/rc.local", "w") do |frclocal|
+          open("#{vnode.filesystem.path}/etc/network/interfaces", "w") do |froute|
+          open("#{vnode.filesystem.path}/etc/rc.local", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
             frclocal.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if vnode.gateway?
             froute.puts("auto lo\niface lo inet loopback")

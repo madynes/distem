@@ -8,21 +8,20 @@ module Wrekavoc
       PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
       @@lxclock = Mutex.new
 
-      attr_reader :rootfspath
+      attr_reader :vnode
 
-      def initialize(vnode,rootfspath)
+      def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        raise Lib::ResourceNotFoundError, rootfspath \
-          unless File.exists?(rootfspath)
-        raise Lib::InvalidParameterError, rootfspath \
-          unless File.directory?(rootfspath)
+        raise Lib::ResourceNotFoundError, vnode.filesystem.path \
+          unless File.exists?(vnode.filesystem.path)
+        raise Lib::InvalidParameterError, vnode.filesystem.path \
+          unless File.directory?(vnode.filesystem.path)
 
         unless File.exists?(PATH_DEFAULT_CONFIGFILE)
           Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CONFIGFILE}")
         end
 
         @vnode = vnode
-        @rootfspath = rootfspath
         @curname = ""
         @configfile = ""
         @id = 0
@@ -87,7 +86,7 @@ module Wrekavoc
         @vnode.status = Resource::Status::CONFIGURING
         stop()
         remove()
-        Lib::Shell.run("rm -R #{@rootfspath}")
+        Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
         @vnode.status = Resource::Status::READY
       end
 
@@ -99,7 +98,7 @@ module Wrekavoc
         @curname = "#{@vnode.name}-#{@id}"
         configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
-        LXCWrapper::ConfigFile.generate(@vnode,configfile,@rootfspath)
+        LXCWrapper::ConfigFile.generate(@vnode,configfile)
 
         Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
 
