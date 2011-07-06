@@ -1221,10 +1221,12 @@ module Wrekavoc
         begin
           props = JSON.parse(params['properties']) if params['properties']
           if props and !props.empty?
-            if !props['address'] and !props['vnetwork'] and props['limitation']
-              ret = @daemon.viface_configure_limitations(params['vnode'],params['viface'],props['limitation'])
+            if (!props['address'] or props['address'].empty?) \
+             and (!props['vnetwork'] or  props['vnetwork'].empty?) \
+             and (props['limitation'] and !props['limitation'].empty?)
+              ret = @daemon.viface_configure_limitations(params['vnode'],
+                params['viface'],props['limitation'])
             else
-              
               ret = @daemon.viface_attach(params['vnode'],params['viface'],props)
             end
           else

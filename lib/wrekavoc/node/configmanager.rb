@@ -64,20 +64,24 @@ module Wrekavoc
         @containers[vnodename].configure()
         @containers[vnodename].start()
         vnode.vifaces.each do |viface|
-          unless viface.limited?
-            NetworkLimitation.apply(viface)
-            viface.limited = true
+          if viface.limitation? and !viface.limited?
+            viface_configure(viface)
           end
         end
       end
 
-      def viface_reconfigure(viface)
+      def viface_flush(viface)
         raise Lib::ResourceNotFoundError, viface unless viface
 
         if viface.limited?
           NetworkLimitation.undo(viface)
           viface.limited = false
         end
+      end
+
+      def viface_configure(viface)
+        raise Lib::ResourceNotFoundError, viface unless viface
+        raise Lib::AlreadyExistingResourceError, 'limitation' if viface.limited?
 
         NetworkLimitation.apply(viface)
         viface.limited = true

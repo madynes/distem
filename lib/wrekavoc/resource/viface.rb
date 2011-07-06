@@ -67,7 +67,7 @@ module Wrekavoc
         return (vnetwork ? vnetwork.address.include?(@address) : false)
       end
 
-      def add_limitation(limitation)
+      def add_limitations(limitation)
         limit_input = nil
         limit_output = nil
         #Already parsed hash
@@ -104,10 +104,13 @@ module Wrekavoc
         @limit_output = limit_output
       end
 
-      def remove_limitation(limitation)
-        raise unless limitation.is_a?(Hash)
-        @limitation_input = nil if limitation['INPUT']
-        @limitation_output = nil if limitation['OUTPUT']
+      def remove_limitations()
+        @limit_input = nil
+        @limit_output = nil
+      end
+
+      def limitation?
+        return (@limit_input or @limit_output)
       end
 
       def limited?

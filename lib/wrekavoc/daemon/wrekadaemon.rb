@@ -630,10 +630,9 @@ module Wrekavoc
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnodename,vifacename) if viface.attached?
 
-        raise Lib::ResourceNotFoundError, vifacename unless viface
-        #raise Lib::AlreadyExistingResourceError, 'attach' if viface.attached?
         raise Lib::MissingParameterError, "address|vnetwork" \
-          unless (properties['address'] or properties['vnetwork'])
+          if ((!properties['address'] or properties['address'].empty?) \
+          and (!properties['vnetwork'] or properties['vnetwork'].empty?))
 
         if daemon?
           if properties['address']
@@ -698,7 +697,7 @@ module Wrekavoc
 
         viface_configure_limitations(vnode.name,viface.name,
           properties['limitation']
-        )
+        ) if properties['limitation'] and !properties['limitation'].empty?
 
         return viface
 
@@ -734,6 +733,22 @@ module Wrekavoc
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
+        raise MissingParameterError unless limitations
+
+        limits = Limitation::Network::Manager.parse_limitations(
+          vnode,viface,limitations
+        ) 
+
+        if viface.limitation?
+          if target?(vnode) and vnode.status == Resource::Status::RUNNING
+            vnode.status = Resource::Status::CONFIGURING
+            @node_config.viface_flush(viface) 
+            vnode.status = Resource::Status::RUNNING
+          end
+          viface.remove_limitations()
+        end
+        viface.add_limitations(limits)
+
         if daemon?
           unless target?(vnode)
             props = {}
@@ -743,18 +758,10 @@ module Wrekavoc
           end
         end
 
-        #Set the limitations if there is some
-        if limitations
-          limits = Limitation::Network::Manager.parse_limitations(
-            vnode,viface,limitations
-          ) 
-          viface.add_limitation(limits)
-        end
-
         if target?(vnode)
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
-            @node_config.viface_reconfigure(viface) if limits
+            @node_config.viface_configure(viface)
             vnode.status = Resource::Status::RUNNING
           end
         end
@@ -762,7 +769,7 @@ module Wrekavoc
       rescue Lib::AlreadyExistingResourceError
         raise
       rescue Exception
-        viface.remove_limitation(limitations) \
+        viface.remove_limitations() \
           if limitations
         raise
       end
