@@ -185,9 +185,6 @@ if options['f_vnode_attach']
     params['vnetwork'] = options['vnetwork_name']
   elsif options['viface_address']
     params['address'] = options['viface_address']
-  else
-    pp "You must specify a network (-N) or an address (-A []) for the viface"
-    exit 1
   end
   pp cl.viface_attach(options['vnode_name'],options['viface_name'],params)
 end

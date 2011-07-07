@@ -16,13 +16,6 @@ module Wrekavoc
           super(paramshash)
           @delay = paramshash['delay'] if paramshash['delay']
         end
-
-        def to_hash()
-          ret = {}
-          ret['type'] = Latency.name
-          ret['delay'] = @delay
-          return ret
-        end
       end
 
     end

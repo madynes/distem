@@ -670,6 +670,30 @@ module Wrekavoc
         end
       end
 
+      # Get the full description of the platform
+      # ==== Attributes
+      # * +format+ The wished output format (default is JSON)
+      # ==== Returns
+      # The description in the wished format
+
+      def vplatform_info(format = 'JSON')
+        begin
+          ret = {}
+          req = "/vplatform/#{format}"
+          @resource[req].get(
+            {}
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       protected
 
       def check_error(result,response)

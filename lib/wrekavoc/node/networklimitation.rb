@@ -12,7 +12,7 @@ module Wrekavoc
       def self.undo(viface)
         if viface.limit_input
           iface = "ifb#{viface.id}"
-          tmproot = TCWrapper::QdiscRoot.new(iface)
+          inputroot = TCWrapper::QdiscRoot.new(iface)
           Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
         end
 

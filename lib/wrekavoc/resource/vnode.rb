@@ -114,19 +114,6 @@ module Wrekavoc
         vnode.is_a?(VNode) and (@name == vnode.name)
       end
 
-      def to_hash()
-        ret = {}
-        ret['id'] = @id.to_s
-        ret['name'] = @name
-        ret['host'] = @host.address.to_s
-        ret['filesystem'] = @filesystem.to_hash
-        ret['status'] = @status
-        ret['gateway'] = @gateway.to_s
-        ret['ifaces'] = []
-        @vifaces.each { |viface| ret['ifaces'] << viface.name }
-        return ret
-      end
-
       def to_s
         return @name
       end

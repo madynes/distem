@@ -6,6 +6,7 @@ module Wrekavoc
 
     # Wrekavoc Virtual Node filesystem
     class FileSystem
+      attr_reader :vnode
       # The URI to the -bootstrapped and compressed- image file
       attr_accessor :image
       # The path to the filesystem on the physical machine
@@ -15,14 +16,6 @@ module Wrekavoc
         @vnode = vnode
         @image = URI.encode(image)
         @path = path
-      end
-
-      def to_hash
-        ret = {}
-        ret['vnode'] = @vnode
-        ret['image'] = @image
-        ret['path'] = @path
-        return ret
       end
 
       def to_s

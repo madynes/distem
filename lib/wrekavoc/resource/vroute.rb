@@ -23,15 +23,6 @@ module Wrekavoc
           and (@dstnet == vroute.dstnet) # and (@gw == vroute.gw)
       end
 
-      def to_hash()
-        ret = {}
-        ret['id'] = @id.to_s
-        ret['networksrc'] = @srcnet.name
-        ret['networkdst'] = @dstnet.name
-        ret['gateway'] = @gw.to_s
-        return ret
-      end
-
       def to_s()
         return "#{@srcnet.address.to_string} to #{@dstnet.address.to_string} via #{@gw.to_s}"
       end

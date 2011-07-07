@@ -156,17 +156,6 @@ module Wrekavoc
         return ret
       end
 
-      def to_hash()
-        ret = {}
-        ret['name'] = @name
-        ret['address'] = @address.to_string
-        ret['vnodes'] = []
-        @vnodes.each_pair do |vnode,viface|
-          ret['vnodes'] << vnode.name if viface
-        end
-        return ret
-      end
-
       def to_s()
         return "#{name}(#{address.to_string})"
       end

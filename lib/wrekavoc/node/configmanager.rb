@@ -24,14 +24,6 @@ module Wrekavoc
         return (@containers.has_key?(name) ? @containers[name] : nil)
       end
 
-      def get_vnodes_list()
-        ret = {}
-        @vplatform.vnodes.each_value do |vnode|
-          ret[vnode.name] = vnode.to_hash
-        end
-        return ret
-      end
-
       # >>> TODO: Add the ability to modify a vnode      
       def vnode_add(vnode)
         @vplatform.add_vnode(vnode)

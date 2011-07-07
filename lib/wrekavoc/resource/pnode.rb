@@ -40,14 +40,6 @@ module Wrekavoc
       def ==(pnode)
         pnode.is_a?(PNode) and (@address == pnode.address)
       end
-
-      def to_hash()
-        ret = {}
-        ret['id'] = @id.to_s
-        ret['address'] = @address
-        ret['status'] = @status
-        return ret
-      end
     end
 
   end  

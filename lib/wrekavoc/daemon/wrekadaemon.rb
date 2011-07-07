@@ -121,7 +121,6 @@ module Wrekavoc
       end
 
       def pnodes_quit()
-        ret = []
         if daemon?
           me = nil
           @daemon_resources.pnodes.each_value do |pnode|
@@ -129,11 +128,11 @@ module Wrekavoc
               me = pnode.address.to_s
               next
             end
-            ret << pnode_quit(pnode.address.to_s).to_hash
+            pnode_quit(pnode.address.to_s)
           end
-          ret << pnode_quit(me).to_hash
+          pnode_quit(me)
         end
-        return ret
+        return @daemon_resources.pnodes
       end
 
       def pnode_get(hostname, raising = true) 
@@ -156,18 +155,14 @@ module Wrekavoc
       end
 
       def pnodes_get()
-        ret = []
+        vplatform = nil
         if daemon?
           vplatform = @daemon_resources
         else
-          @node_config.vplatform
+          vplatform = @node_config.vplatform
         end
 
-        vplatform.pnodes.each_value do |pnode|
-          ret << pnode.to_hash
-        end
-
-        return ret
+        return vplatform.pnodes
       end
 
       def vnode_create(name,properties)
@@ -384,22 +379,6 @@ module Wrekavoc
       end
 
       def vnodes_get()
-        ret = []
-        if daemon?
-          vplatform = @daemon_resources
-        else
-          @node_config.vplatform
-        end
-
-        vplatform.vnodes.each_value do |vnode|
-          ret << vnode.to_hash
-        end
-
-        return ret
-      end
-
-      def vnodes_remove()
-        ret = []
         vnodes = nil
         if daemon?
           vnodes = @daemon_resources.vnodes
@@ -407,12 +386,20 @@ module Wrekavoc
           vnodes = @node_config.vplatform.vnodes
         end
 
-        vnodes.each_value do |vnode|
-          ret << vnode.to_hash
-          vnode_remove(vnode.name)
+        return vnodes
+      end
+
+      def vnodes_remove()
+        vnodes = nil
+        if daemon?
+          vnodes = @daemon_resources.vnodes
+        else
+          vnodes = @node_config.vplatform.vnodes
         end
 
-        return ret
+        vnodes.each_value { |vnode| vnode_remove(vnode.name) }
+
+        return vnodes
       end
 
       def viface_create(vnodename,vifacename)
@@ -581,7 +568,6 @@ module Wrekavoc
       end
 
       def vnetworks_remove()
-        ret = []
         vnetworks = nil
         if daemon?
           vnetworks = @daemon_resources.vnetworks
@@ -589,12 +575,9 @@ module Wrekavoc
           vnetworks = @node_config.vplatform.vnetworks
         end
 
-        vnetworks.each_value do |vnetwork|
-          ret << vnetwork.to_hash
-          vnetwork_remove(vnetwork.name)
-        end
+        vnetworks.each_value { |vnetwork| vnetwork_remove(vnetwork.name) }
 
-        return ret
+        return vnetworks
       end
 
       def vnetwork_get(name,raising = true)
@@ -610,18 +593,14 @@ module Wrekavoc
       end
 
       def vnetworks_get()
-        ret = []
+        vnetworks = nil
         if daemon?
-          vplatform = @daemon_resources
+          vnetworks = @daemon_resources.vnetworks
         else
-          @node_config.vplatform
+          vnetworks = @node_config.vplatform.vnetworks
         end
 
-        vplatform.vnetworks.each_value do |vnetwork|
-          ret << vnetwork.to_hash
-        end
-
-        return ret
+        return vnetworks
      end
 
       def viface_attach(vnodename,vifacename,properties)
@@ -858,6 +837,28 @@ module Wrekavoc
         end
 
         return ret
+      end
+
+      def vplatform_get(format)
+        format = '' unless format
+        visitor = nil
+        ret = ''
+
+        case format.upcase
+          when 'XML'
+            visitor = TopologyStore::XMLWriter.new
+          when 'JSON'
+            visitor = TopologyStore::HashWriter.new
+            ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
+          else
+            raise Lib::InvalidParameterError, format 
+        end
+
+        if ret.empty?
+          return visitor.visit(@daemon_resources)
+        else
+          return ret
+        end
       end
 
       protected

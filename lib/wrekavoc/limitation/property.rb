@@ -16,7 +16,8 @@ module Wrekavoc
         def parse_params(paramshash)
         end
 
-        def to_hash()
+        def to_s()
+          return self.class.name.split('::').last || ''
         end
       end
 

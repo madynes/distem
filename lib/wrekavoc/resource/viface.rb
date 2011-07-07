@@ -120,18 +120,6 @@ module Wrekavoc
       def ==(viface)
         viface.is_a?(VIface) and (@name == viface.name)
       end
-
-      def to_hash()
-        ret = {}
-        ret['id'] = @id.to_s
-        ret['name'] = @name
-        ret['vnode'] = @vnode.name
-        ret['address'] = @address.to_string
-        ret['connected_to'] = (@vnetwork ? @vnetwork.name : 'nil')
-        ret['limit_input'] = (@limit_input ? @limit_input.to_hash : 'nil')
-        ret['limit_output'] = (@limit_output ? @limit_output.to_hash : 'nil')
-        return ret
-      end
     end
 
   end
