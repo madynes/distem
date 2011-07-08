@@ -49,8 +49,7 @@ module Wrekavoc
       end
 
       def visit_hash(hash)
-        ret = {}
-        hash.each_pair { |key,val| ret[key] = visit(val) }
+        ret = hash.values.collect { |val| visit(val) }
         return ret
       end
 

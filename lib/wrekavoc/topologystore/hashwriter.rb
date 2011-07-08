@@ -5,11 +5,11 @@ module Wrekavoc
 
     class HashWriter < TopologyWriter
       def visit_vplatform(vplatform)
-        return {
+        return { 'vplatform' => {
           'pnodes' => visit(vplatform.pnodes),
           'vnodes' => visit(vplatform.vnodes),
           'vnetworks' => visit(vplatform.vnetworks),
-        }
+        } }
       end
 
       def visit_pnode(pnode)
@@ -28,7 +28,7 @@ module Wrekavoc
           'filesystem' => visit(vnode.filesystem),
           'status' => vnode.status,
           'gateway' => vnode.gateway.to_s,
-          'ifaces' => visit(vnode.vifaces),
+          'vifaces' => visit(vnode.vifaces),
         }
       end
 
@@ -38,9 +38,9 @@ module Wrekavoc
           'name' => viface.name,
           'vnode' => viface.vnode.name,
           'address' => viface.address.to_string,
-          'connected_to' => (viface.vnetwork ? viface.vnetwork.name : 'nil'),
-          'limit_input' => (viface.limit_input ? visit(viface.limit_input) : 'nil'),
-          'limit_output' => (viface.limit_output ? visit(viface.limit_output) : 'nil'),
+          'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
+          'limit_input' => (viface.limit_input ? visit(viface.limit_input) : nil),
+          'limit_output' => (viface.limit_output ? visit(viface.limit_output) : nil),
         }
       end
 

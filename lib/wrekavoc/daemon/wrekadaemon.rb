@@ -123,6 +123,7 @@ module Wrekavoc
       def pnodes_quit()
         if daemon?
           me = nil
+          ret = @daemon_resources.pnodes.dup
           @daemon_resources.pnodes.each_value do |pnode|
             if target?(pnode.address.to_s)
               me = pnode.address.to_s
@@ -132,7 +133,7 @@ module Wrekavoc
           end
           pnode_quit(me)
         end
-        return @daemon_resources.pnodes
+        return ret
       end
 
       def pnode_get(hostname, raising = true) 
@@ -839,14 +840,116 @@ module Wrekavoc
         return ret
       end
 
+      def vplatform_create(format,data)
+        # >>> TODO: check if there is already a created vplatform
+        raise Lib::InvalidParameterError unless daemon?
+        raise Lib::MissingParameterError, 'data' unless data
+
+        visitor = nil
+        hash = nil
+
+        case format.upcase
+          #when 'XML'
+          #  visitor = TopologyStore::XMLReader.new
+          when 'JSON'
+            hash = JSON.parse(data)
+          else
+            raise Lib::InvalidParameterError, format 
+        end
+
+        raise InvalidParameterError, data unless Lib::Validator.validate(hash)
+
+        # Initialize the pnodes (if there is some)
+        props = {}
+        props['async'] = true
+        hash['vplatform']['pnodes'].each do |pnode|
+          pnode_init(pnode['address'], props)
+        end
+
+        @daemon_resources.pnodes.each_value do |pnode|
+          while pnode.status != Resource::Status::RUNNING
+            sleep(0.2)
+          end
+        end
+
+        # Creating vnetworks
+        hash['vplatform']['vnetworks'].each do |vnetwork|
+          vnetwork_create(vnetwork['name'],vnetwork['address'])
+        end
+
+        # Creating the vnodes
+        hash['vplatform']['vnodes'].each do |vnode|
+          props['async'] = true
+          props['target'] = vnode['host'] if vnode['host']
+          props['image'] = vnode['filesystem']['image']
+          vnode_create(vnode['name'], props)
+          next unless vnode['vifaces']
+          sleep(0.2)
+
+          vnode['vifaces'].each do |viface|
+            viface_create(vnode['name'],viface['name'])
+            props = {}
+            props['address'] = viface['address'] if viface['address'] 
+            props['vnetwork'] = viface['vnetwork'] \
+              if !props['address'] and viface['vnetwork']
+            # >>> TODO: Limitations
+            if viface['limit_output']
+              props['limitation'] = {}
+              props['limitation']['OUTPUT'] = {}
+              if viface['limit_output']['properties']
+                viface['limit_output']['properties'].each do |limprop|
+                  type = limprop['type'].downcase
+                  limprop.delete('type')
+                  props['limitation']['OUTPUT'][type] = limprop.dup
+                end
+              end
+            end
+            if viface['limit_input']
+              props['limitation'] = {} unless props['limitation']
+              props['limitation']['INPUT'] = {}
+              if viface['limit_input']['properties']
+                viface['limit_input']['properties'].each do |limprop|
+                  type = limprop['type'].downcase
+                  limprop.delete('type')
+                  props['limitation']['INPUT'][type] = limprop.dup
+                end
+              end
+            end
+            viface_attach(vnode['name'],viface['name'],props)
+          end
+          props = {}
+        end
+
+        # Creating VRoutes
+        # >>>TODO: create real vroutes
+        vroute_complete()
+        
+        @daemon_resources.vnodes.each_value do |vnode|
+          while vnode.status != Resource::Status::READY
+            sleep(0.2)
+          end
+        end
+
+        # >>> TODO: start only if started
+        @daemon_resources.vnodes.each_value { |vnode| vnode_start(vnode.name) }
+
+        @daemon_resources.vnodes.each_value do |vnode|
+          while vnode.status != Resource::Status::RUNNING
+            sleep(0.2)
+          end
+        end
+
+        return @daemon_resources
+      end
+
       def vplatform_get(format)
         format = '' unless format
         visitor = nil
         ret = ''
 
         case format.upcase
-          when 'XML'
-            visitor = TopologyStore::XMLWriter.new
+          #when 'XML'
+          #  visitor = TopologyStore::XMLWriter.new
           when 'JSON'
             visitor = TopologyStore::HashWriter.new
             ret += JSON.pretty_generate(visitor.visit(@daemon_resources))

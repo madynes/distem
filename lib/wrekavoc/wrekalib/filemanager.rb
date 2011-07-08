@@ -74,6 +74,8 @@ module Wrekavoc
         extname = File.extname(archivefile)
         Lib::Shell.run("ln -sf #{archivefile} #{File.join(target_dir,basename)}")
         case extname
+          when ".tar"
+            Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xf #{basename}")
           when ".gz", ".gzip"
             if File.extname(File.basename(basename,extname)) == ".tar"
               Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xzf #{basename}")

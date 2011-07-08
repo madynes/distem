@@ -670,6 +670,31 @@ module Wrekavoc
         end
       end
 
+      # Create an set a platform with backup data
+      # ==== Attributes
+      # * +format+ The input data format (default is JSON)
+      # * +data+ The data used to create the vplatform
+      # ==== Returns
+      # The description of the vplatform
+
+      def vplatform_create(data,format = 'JSON')
+        begin
+          ret = {}
+          req = "/vplatform"
+          @resource[req].post(
+            { 'format' => format, 'data' => data }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       # Get the full description of the platform
       # ==== Attributes
       # * +format+ The wished output format (default is JSON)

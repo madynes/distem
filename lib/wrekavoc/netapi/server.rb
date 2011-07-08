@@ -1412,6 +1412,59 @@ module Wrekavoc
 
         return result!
       end
+
+      ##
+      # :method: post(/vplatform)
+      #
+      # :call-seq:
+      #   POST /vplatform
+      # 
+      # Load a configuration
+      #
+      # == Query parameters
+      # <tt>data</tt>:: data to be applied
+      # <tt>format</tt>:: the format of the data
+      #
+      # == Content-Types
+      # <tt>application/file</tt>:: The file in the requested format
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      post '/vplatform' do
+        begin
+          ret = @daemon.vplatform_create(params['format'],params['data'])
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return result!
+      end
       
       protected
 
