@@ -6,6 +6,8 @@ module Wrekavoc
   module Lib
 
     class FileManager
+      MAX_SIMULTANEOUS_EXTRACT = 8
+
       PATH_CURRENT=File.expand_path(File.dirname(__FILE__))
       PATH_WREKAVOC_BIN=File.expand_path('../../../bin/',PATH_CURRENT)
       PATH_WREKAVOC_LOGS=File.expand_path('../../../logs/',PATH_CURRENT)
@@ -19,8 +21,8 @@ module Wrekavoc
       BIN_BUNZIP2="bunzip2"
       BIN_UNZIP="unzip"
 
-      @@extractcache = []
-      @@extractcachelock = {}
+      @@initcachelock = {}
+      @@cachelock = {}
       
       # Returns a path to the file on the local machine
       def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
@@ -56,8 +58,15 @@ module Wrekavoc
         end
 
         cachedir = cache_archive(archivefile)
+        filehash = file_hash(archivefile)
 
-        Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+        unless @@cachelock[filehash]
+          @@cachelock[filehash] = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT)
+        end
+
+        @@cachelock[filehash].synchronize {
+          Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+        }
 
         return targetdir
       end
@@ -101,11 +110,11 @@ module Wrekavoc
         filehash = file_hash(archivefile)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
-        if @@extractcachelock[filehash]
-          @@extractcachelock[filehash].synchronize {}
+        if @@initcachelock[filehash]
+          @@initcachelock[filehash].synchronize {}
         else
-          @@extractcachelock[filehash] = Mutex.new
-          @@extractcachelock[filehash].synchronize {
+          @@initcachelock[filehash] = Mutex.new
+          @@initcachelock[filehash].synchronize {
             if File.exists?(cachedir)
               Lib::Shell.run("rm -R #{cachedir}")
             end
