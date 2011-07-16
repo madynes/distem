@@ -7,7 +7,7 @@ module Wrekavoc
 
       PATH_WREKATMP='/tmp/wrekavoc/'
       PATH_CGROUP='/dev/cgroup'
-      MAX_IFACES=32
+      MAX_IFACES=256
       
       def self.init_node
         Lib::NetTools.set_bridge()

@@ -1,0 +1,214 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "simgrid.dtd">
+<platform version="2">
+  <cluster id="LU" prefix="leiden-university-" suffix="das3.nl"
+       radical="1-32" power="4.311E9" bw="1.25E8" lat="1.0E-4"
+       bb_bw="1.25E9" bb_lat="1.0E-4"/>
+
+  <cluster id="TUD" prefix="delft-university-of-technology-" suffix="das3.nl"
+       radical="1-68" power="3.865E9" bw="1.25E8" lat="1.0E-4"
+       bb_bw="1.25E9" bb_lat="1.0E-4"/>
+
+  <cluster id="UvA" prefix="university-of-amsterdam-" suffix="das3.nl"
+       radical="1-41" power="3.675E9" bw="1.25E8" lat="1.0E-4"
+       bb_bw="1.25E9" bb_lat="1.0E-4"/>
+
+  <cluster id="UvA-MN" prefix="multimedia-consortium-" suffix="das3.nl"
+       radical="1-46" power="3.865E9" bw="1.25E8" lat="1.0E-4"
+       bb_bw="1.25E9" bb_lat="1.0E-4"/>
+
+  <cluster id="VU" prefix="vrije-universiteit-" suffix="das3.nl"
+       radical="1-85" power="3.865E9" bw="1.25E8" lat="1.0E-4"
+       bb_bw="1.25E9" bb_lat="1.0E-4"/>
+
+
+  <link id="LU_amsterdam2" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="TUD_amsterdam1" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="UvA_MN_amsterdam1" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="UvA_VLe_amsterdam1" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="VU_amsterdam2" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="amsterdam1_amsterdam2" bandwidth="1.25E9" latency="1.0E-4" />
+  <link id="amsterdam1_sw" bandwidth="1.25E9" latency="1.0E-4" sharing_policy = "FATPIPE"/>
+  <link id="amsterdam2_sw" bandwidth="1.25E9" latency="1.0E-4" sharing_policy = "FATPIPE"/>
+
+  <route:multi src="$*" dst="LU">
+    <link:ctn id="LU_amsterdam2"/>
+    <link:ctn id="amsterdam2_sw"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="$*" dst="TUD">
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="$*" dst="UvA">
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="$*" dst="UvA-MN">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="$*" dst="VU">
+    <link:ctn id="VU_amsterdam2"/>
+    <link:ctn id="amsterdam2_sw"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="LU" dst="$*">
+    <link:ctn id="LU_amsterdam2"/>
+    <link:ctn id="amsterdam2_sw"/>
+  </route:multi>
+
+  <route:multi src="LU" dst="TUD">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="LU" dst="UvA">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="LU" dst="UvA-MN">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="LU" dst="VU">
+    <link:ctn id="VU_amsterdam2"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="TUD" dst="$*">
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+  </route:multi>
+
+  <route:multi src="TUD" dst="LU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="TUD" dst="UvA">
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="TUD" dst="UvA-MN">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="TUD" dst="VU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA" dst="$*">
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+  </route:multi>
+
+  <route:multi src="UvA" dst="LU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA" dst="TUD">
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA" dst="UvA-MN">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA" dst="VU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA-MN" dst="$*">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="amsterdam1_sw"/>
+  </route:multi>
+
+  <route:multi src="UvA-MN" dst="LU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA-MN" dst="TUD">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA-MN" dst="UvA">
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="UvA-MN" dst="VU">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="VU" dst="$*">
+    <link:ctn id="VU_amsterdam2"/>
+    <link:ctn id="amsterdam2_sw"/>
+  </route:multi>
+
+  <route:multi src="VU" dst="LU">
+    <link:ctn id="VU_amsterdam2"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="VU" dst="TUD">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="TUD_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="VU" dst="UvA">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_VLe_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+  <route:multi src="VU" dst="UvA-MN">
+    <link:ctn id="amsterdam1_amsterdam2"/>
+    <link:ctn id="amsterdam1_sw"/>
+    <link:ctn id="UvA_MN_amsterdam1"/>
+    <link:ctn id="$dst"/>
+  </route:multi>
+
+</platform>
+

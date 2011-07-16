@@ -27,7 +27,7 @@ module Wrekavoc
           'host' => vnode.host.address.to_s,
           'filesystem' => visit(vnode.filesystem),
           'status' => vnode.status,
-          'gateway' => vnode.gateway.to_s,
+          'gateway' => vnode.gateway,
           'vifaces' => visit(vnode.vifaces),
         }
       end

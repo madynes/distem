@@ -3,6 +3,7 @@ require 'thread'
 require 'socket'
 require 'ipaddress'
 require 'json'
+require 'pp'
 
 module Wrekavoc
   module Daemon
@@ -845,30 +846,39 @@ module Wrekavoc
         raise Lib::InvalidParameterError unless daemon?
         raise Lib::MissingParameterError, 'data' unless data
 
-        visitor = nil
-        hash = nil
+        parser = nil
+        hash = {}
 
         case format.upcase
           #when 'XML'
           #  visitor = TopologyStore::XMLReader.new
           when 'JSON'
             hash = JSON.parse(data)
+          when 'SIMGRID'
+            parser = TopologyStore::SimgridReader.new('file:///home/lsarzyniec/rootfs.tar.bz2')
           else
             raise Lib::InvalidParameterError, format 
+        end
+
+        if hash.empty?
+          hash = parser.parse(data)
+          #raise PP.pp(hash)
         end
 
         raise InvalidParameterError, data unless Lib::Validator.validate(hash)
 
         # Initialize the pnodes (if there is some)
-        props = {}
-        props['async'] = true
-        hash['vplatform']['pnodes'].each do |pnode|
-          pnode_init(pnode['address'], props)
-        end
+        if hash['vplatform']['pnodes']
+          props = {}
+          props['async'] = true
+          hash['vplatform']['pnodes'].each do |pnode|
+            pnode_init(pnode['address'], props)
+          end
 
-        @daemon_resources.pnodes.each_value do |pnode|
-          while pnode.status != Resource::Status::RUNNING
-            sleep(0.2)
+          @daemon_resources.pnodes.each_value do |pnode|
+            while pnode.status != Resource::Status::RUNNING
+              sleep(0.2)
+            end
           end
         end
 
@@ -878,6 +888,7 @@ module Wrekavoc
         end
 
         # Creating the vnodes
+        props = {}
         hash['vplatform']['vnodes'].each do |vnode|
           props['async'] = true
           props['target'] = vnode['host'] if vnode['host']
@@ -923,7 +934,7 @@ module Wrekavoc
         # Creating VRoutes
         # >>>TODO: create real vroutes
         vroute_complete()
-        
+=begin
         @daemon_resources.vnodes.each_value do |vnode|
           while vnode.status != Resource::Status::READY
             sleep(0.2)
@@ -938,7 +949,7 @@ module Wrekavoc
             sleep(0.2)
           end
         end
-
+=end
         return @daemon_resources
       end
 
