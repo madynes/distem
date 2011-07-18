@@ -92,7 +92,7 @@ module Wrekavoc
           'name' => defaultgw['name'],
           'bw' => nil,
           'lat' => nil,
-          'ifnb' => 0
+          'ifnb' => 1
         }
         tmp['gateways'] << gw
         tmp['networks'] = [] unless tmp['networks']
@@ -210,6 +210,17 @@ module Wrekavoc
               networkname = network1 + '-' + network2
             end
 
+            # Create vnetwork
+            newnet = result['vnetworks'].select { |net| net['name'] == networkname }
+            if !newnet or newnet.empty?
+              result['vnetworks'] << {
+                'name' => networkname,
+                'address' => "#{IPHACKROOT}.#{@@iphack}.0/24"
+              }
+              @@iphack += 1
+            end
+
+            # Create viface
             viface = vnode['vifaces'].select{ |iface| iface['vnetwork'] == networkname }[0]
             unless viface
               viface = {

@@ -6,8 +6,10 @@ module Wrekavoc
     class NetTools
       NAME_BRIDGE='br0'
       LOCALHOST='localhost'
+      IFNAMEMAXSIZE=15
       @@nic_count=1
       @@addr_default=nil
+      @@ifids = 0
 
       def self.get_default_iface
         cmdret = Shell.run("/sbin/route") 
@@ -75,7 +77,11 @@ module Wrekavoc
         raise unless vnode.is_a?(Resource::VNode)
         raise unless viface.is_a?(Resource::VIface)
 
-        return "#{vnode.name}-#{viface.name}"
+        ret = "#{vnode.name}-#{viface.name}-#{@@ifids}"
+        @@ifids += 1
+        binf = (ret.size >= IFNAMEMAXSIZE ? ret.size-IFNAMEMAXSIZE : 0)
+        ret = ret[binf..ret.size]
+        
       end
 
       def self.localaddr?(address)

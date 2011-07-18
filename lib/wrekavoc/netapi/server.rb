@@ -304,7 +304,7 @@ module Wrekavoc
       #
       delete '/vnodes/:vnode' do
         begin
-          ret = @daemon.vnode_remove(params['vnode'])
+          ret = @daemon.vnode_remove(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -411,7 +411,7 @@ module Wrekavoc
       #
       get '/vnodes/:vnode' do
         begin
-          ret = @daemon.vnode_get(params['vnode'])
+          ret = @daemon.vnode_get(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -561,7 +561,8 @@ module Wrekavoc
         begin
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
-          ret = @daemon.vnode_set_status(params['vnode'],params['status'],props)
+          ret = @daemon.vnode_set_status(URI.unescape(params['vnode']),
+            params['status'],props)
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -613,7 +614,8 @@ module Wrekavoc
       #
       put '/vnodes/:vnode/mode' do
         begin
-          ret = @daemon.vnode_set_mode(params['vnode'],params['mode'])
+          ret = @daemon.vnode_set_mode(URI.unescape(params['vnode']),
+            params['mode'])
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -664,7 +666,7 @@ module Wrekavoc
       #
       get '/vnodes/:vnode/filesystem' do
         begin
-          ret = @daemon.vnode_filesystem_get(params['vnode'])
+          ret = @daemon.vnode_filesystem_get(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -717,7 +719,7 @@ module Wrekavoc
 
       get '/vnodes/:vnode/filesystem/image' do
         begin
-          ret = @daemon.vnode_filesystem_image_get(params['vnode'])
+          ret = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
           send_file(ret, :filename => "#{params['vnode']}-fsimage.tar.gz")
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
@@ -766,7 +768,8 @@ module Wrekavoc
       #
       post '/vnodes/:vnode/commands' do
         begin
-          ret = @daemon.vnode_execute(params['vnode'],params['command'])
+          ret = @daemon.vnode_execute(URI.unescape(params['vnode']),
+            params['command'])
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -818,7 +821,7 @@ module Wrekavoc
       #
       post '/vnodes/:vnode/vifaces' do
         begin
-          ret = @daemon.viface_create(params['vnode'],params['name'])
+          ret = @daemon.viface_create(URI.unescape(params['vnode']),params['name'])
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -869,7 +872,8 @@ module Wrekavoc
       #
       delete '/vnodes/:vnode/vifaces/:viface' do
         begin
-          ret = @daemon.viface_remove(params['vnode'],params['viface'])
+          ret = @daemon.viface_remove(URI.unescape(params['vnode']),
+            URI.unescape(params['viface']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -920,7 +924,8 @@ module Wrekavoc
       #
       get '/vnodes/:vnode/vifaces/:viface' do
         begin
-          ret = @daemon.viface_get(params['vnode'],params['viface'])
+          ret = @daemon.viface_get(URI.unescape(params['vnode']),
+            URI.unescape(params['viface']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -1022,7 +1027,7 @@ module Wrekavoc
       #
       delete '/vnetworks/:vnetwork' do
         begin
-          ret = @daemon.vnetwork_remove(params['vnetwork'])
+          ret = @daemon.vnetwork_remove(URI.unescape(params['vnetwork']))
         rescue Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -1070,7 +1075,7 @@ module Wrekavoc
       #
       get '/vnetworks/:vnetwork' do
         begin
-          ret = @daemon.vnetwork_get(params['vnetwork'])
+          ret = @daemon.vnetwork_get(URI.unescape(params['vnetwork']))
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
@@ -1219,18 +1224,20 @@ module Wrekavoc
       
       put '/vnodes/:vnode/vifaces/:viface' do 
         begin
+          vnodename = URI.unescape(params['vnode'])
+          vifacename = URI.unescape(params['viface'])
           props = JSON.parse(params['properties']) if params['properties']
           if props and !props.empty?
             if (!props['address'] or props['address'].empty?) \
              and (!props['vnetwork'] or  props['vnetwork'].empty?) \
              and (props['limitation'] and !props['limitation'].empty?)
-              ret = @daemon.viface_configure_limitations(params['vnode'],
-                params['viface'],props['limitation'])
+              ret = @daemon.viface_configure_limitations(vnodename,
+                vifacename,props['limitation'])
             else
-              ret = @daemon.viface_attach(params['vnode'],params['viface'],props)
+              ret = @daemon.viface_attach(vnodename,vifacename,props)
             end
           else
-            ret = @daemon.viface_detach(params['vnode'],params['viface'])
+            ret = @daemon.viface_detach(vnodename,vifacename)
           end
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
@@ -1286,7 +1293,7 @@ module Wrekavoc
       post '/vnetworks/:vnetwork/vroutes' do
         begin
           ret = @daemon.vroute_create(
-            params['vnetwork'],
+            URI.unescape(params['vnetwork']),
             params['destnetwork'],
             params['gatewaynode'], params['vnode'] 
           )

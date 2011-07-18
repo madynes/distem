@@ -10,6 +10,8 @@ module Wrekavoc
       attr_reader :id
       # The IP address of the Node
       attr_reader :address
+      # The CPU description
+      attr_accessor :cpu
       # The status in which the Node is
       attr_accessor :status
 

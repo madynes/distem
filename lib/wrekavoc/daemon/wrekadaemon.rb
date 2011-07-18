@@ -169,6 +169,7 @@ module Wrekavoc
 
       def vnode_create(name,properties)
       begin
+        name = name.gsub(' ','_')
         if daemon?
           if properties['target']
             pnode = @daemon_resources.get_pnode_by_address(properties['target'])
@@ -270,6 +271,7 @@ module Wrekavoc
       end
 
       def vnode_get(name, raising = true)
+        name = name.gsub(' ','_')
         if daemon?
           vnode = @daemon_resources.get_vnode(name)
         else
@@ -406,6 +408,7 @@ module Wrekavoc
 
       def viface_create(vnodename,vifacename)
       begin
+        vifacename = vifacename.gsub(' ','_')
         vnode = vnode_get(vnodename)
 
         viface = Resource::VIface.new(vifacename,vnode)
@@ -455,6 +458,7 @@ module Wrekavoc
       end
 
       def viface_get(vnodename,vifacename,raising = true)
+        vifacename = vifacename.gsub(' ','_')
         vnode = vnode_get(vnodename,raising)
         viface = vnode.get_viface_by_name(vifacename)
 
@@ -527,6 +531,7 @@ module Wrekavoc
 
       def vnetwork_create(name,address)
       begin
+        name = name.gsub(' ','_')
         vnetwork = Resource::VNetwork.new(address,name)
         if daemon?
           @daemon_resources.add_vnetwork(vnetwork)
@@ -583,6 +588,7 @@ module Wrekavoc
       end
 
       def vnetwork_get(name,raising = true)
+        name = name.gsub(' ','_')
         if daemon?
           vnetwork = @daemon_resources.get_vnetwork_by_name(name)
         else
@@ -610,6 +616,8 @@ module Wrekavoc
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnodename,vifacename) if viface.attached?
+        properties['vnetwork'] = properties['vnetwork'].gsub(' ','_') \
+          if properties['vnetwork']
 
         raise Lib::MissingParameterError, "address|vnetwork" \
           if ((!properties['address'] or properties['address'].empty?) \
@@ -862,7 +870,7 @@ module Wrekavoc
 
         if hash.empty?
           hash = parser.parse(data)
-          #raise PP.pp(hash)
+          #raise PP.pp(hash['vplatform'])
         end
 
         raise InvalidParameterError, data unless Lib::Validator.validate(hash)
@@ -895,7 +903,7 @@ module Wrekavoc
           props['image'] = vnode['filesystem']['image']
           vnode_create(vnode['name'], props)
           next unless vnode['vifaces']
-          sleep(0.2)
+          sleep(0.5)
 
           vnode['vifaces'].each do |viface|
             viface_create(vnode['name'],viface['name'])

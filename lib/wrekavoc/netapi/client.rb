@@ -2,6 +2,7 @@ require 'wrekavoc'
 require 'rest_client'
 require 'json'
 require 'cgi'
+require 'uri'
 require 'pp'
 
 module Wrekavoc
@@ -171,7 +172,7 @@ module Wrekavoc
       def vnode_remove(name)
         begin
           ret = {}
-          req = "/vnodes/#{name}"
+          req = "/vnodes/#{URI.escape(name)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
@@ -189,7 +190,7 @@ module Wrekavoc
       def vnode_info(vnodename)
         begin
           ret = {}
-          req = "/vnodes/#{vnodename}"
+          req = "/vnodes/#{URI.escape(vnodename)}"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -211,7 +212,7 @@ module Wrekavoc
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
-          req = "/vnodes/#{vnode}"
+          req = "/vnodes/#{URI.escape(vnode)}"
           @resource[req].put(
             { :status => Resource::Status::RUNNING, :properties => properties }
           ) { |response, request, result|
@@ -241,7 +242,7 @@ module Wrekavoc
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
-          req = "/vnodes/#{vnode}"
+          req = "/vnodes/#{URI.escape(vnode)}"
           @resource[req].put(
             { :status => Resource::Status::READY, :properties => properties }
           ) { |response, request, result|
@@ -271,7 +272,7 @@ module Wrekavoc
       def viface_create(vnode, name)
         begin
           ret = {}
-          req = "/vnodes/#{vnode}/vifaces"
+          req = "/vnodes/#{URI.escape(vnode)}/vifaces"
           @resource[req].post(
             { :name => name }
           ) { |response, request, result|
@@ -295,7 +296,7 @@ module Wrekavoc
       def viface_remove(vnodename,vifacename)
         begin
           ret = {}
-          req = "/vnodes/#{vnodename}/vifaces/#{vifacename}"
+          req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
@@ -313,7 +314,7 @@ module Wrekavoc
       def viface_info(vnodename, vifacename)
         begin
           ret = {}
-          req = "/vnodes/#{vnodename}/vifaces/#{vifacename}"
+          req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
           @resource[req].get(
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
@@ -335,7 +336,7 @@ module Wrekavoc
       def vnode_gateway(vnode)
         begin
           ret = {}
-          req = "/vnodes/#{vnode}/mode"
+          req = "/vnodes/#{URI.escape(vnode)}/mode"
           @resource[req].put(
             { :mode => Resource::VNode::MODE_GATEWAY }
           ) { |response, request, result|
@@ -358,7 +359,7 @@ module Wrekavoc
       def vnode_filesystem_info(vnode)
         begin
           ret = {}
-          req = "/vnodes/#{vnode}/filesystem"
+          req = "/vnodes/#{URI.escape(vnode)}/filesystem"
           @resource[req].get(
             {}
           ) { |response, request, result|
@@ -388,7 +389,7 @@ module Wrekavoc
           end
 
           ret = {}
-          req = "/vnodes/#{vnode}/filesystem/image"
+          req = "/vnodes/#{URI.escape(vnode)}/filesystem/image"
           @resource[req].get(
             {}
           ) { |response, request, result|
@@ -475,7 +476,7 @@ module Wrekavoc
       def vnetwork_remove(name)
         begin
           ret = {}
-          req = "/vnetworks/#{name}"
+          req = "/vnetworks/#{URI.escape(name)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
@@ -493,7 +494,7 @@ module Wrekavoc
       def vnetwork_info(vnetworkname)
         begin
           ret = {}
-          req = "/vnetworks/#{vnetworkname}"
+          req = "/vnetworks/#{URI.escape(vnetworkname)}"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -558,7 +559,7 @@ module Wrekavoc
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
-          req = "/vnodes/#{vnode}/vifaces/#{viface}"
+          req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
           @resource[req].put(
             { :properties => properties }
           ) { |response, request, result|
@@ -583,7 +584,7 @@ module Wrekavoc
       def viface_detach(vnode, viface)
         begin
           ret = {}
-          req = "/vnodes/#{vnode}/vifaces/#{viface}"
+          req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
           @resource[req].put(
             {}
           ) { |response, request, result|
@@ -609,7 +610,7 @@ module Wrekavoc
       def vroute_create(srcnet,destnet,gateway,vnode="")
         begin
           ret = {}
-          req = "/vnetworks/#{srcnet}/vroutes"
+          req = "/vnetworks/#{URI.escape(srcnet)}/vroutes"
           @resource[req].post(
             { :destnetwork => destnet,
               :gatewaynode => gateway, :vnode => vnode }
@@ -655,7 +656,7 @@ module Wrekavoc
       def vnode_execute(vnode, command)
         begin
           ret = {}
-          req = "/vnodes/#{vnode}/commands"
+          req = "/vnodes/#{URI.escape(vnode)}/commands"
           @resource[req].post(
             { :command => command }
           ) { |response, request, result|
