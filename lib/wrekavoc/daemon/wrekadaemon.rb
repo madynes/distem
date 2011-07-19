@@ -56,7 +56,18 @@ module Wrekavoc
                 Admin.pnode_run_server(pnode)
                 sleep(1)
                 cl = NetAPI::Client.new(target)
-                cl.pnode_init(target)
+                ret = cl.pnode_init(target)
+                pnode.memory.capacity = ret['memory']['capacity'].split()[0].to_i
+                pnode.memory.swap = ret['memory']['swap'].split()[0].to_i
+
+                ret['cpu']['cores'].each do |core|
+                  pnode.cpu.add_core(core['physicalid'],
+                    core['frequency'].split()[0].to_f
+                  )
+                end
+                ret['cpu']['critical_cache_links'].each do |link|
+                  pnode.cpu.add_critical_cache_link(link)
+                end
             end
             pnode.status = Resource::Status::RUNNING
           }

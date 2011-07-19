@@ -35,8 +35,18 @@ module Wrekavoc
 
       def add_critical_cache_link(cores)
         raise Lib::InvalidParameterError, cores unless cores.is_a?(Array)
+        cores.collect! do |core|
+          unless core.is_a?(Core)
+            core = get_core(core)
+            raise Lib::InvalidParameterError, core unless core
+          end
+          core
+        end 
+
         cores.each do |core|
-          raise raise Lib::InvalidParameterError, core unless core.is_a?(Core)
+          core = get_core(core) unless core.is_a?(Core)
+          raise raise Lib::InvalidParameterError, core unless core
+
           tmpcores = cores.dup
           tmpcores.delete(core)
           core.cache_links = tmpcores

@@ -37,8 +37,7 @@ module Wrekavoc
             pcpu.add_critical_cache_link(cur) unless cur.empty?
             cur = []
           elsif line =~ /\s*Core\s*p#[0-9]+\s*\+\s*PU\s*p#([0-9]+)\s*/
-            coreid = Regexp.last_match(1)
-            cur << pcpu.get_core(coreid)
+            cur << Regexp.last_match(1)
           end
         end
         pcpu.add_critical_cache_link(cur) unless cur.empty?
