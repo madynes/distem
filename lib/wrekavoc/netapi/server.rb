@@ -949,6 +949,58 @@ module Wrekavoc
         return result!
       end
 
+      ##
+      # :method: post(/vnodes/:vnodename/vcpu)
+      #
+      # :call-seq:
+      #   POST /vnodes/:vnodename/vcpu
+      # 
+      # Create a new virtual cpu on the targeted virtual node.
+      # By default all the virtual nodes on a same physical one are sharing available CPU resources, using this method you can allocate some cores to a virtual node and apply some limitations on them
+      #
+      # == Query parameters
+      # <tt>corenb</tt>:: the number of cores to allocate (need to have enough free ones on the physical node)
+      # <tt>frequency</tt>:: (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency)
+      #
+      # == Content-Types
+      # <tt>application/json</tt>:: JSON
+      #
+      # == Status codes
+      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
+      # <tt>200</tt>:: OK
+      # <tt>400</tt>:: Parameter error 
+      # <tt>404</tt>:: Resource error
+      # <tt>500</tt>:: Shell error (check the logs)
+      # <tt>501</tt>:: Not implemented yet
+      # 
+      # == Usage
+      # ...
+      
+      #
+      post '/vnodes/:vnode/vcpu' do
+        begin
+          ret = @daemon.vcpu_create(URI.unescape(params['vnode']),
+            params['corenb'],params['frequency'])
+        rescue Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        else
+          @body = ret
+        end
+
+        return result!
+      end
+
       
       ##
       # :method: post(/vnetworks)

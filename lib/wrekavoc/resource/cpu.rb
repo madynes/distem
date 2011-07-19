@@ -14,9 +14,10 @@ module Wrekavoc
         end
       end
 
-      attr_reader :cores,:critical_cache_links
+      attr_reader :cores,:critical_cache_links,:cores_alloc
       def initialize()
-        @cores = Hash.new
+        @cores = {}
+        @cores_alloc = {}
         @critical_cache_links = []
       end
 
@@ -52,6 +53,19 @@ module Wrekavoc
           core.cache_links = tmpcores
         end
         @critical_cache_links << cores
+      end
+
+      def alloc_cores(vnode,corenb=1)
+        freecores = @cores.values - @cores_alloc.keys
+        raise Lib::UnavailableResourceError, "Core x#{corenb}" \
+          if freecores.empty? or freecores.size < corenb
+        cores = freecores[0..corenb-1]
+        cores.each { |core| @cores_alloc[core] = vnode }
+        return cores
+      end
+
+      def free_cores(vnode)
+        @cores_alloc.delete_if { |core,vnod| vnod == vnode }
       end
     end
 

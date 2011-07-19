@@ -52,6 +52,10 @@ module Wrekavoc
         raise unless vroute.is_a?(Limitation::Network::Latency)
       end
 
+      def visit_nilclass(obj)
+        return nil
+      end
+
       def visit_hash(hash)
         ret = hash.values.collect { |val| visit(val) }
         return ret

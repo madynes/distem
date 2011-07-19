@@ -16,7 +16,7 @@ module Wrekavoc
       attr_reader :id
       # The filesystem informations of the vnode
       attr_reader :filesystem
-      attr_reader :name, :host, :vifaces
+      attr_reader :name, :host, :vifaces, :vcpu
       # The status of the Virtual node (Started|Stopped|Booting|Installing)
       attr_accessor :status
       attr_accessor :gateway
@@ -48,6 +48,7 @@ module Wrekavoc
         @filesystem = FileSystem.new(self,image)
         @gateway = false
         @vifaces = []
+        @vcpu = nil
         @status = Status::INIT
         @@ids += 1
       end
@@ -108,6 +109,27 @@ module Wrekavoc
           end
         end
         return ret
+      end
+
+      def add_vcpu(corenb,freq=nil,linked_cores=false)
+        raise Lib::AlreadyExistingResourceError, 'VCPU' if @vcpu
+        cores = @host.cpu.alloc_cores(self,corenb)
+        @vcpu = CPU.new
+        cores.each do |core|
+          frequency = 0.0
+          if freq and freq.to_f > 0.0
+            raise Lib::InvalidParameterError, freq if freq.to_f > core.frequency
+            frequency = freq.to_f
+          else
+            frequency = core.frequency
+          end
+          @vcpu.add_core(core.physicalid,frequency)
+        end
+      end
+
+      def remove_vcpu()
+        @host.cpu.free_cores(self)
+        @vcpu = nil
       end
 
       def ==(vnode)

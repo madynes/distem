@@ -287,6 +287,31 @@ module Wrekavoc
         end
       end
 
+      # Set up a virtual CPU on the virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +corenb+ The number of cores to allocate (need to have enough free ones on the physical node)
+      # * +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency)
+      # ==== Returns
+      # The virtual interface which have been created (Hash)
+      def vcpu_create(vnode, corenb=1, frequency=nil)
+        begin
+          ret = {}
+          req = "/vnodes/#{URI.escape(vnode)}/vcpu"
+          @resource[req].post(
+            { :corenb => corenb, :frequency => frequency }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          return ret
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        end
+      end
+
       # Remove a virtual interface
       # ==== Attributes
       # * +vnodename+ The name of the virtual node

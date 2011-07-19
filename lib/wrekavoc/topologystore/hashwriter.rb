@@ -26,11 +26,12 @@ module Wrekavoc
         return {
           'id' => vnode.id.to_s,
           'name' => vnode.name,
+          'status' => vnode.status,
           'host' => vnode.host.address.to_s,
           'filesystem' => visit(vnode.filesystem),
-          'status' => vnode.status,
-          'gateway' => vnode.gateway,
           'vifaces' => visit(vnode.vifaces),
+          'vcpu' => visit(vnode.vcpu),
+          'gateway' => vnode.gateway,
         }
       end
 
@@ -49,12 +50,21 @@ module Wrekavoc
       def visit_cpu(cpu)
         ret = {
           'cores' => visit(cpu.cores),
-          'critical_cache_links' => [],
         }
 
-        cpu.critical_cache_links.each do |cachelink|
-          ret['critical_cache_links'] <<
-            cachelink.collect { |core| core.physicalid }
+        unless cpu.cores_alloc.empty?
+          ret['cores_alloc'] = {}
+          cpu.cores_alloc.each do |core,vnode|
+            ret['cores_alloc'] << { 'core' => core.physicalid, 'vnode' => vnode.name }
+          end
+        end
+
+        unless cpu.critical_cache_links.empty?
+          ret['critical_cache_links'] = []
+          cpu.critical_cache_links.each do |cachelink|
+            ret['critical_cache_links'] <<
+              cachelink.collect { |core| core.physicalid }
+          end
         end
         
         return ret
@@ -64,11 +74,13 @@ module Wrekavoc
         ret = {
           'physicalid' => core.physicalid,
           'frequency' => core.frequency.to_s + ' MHz',
-          'cache_links' => [],
         }
 
-        core.cache_links.each do |linkedcore|
-          ret['cache_links'] << linkedcore.physicalid
+        unless core.cache_links.empty?
+          ret['cache_links'] = []
+          core.cache_links.each do |linkedcore|
+            ret['cache_links'] << linkedcore.physicalid
+          end
         end
 
         return ret

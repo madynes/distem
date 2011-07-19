@@ -63,6 +63,12 @@ module LXCWrapper
               end
               frclocal.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
             end
+            if vnode.vcpu
+              cores = ""
+              vnode.vcpu.cores.each_key { |physid| cores += "#{physid}," }
+              cores.chop! unless cores.empty?
+              f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
+            end
             frclocal.puts("exit 0")
           end
           end

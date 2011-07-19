@@ -254,6 +254,7 @@ module Wrekavoc
       def vnode_remove(name)
         vnode = vnode_get(name)
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
+        vnode.remove_vcpu()
 
         if daemon?
           @daemon_resources.remove_vnode(vnode)
@@ -499,6 +500,30 @@ module Wrekavoc
         end
 
         return vnode
+      end
+
+      def vcpu_create(vnodename,corenb,frequency)
+      begin
+        vnode = vnode_get(vnodename)
+        raise Lib::MissingParameterError, 'corenb' unless corenb
+        # >>> TODO: check if 'corenb' is an integer
+        vnode.add_vcpu(corenb.to_i,frequency)
+
+        if daemon?
+          unless target?(vnode)
+            cl = NetAPI::Client.new(vnode.host.address)
+            cl.vcpu_create(vnode.name,corenb,frequency)
+          end
+        end
+
+        return vnode
+
+      rescue Lib::AlreadyExistingResourceError
+        raise
+      rescue Exception
+        vnode.remove_vcpu() if vnode
+        raise
+      end
       end
 
       def vnode_filesystem_get(vnodename)
