@@ -38,7 +38,7 @@ module Wrekavoc
 
         nodemodeblock = Proc.new {
           pnode = @node_config.pnode
-          Node::Admin.init_node()
+          Node::Admin.init_node(pnode)
           @node_config.vplatform.add_pnode(pnode)
           pnode.status = Resource::Status::RUNNING
         }

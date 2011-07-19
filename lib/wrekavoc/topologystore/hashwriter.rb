@@ -16,6 +16,8 @@ module Wrekavoc
         return {
           'id' => pnode.id.to_s,
           'address' => pnode.address,
+          'cpu' => visit(pnode.cpu),
+          'memory' => visit(pnode.memory),
           'status' => pnode.status,
         }
       end
@@ -41,6 +43,41 @@ module Wrekavoc
           'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
           'limit_input' => (viface.limit_input ? visit(viface.limit_input) : nil),
           'limit_output' => (viface.limit_output ? visit(viface.limit_output) : nil),
+        }
+      end
+
+      def visit_cpu(cpu)
+        ret = {
+          'cores' => visit(cpu.cores),
+          'critical_cache_links' => [],
+        }
+
+        cpu.critical_cache_links.each do |cachelink|
+          ret['critical_cache_links'] <<
+            cachelink.collect { |core| core.physicalid }
+        end
+        
+        return ret
+      end
+
+      def visit_core(core)
+        ret = {
+          'physicalid' => core.physicalid,
+          'frequency' => core.frequency.to_s + ' MHz',
+          'cache_links' => [],
+        }
+
+        core.cache_links.each do |linkedcore|
+          ret['cache_links'] << linkedcore.physicalid
+        end
+
+        return ret
+      end
+
+      def visit_memory(memory)
+        return {
+          'capacity' => memory.capacity.to_s + ' Mo',
+          'swap' => memory.swap.to_s + ' Mo',
         }
       end
 

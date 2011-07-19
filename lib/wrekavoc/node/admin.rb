@@ -9,10 +9,12 @@ module Wrekavoc
       PATH_CGROUP='/dev/cgroup'
       MAX_IFACES=256
       
-      def self.init_node
+      def self.init_node(pnode)
         Lib::NetTools.set_bridge()
         Lib::NetTools.set_ifb(MAX_IFACES)
         set_cgroups()
+        Lib::CPUTools.set_resource(pnode.cpu)
+        Lib::MemoryTools.set_resource(pnode.memory)
       end
 
       def self.quit_node

@@ -12,6 +12,8 @@ module Wrekavoc
       attr_reader :address
       # The CPU description
       attr_accessor :cpu
+      # The Memory description
+      attr_accessor :memory
       # The status in which the Node is
       attr_accessor :status
 
@@ -31,6 +33,9 @@ module Wrekavoc
         rescue Resolv::ResolvError
           raise Lib::InvalidParameterError, hostname
         end
+        @cpu = CPU.new
+        @memory = Memory.new
+
         @ssh_user = ssh_user
         @ssh_password = ssh_password
         @status = Status::INIT
