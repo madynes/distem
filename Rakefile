@@ -8,6 +8,12 @@ Rake::TestTask.new('test:unit') do |t|
   t.verbose = true
 end
 
+desc "Compilation of external resources"
+task :prepare do
+  sh 'make -C lib/utils'
+  sh 'make -C lib/utils clean'
+end
+
 desc "Generate basic Documentation"
 Rake::RDocTask.new do |t|
   t.rdoc_dir = 'doc'

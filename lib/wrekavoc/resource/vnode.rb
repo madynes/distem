@@ -114,7 +114,7 @@ module Wrekavoc
       def add_vcpu(corenb,freq=nil,linked_cores=false)
         raise Lib::AlreadyExistingResourceError, 'VCPU' if @vcpu
         cores = @host.cpu.alloc_cores(self,corenb)
-        @vcpu = CPU.new
+        @vcpu = VCPU.new(@host.cpu)
         cores.each do |core|
           frequency = 0.0
           if freq and freq.to_f > 0.0
@@ -123,7 +123,7 @@ module Wrekavoc
           else
             frequency = core.frequency
           end
-          @vcpu.add_core(core.physicalid,frequency)
+          @vcpu.add_vcore(core,frequency)
         end
       end
 

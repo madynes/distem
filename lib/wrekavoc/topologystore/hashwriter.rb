@@ -49,22 +49,19 @@ module Wrekavoc
 
       def visit_cpu(cpu)
         ret = {
+          'id' => cpu.id.to_s,
           'cores' => visit(cpu.cores),
+          'cores_alloc' => {},
+          'critical_cache_links' => [],
         }
 
-        unless cpu.cores_alloc.empty?
-          ret['cores_alloc'] = {}
-          cpu.cores_alloc.each do |core,vnode|
-            ret['cores_alloc'] << { 'core' => core.physicalid, 'vnode' => vnode.name }
-          end
+        cpu.cores_alloc.each do |core,vnode|
+          ret['cores_alloc'] << { 'core' => core.physicalid, 'vnode' => vnode.name }
         end
 
-        unless cpu.critical_cache_links.empty?
-          ret['critical_cache_links'] = []
-          cpu.critical_cache_links.each do |cachelink|
-            ret['critical_cache_links'] <<
-              cachelink.collect { |core| core.physicalid }
-          end
+        cpu.critical_cache_links.each do |cachelink|
+          ret['critical_cache_links'] <<
+            cachelink.collect { |core| core.physicalid }
         end
         
         return ret
@@ -74,16 +71,28 @@ module Wrekavoc
         ret = {
           'physicalid' => core.physicalid,
           'frequency' => core.frequency.to_s + ' MHz',
+          'cache_links' => [],
         }
 
-        unless core.cache_links.empty?
-          ret['cache_links'] = []
-          core.cache_links.each do |linkedcore|
-            ret['cache_links'] << linkedcore.physicalid
-          end
+        core.cache_links.each do |linkedcore|
+          ret['cache_links'] << linkedcore.physicalid
         end
 
         return ret
+      end
+
+      def visit_vcpu(vcpu)
+        return {
+          'pcpu' => vcpu.pcpu.id.to_s,
+          'vcores' => visit(vcpu.vcores),
+        }
+      end
+
+      def visit_vcore(vcore)
+        return {
+          'pcore' => vcore.pcore.physicalid.to_s,
+          'frequency' => vcore.frequency.to_s + ' MHz',
+        }
       end
 
       def visit_memory(memory)

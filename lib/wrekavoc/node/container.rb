@@ -22,6 +22,7 @@ module Wrekavoc
         end
 
         @vnode = vnode
+        @cpulim = CPULimitation.new(@vnode)
         @curname = ""
         @configfile = ""
         @id = 0
@@ -44,6 +45,7 @@ module Wrekavoc
             @@lxclock.synchronize {
               Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
+              @cpulim.apply
             }
           else
             raise Lib::ResourceNotFoundError, @vnode.name
@@ -65,6 +67,7 @@ module Wrekavoc
             @@lxclock.synchronize {
               Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
+              @cpulim.undo
             }
           end
           #@vnode.status = Resource::Status::READY
