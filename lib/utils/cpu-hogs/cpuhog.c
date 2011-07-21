@@ -131,7 +131,7 @@ static void send_notification() {
 
 #define ERROR(label)  { return_value = 1; goto label; }
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
 	int i;
 	struct sched_param param;
 	cpu_cmds* cmds;
