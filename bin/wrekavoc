@@ -5,7 +5,7 @@ require 'wrekavoc'
 require 'optparse'
 require 'pp'
 
-USAGE="Usage: #{$0} <daemon_address> [options]"
+USAGE="Usage: #{$0} [options]"
 
 ERR_NONE=0
 ERR_HOST=1
@@ -40,6 +40,7 @@ options['f_vnode_create'] = false
 options['f_viface_create'] = false
 options['f_vnetwork_create'] = false
 
+options['daemon_addr'] = 'localhost'
 options['daemon_port'] = 4567
 options['pnode_addr'] = false
 options['vnode_name'] = false
@@ -61,6 +62,10 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-H', '--host HOSTNAME', \
     'The HOSTNAME of the physical node that host virtual ones' ) do |h|
     options['pnode_addr'] = h
+  end
+  opts.on( '-d', '--daemon ADDRESS', \
+    'The address of the daemon [default: localhost]' ) do |h|
+    options['daemon_addr'] = h
   end
   opts.on( '-n', '--vnode VNODE', \
     'The name of the Virtual Node' ) do |n|
@@ -105,7 +110,7 @@ optparse = OptionParser.new(USAGE) do |opts|
 end
 optparse.parse!
 
-unless ARGV.length == 1
+unless ARGV.length == 0
   puts USAGE
   exit
 end
@@ -116,12 +121,12 @@ cl=false
 if (options['f_pnode_init'])
   errorcheck(ERR_HOST,options['pnode_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnode_init(options['pnode_addr'])
 end
 
 if (options['f_pnodes_quit'])
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnodes_quit()
 end
 
@@ -130,20 +135,20 @@ if (options['f_vnode_create'])
   props['image'] = options['vnode_image']
   props['target'] = options['pnode_addr'] if options['pnode_addr']
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_create(options['vnode_name'], props)
 end
 
 if options['f_vnetwork_create']
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
 end
 
 if (options['f_viface_create'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.viface_create(options['vnode_name'], options['viface_name'])
 end

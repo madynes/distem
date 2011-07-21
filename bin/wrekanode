@@ -40,7 +40,7 @@ options['file_src'] = false
 options['file_dest'] = false
 options['exec_cmd'] = false
 options['image_path'] = false
-options['daemon_addr'] = false
+options['daemon_addr'] = 'localhost'
 options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -57,7 +57,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['ssh_user'] = u
   end
   opts.on( '-d', '--daemon ADDRESS', \
-    'The address of the daemon' ) do |h|
+    'The address of the daemon [default: localhost]' ) do |h|
     options['daemon_addr'] = h
   end
   opts.on( '-s', '--start-vnode',\

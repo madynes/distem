@@ -4,7 +4,7 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'wrekavoc'
 require 'optparse'
 
-USAGE="Usage: #{$0} <daemon_address> [options]"
+USAGE="Usage: #{$0} [options]"
 
 ERR_VNODE=0
 ERR_VIFACE=1
@@ -53,12 +53,17 @@ options['lim_direction'] = false
 options['lim_params'] = false
 options['lim_latency'] = false
 options['lim_bandwidth'] = false
+options['daemon_addr'] = 'localhost'
 options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
     puts opts
     exit
+  end
+  opts.on( '-d', '--daemon ADDRESS', \
+    'The address of the daemon [default: localhost]' ) do |h|
+    options['daemon_addr'] = h
   end
   opts.on( '-p', '--port NUMBER', \
     'The port that the daemon is listening on [default: 4567]' ) do |p|
@@ -127,7 +132,7 @@ end
 
 optparse.parse!
 
-unless ARGV.length == 1
+unless ARGV.length == 0
   puts USAGE
   exit
 end
@@ -137,17 +142,17 @@ cl=false
 if options['f_vnetwork_create']
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
 end
 
 if options['f_vroute_create']
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vroute_create(options['vroute_srcnet'],options['vroute_destnet'],options['vroute_gateway'])
 end
 
 if options['f_vroute_complete']
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vroute_complete()
 end
 
@@ -155,7 +160,7 @@ if options['f_vnode_attach']
   errorcheck(ERR_VNODE,options['vnode_name'])
   errorcheck(ERR_VIFACE,options['viface_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(ARGV[0],options['daemon_port']) unless cl
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
 
   if options['f_limitation_create']
     plimit = {}
