@@ -19,8 +19,8 @@ module Wrekavoc
 
           coresdesc = ""
           vcpu.vcores.each_value do |vcore|
-            freq = (vcore.pcore.frequency - vcore.frequency) * 1024
-            coresdesc += "#{vcore.pcore.physicalid}:#{freq} " if freq > 0.0
+            coresdesc += "#{vcore.pcore.physicalid}:#{vcore.frequency*1024} " \
+              if vcore.frequency < vcore.pcore.frequency
           end
 
           unless coresdesc.empty?
