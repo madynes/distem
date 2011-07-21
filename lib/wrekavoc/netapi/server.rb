@@ -960,7 +960,7 @@ module Wrekavoc
       #
       # == Query parameters
       # <tt>corenb</tt>:: the number of cores to allocate (need to have enough free ones on the physical node)
-      # <tt>frequency</tt>:: (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency)
+      # <tt>frequency</tt>:: (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON

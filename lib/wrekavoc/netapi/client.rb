@@ -291,7 +291,7 @@ module Wrekavoc
       # ==== Attributes
       # * +vnodename+ The name of the virtual node
       # * +corenb+ The number of cores to allocate (need to have enough free ones on the physical node)
-      # * +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency)
+      # +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
       # ==== Returns
       # The virtual interface which have been created (Hash)
       def vcpu_create(vnode, corenb=1, frequency=nil)

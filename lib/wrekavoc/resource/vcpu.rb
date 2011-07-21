@@ -7,9 +7,15 @@ module Wrekavoc
       class VCore
         attr_reader :pcore,:frequency
         def initialize(pcore,freq)
-          raise Lib::InvalidParameterError, freq if freq > pcore.frequency
+          raise Lib::InvalidParameterError, freq \
+            if freq > pcore.frequency or freq <= 0
           @pcore = pcore
-          @frequency = freq
+
+          if freq > 0 and freq <= 1
+            @frequency = pcore.frequency * freq
+          else
+            @frequency = freq
+          end
         end
       end
 
