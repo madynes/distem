@@ -7,7 +7,7 @@ module Wrekavoc
 
       class HogsAlgorithm
         def initialize()
-          @pid = nil
+          @ext = nil
         end
 
         def apply(vcpu)
@@ -18,21 +18,13 @@ module Wrekavoc
           end
 
           unless coresdesc.empty?
-            @pid = fork { 
-              c = CPUExtension::CPUHogs.new
-              c.run(coresdesc)
-            }
-            begin
-              Process.kill(0,@pid)
-            rescue Errno::ESRCH
-              raise Lib::ShellError.new('CPUHogs','Command failed')
-            end
+            @ext = CPUExtension::CPUHogs.new
+            @ext.run(coresdesc)
           end
         end
 
         def undo()
-          Process.kill('SIGTERM',@pid) if @pid
-          @pid = nil
+          @ext.stop if @ext
         end
       end
 

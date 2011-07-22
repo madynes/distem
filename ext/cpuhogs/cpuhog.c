@@ -21,7 +21,7 @@ static double ratio;
 static pthread_t* threads;
 static pthread_barrier_t barrier;
 static lli loops_per_sec;
-static int finished = 0;
+int finished = 0;
 static volatile int ctrlc = 0;
 static int return_value = 0;
 static int sync_barrier;
