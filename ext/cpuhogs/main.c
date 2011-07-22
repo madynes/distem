@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include "common.h"
-#include "cpucmd.h"
+#include "main.h"
 
 static double ratio;
 

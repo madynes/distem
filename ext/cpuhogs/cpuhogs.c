@@ -67,6 +67,14 @@ static VALUE cpuhogs_stop(VALUE self)
 	return Qnil;
 }
 
+static VALUE cpuhogs_is_run(VALUE self)
+{
+	if (NUM2INT(rb_iv_get(self, "@pid")))
+		return Qtrue;
+	else
+		return Qfalse;
+}
+
 void Init_cpuhogs()
 {
 	m_cpu = rb_define_module("CPUExtension");
@@ -75,4 +83,5 @@ void Init_cpuhogs()
 	rb_define_attr(c_cpuhogs, "pid", 1, 0);
 	rb_define_method(c_cpuhogs, "run", cpuhogs_run, 1);
 	rb_define_method(c_cpuhogs, "stop", cpuhogs_stop, 0);
+	rb_define_method(c_cpuhogs, "running?", cpuhogs_is_run, 0);
 }
