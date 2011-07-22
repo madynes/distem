@@ -131,12 +131,12 @@ static void send_notification() {
 
 #define ERROR(label)  { return_value = 1; goto label; }
 
-int run(int argc, char** argv) {
+int run(cpu_cmds* cmds) {
 	int i;
 	struct sched_param param;
-	cpu_cmds* cmds;
+	//cpu_cmds* cmds;
 
-	cmds = parse_cpus(argc, argv);
+	//cmds = parse_cpus(argc, argv);
 
 	if (!cmds) {
 		ERROR(finish);
@@ -237,7 +237,7 @@ threads_free:
 barrier_free:
 	pthread_barrier_destroy(&barrier);
 cmds_free:
-	free(cmds);
+	//free(cmds);
 finish:
 	printf("return = %d\n", return_value);
 	return return_value;

@@ -1,31 +1,38 @@
 #include <ruby.h>
 #include <signal.h>
 #include <unistd.h>
-#include "cpuhog.h"
+#include <st.h>
+#include "main.h"
+
+#define MAX_CPUS 128
 
 static VALUE m_cpu;
 static VALUE c_cpuhogs;
+cpu_cmds *cmds;
+
 
 static VALUE cpuhogs_init(VALUE self)
 {
 	rb_iv_set(self, "@pid", INT2NUM(0));
+	cmds = ALLOC(cpu_cmds);
+	cmds->cpufreq = 1;
+	cmds->interval = 10000000;
+	cmds->cpus = 0;
 
 	return self;
 }
 
-static VALUE cpuhogs_run(VALUE self, VALUE arr)
+int parse_hash(VALUE key, VALUE val, VALUE in)
 {
-	char *argvtmp[128];
-	VALUE tmp;
-	unsigned int i;
+	cmds->ratios[cmds->cpus].cpu = NUM2INT(key);
+	cmds->ratios[cmds->cpus].ratio = (float) NUM2DBL(val);
+	cmds->cpus++;
+	return ST_CONTINUE;
+}
+
+static VALUE cpuhogs_run(VALUE self, VALUE hash)
+{
 	int pid;
-
-	i = 0;
-
-	argvtmp[i++] = "";
-
-	while ((tmp = rb_ary_pop(arr)) != Qnil)
-		argvtmp[i++] = STR2CSTR(tmp);
 
 	pid = fork();
 	if (pid < 0)
@@ -38,7 +45,11 @@ static VALUE cpuhogs_run(VALUE self, VALUE arr)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 
-		run(i,argvtmp);
+		cmds->ratios = ALLOC_N(cpu_ratio,MAX_CPUS);
+		
+		rb_hash_foreach(hash,parse_hash,Qnil);
+
+		run(cmds);
 	}
 	else
 		rb_iv_set(self, "@pid", INT2NUM(pid));
