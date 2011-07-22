@@ -1,17 +1,19 @@
+require 'rubygems'
 require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
+require 'rake/extensiontask'
+
+Rake::ExtensionTask.new do |ext|
+  ext.name = 'cpuhogs'
+  ext.ext_dir = 'ext/cpuhogs'
+  ext.lib_dir = 'lib/ext'
+end
 
 Rake::TestTask.new('test:unit') do |t|
   t.libs << "test"
   t.test_files = FileList['test/unit/**/*.rb']
   t.verbose = true
-end
-
-desc "Compilation of external resources"
-task :prepare do
-  sh 'make -C lib/utils'
-  sh 'make -C lib/utils clean'
 end
 
 desc "Generate basic Documentation"
@@ -38,6 +40,7 @@ desc "Generate source tgz package"
 Rake::PackageTask::new("wrekavoc","0.1") do |p|
   p.need_tar_gz = true
   p.package_files.include('lib/**/*')
+  p.package_files.include('ext/**/*')
   p.package_files.include('bin/**/*')
   p.package_files.include('test/**/*')
   p.package_files.include('Rakefile', 'COPYING','README','TODO')

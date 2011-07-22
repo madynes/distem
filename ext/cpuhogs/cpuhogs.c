@@ -24,7 +24,7 @@ static VALUE cpuhogs_run(VALUE self, VALUE arr)
 	run(i,argvtmp);
 }
 
-void Init_cpuhogs_ext()
+void Init_cpuhogs()
 {
 	m_cpu = rb_define_module("CPUExtension");
 	c_cpuhogs = rb_define_class_under(m_cpu,"CPUHogs",rb_cObject);
