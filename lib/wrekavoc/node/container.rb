@@ -26,6 +26,12 @@ module Wrekavoc
         @curname = ""
         @configfile = ""
         @id = 0
+
+        setup()
+      end
+
+      def setup()
+        Lib::Shell.run("cp -R /root/.ssh #{vnode.filesystem.path}/root/")
       end
       
       def self.stop_all
