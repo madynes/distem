@@ -65,8 +65,8 @@ module Wrekavoc
               'vifaces' => [{
                 'name' => 'if0',
                 'vnetwork' => netname,
-                'limit_input' => nil,
-                'limit_output' => {
+                'vinput' => nil,
+                'voutput' => {
                   'direction' => 'OUTPUT',
                   'properties' => [
                     { 'type' => 'bandwidth', 'rate' => xmldoc.attribute('bw').to_s.to_f.to_s + 'bps' },
@@ -83,7 +83,7 @@ module Wrekavoc
         create_vnode.call
         defaultgw = vnode
         defaultgw['name'] = netname + '_gw'
-        defaultgw['vifaces'][0]['limit_output'] = nil
+        defaultgw['vifaces'][0]['voutput'] = nil
         defaultgw['gateway'] = true
         result['vnodes'] << defaultgw
 
@@ -156,8 +156,8 @@ module Wrekavoc
             vnode['vifaces'] << {
               'name' => 'if' + switch['ifnb'].to_s,
               'vnetwork' => completename,
-              'limit_input' => nil,
-              'limit_output' => {
+              'vinput' => nil,
+              'voutput' => {
                 'direction' => 'OUTPUT',
                 'properties' => [
                   { 'type' => 'bandwidth', 'rate' => bw },
@@ -226,11 +226,11 @@ module Wrekavoc
               viface = {
                 'name' => 'if' + elem['ifnb'].to_s,
                 'vnetwork' => networkname,
-                'limit_input' => nil,
+                'vinput' => nil,
               }
 
               if elem['lat'] or elem['bw']
-                viface['limit_output'] = {
+                viface['voutput'] = {
                   'direction' => 'OUTPUT',
                   'properties' => [
                     { 'type' => 'bandwidth', 'rate' => elem['bw'] },
@@ -238,7 +238,7 @@ module Wrekavoc
                   ]
                 }
               else
-                viface['limit_output'] = nil
+                viface['voutput'] = nil
               end
 
               vnode['vifaces'] << viface
@@ -282,8 +282,8 @@ module Wrekavoc
         viface = {
           'name' => 'if' + switch['ifnb'].to_s,
           'vnetwork' => vnetworkname,
-          'limit_input' => nil,
-          'limit_output' => {
+          'vinput' => nil,
+          'voutput' => {
             'direction' => 'OUTPUT',
             'properties' => [
               { 'type' => 'bandwidth', 'rate' => switch['bw'] },

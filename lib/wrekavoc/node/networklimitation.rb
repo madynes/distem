@@ -5,18 +5,18 @@ module Wrekavoc
 
     class NetworkLimitation
       def self.apply(viface)
-        apply_tbf(viface.limit_output) if viface.limit_output
-        apply_tbf(viface.limit_input) if viface.limit_input
+        apply_tbf(viface.voutput) if viface.voutput
+        apply_tbf(viface.vinput) if viface.vinput
       end
 
       def self.undo(viface)
-        if viface.limit_input
+        if viface.vinput
           iface = "ifb#{viface.id}"
           inputroot = TCWrapper::QdiscRoot.new(iface)
           Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
         end
 
-        if viface.limit_output
+        if viface.voutput
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
           outputroot = TCWrapper::QdiscRoot.new(iface)
           Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))

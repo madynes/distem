@@ -42,8 +42,8 @@ module Wrekavoc
           'vnode' => viface.vnode.name,
           'address' => viface.address.to_string,
           'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
-          'limit_input' => (viface.limit_input ? visit(viface.limit_input) : nil),
-          'limit_output' => (viface.limit_output ? visit(viface.limit_output) : nil),
+          'vinput' => (viface.vinput ? visit(viface.vinput) : nil),
+          'voutput' => (viface.voutput ? visit(viface.voutput) : nil),
         }
       end
 

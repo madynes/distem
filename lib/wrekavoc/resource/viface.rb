@@ -17,9 +17,9 @@ module Wrekavoc
       # The VNetwork this interface is working on
       attr_reader :vnetwork
       # The Limitation (output traffic) applied to this interface
-      attr_reader :limit_output
+      attr_reader :voutput
       # The Limitation (input traffic) applied to this interface
-      attr_reader :limit_input
+      attr_reader :vinput
       attr_accessor :limited
 
       # Create a new Virtual Interface
@@ -35,8 +35,8 @@ module Wrekavoc
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
         @vnetwork = nil
-        @limit_input = nil
-        @limit_output = nil
+        @vinput = nil
+        @voutput = nil
         @limited = false
         @vroutes = []
         @@ids += 1
@@ -52,8 +52,8 @@ module Wrekavoc
         if attached?
           @vnetwork.remove_vnode(@vnode,false)
           @vnetwork = nil
-          @limit_input = nil
-          @limit_output = nil
+          @vinput = nil
+          @voutput = nil
           @address = IPAddress::IPv4.new("0.0.0.0/0")
         end
       end
@@ -68,26 +68,26 @@ module Wrekavoc
       end
 
       def add_limitations(limitation)
-        limit_input = nil
-        limit_output = nil
+        vinput = nil
+        voutput = nil
         #Already parsed hash
         if limitation.is_a?(Hash)
           if limitation['INPUT']
             raise Lib::InvalidParameterError, limitation['INPUT'] \
               unless limitation['INPUT'].is_a?(Limitation::Network::Rule)
-            limit_input = limitation['INPUT']
+            vinput = limitation['INPUT']
           end
           
           if limitation['OUTPUT']
             raise Lib::InvalidParameterError, limitation['OUTPUT'] \
               unless limitation['OUTPUT'].is_a?(Limitation::Network::Rule)
-            limit_output = limitation['OUTPUT']
+            voutput = limitation['OUTPUT']
           end
         elsif limitation.is_a?(Limitation::Network::Rule)
           if limitation.direction == Limitation::Network::Direction::INPUT
-            limit_input = limitation
+            vinput = limitation
           elsif limitation.direction == Limitation::Network::Direction::OUTPUT
-            limit_output = limitation
+            voutput = limitation
           else
             raise Lib::InvalidParameterError, limitation
           end
@@ -95,22 +95,22 @@ module Wrekavoc
           raise Lib::InvalidParameterError, limitation
         end
 
-        raise Lib::AlreadyExistingResourceError, limit_input \
-          if limit_input and @limit_input
-        @limit_input = limit_input
+        raise Lib::AlreadyExistingResourceError, vinput \
+          if vinput and @vinput
+        @vinput = vinput
 
-        raise Lib::AlreadyExistingResourceError, limit_output \
-          if limit_output and @limit_output
-        @limit_output = limit_output
+        raise Lib::AlreadyExistingResourceError, voutput \
+          if voutput and @voutput
+        @voutput = voutput
       end
 
       def remove_limitations()
-        @limit_input = nil
-        @limit_output = nil
+        @vinput = nil
+        @voutput = nil
       end
 
       def limitation?
-        return (@limit_input or @limit_output)
+        return (@vinput or @voutput)
       end
 
       def limited?

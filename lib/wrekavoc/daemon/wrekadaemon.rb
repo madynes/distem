@@ -948,22 +948,22 @@ module Wrekavoc
             props['vnetwork'] = viface['vnetwork'] \
               if !props['address'] and viface['vnetwork']
             # >>> TODO: Limitations
-            if viface['limit_output']
+            if viface['voutput']
               props['limitation'] = {}
               props['limitation']['OUTPUT'] = {}
-              if viface['limit_output']['properties']
-                viface['limit_output']['properties'].each do |limprop|
+              if viface['voutput']['properties']
+                viface['voutput']['properties'].each do |limprop|
                   type = limprop['type'].downcase
                   limprop.delete('type')
                   props['limitation']['OUTPUT'][type] = limprop.dup
                 end
               end
             end
-            if viface['limit_input']
+            if viface['vinput']
               props['limitation'] = {} unless props['limitation']
               props['limitation']['INPUT'] = {}
-              if viface['limit_input']['properties']
-                viface['limit_input']['properties'].each do |limprop|
+              if viface['vinput']['properties']
+                viface['vinput']['properties'].each do |limprop|
                   type = limprop['type'].downcase
                   limprop.delete('type')
                   props['limitation']['INPUT'][type] = limprop.dup

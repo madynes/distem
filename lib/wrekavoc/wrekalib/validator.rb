@@ -27,7 +27,7 @@ module Wrekavoc
               'vnode' => nil,
               'address' => nil,
               'vnetwork' => nil,
-              'limit_output' => {
+              'voutput' => {
                 'vnode' => nil,
                 'viface' => nil,
                 'direction' => nil,
@@ -35,7 +35,7 @@ module Wrekavoc
                   'type' => nil
                 },
               },
-              'limit_input' => {
+              'vinput' => {
                 'vnode' => nil,
                 'viface' => nil,
                 'direction' => nil,
