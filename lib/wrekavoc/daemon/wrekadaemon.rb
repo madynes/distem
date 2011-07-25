@@ -321,7 +321,7 @@ module Wrekavoc
 
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
-          @node_config.vnode_start(vnode.name)
+          @node_config.vnode_start(vnode)
           vnode.status = Resource::Status::RUNNING
         }
 
@@ -362,7 +362,7 @@ module Wrekavoc
 
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
-          @node_config.vnode_stop(vnode.name)
+          @node_config.vnode_stop(vnode)
           vnode.status = Resource::Status::READY
         }
 

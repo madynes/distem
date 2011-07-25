@@ -50,11 +50,9 @@ module Wrekavoc
       #  @containers[vnodename].configure()
       #end
 
-      def vnode_start(vnodename)
-        vnode = @vplatform.get_vnode(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename unless vnode
-        @containers[vnodename].configure()
-        @containers[vnodename].start()
+      def vnode_start(vnode)
+        @containers[vnode.name].configure()
+        @containers[vnode.name].start()
         vnode.vifaces.each do |viface|
           if viface.limitation? and !viface.limited?
             viface_configure(viface)
@@ -79,16 +77,14 @@ module Wrekavoc
         viface.limited = true
       end
 
-      def vnode_stop(vnodename)
-        vnode = @vplatform.get_vnode(vnodename)
-        raise Lib::ResourceNotFoundError, vnodename unless vnode
+      def vnode_stop(vnode)
         vnode.vifaces.each do |viface|
           unless viface.limited?
             NetworkLimitation.undo(viface)
             viface.limited = false
           end
         end
-        @containers[vnodename].stop()
+        @containers[vnode.name].stop()
       end
 
       def viface_add(viface)
