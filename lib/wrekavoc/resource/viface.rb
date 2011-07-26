@@ -5,6 +5,54 @@ module Wrekavoc
 
     # Wrekavoc Virtual Interface (to be attached on a Virtual Node)
     class VIface
+      class VTraffic
+        class Direction
+          INPUT = 'INPUT'
+          OUTPUT = 'OUTPUT'
+        end
+
+        class Property
+          def initialize()
+          end
+
+          def parse_params(paramshash)
+          end
+
+          def to_s()
+            return self.class.name.split('::').last || ''
+          end
+        end
+
+        attr_reader :viface, :direction, :properties
+        def initialize(viface, direction, properties = {})
+          @viface = viface
+          @direction = direction
+          @properties = {}
+          parse_properties(properties)
+        end
+
+
+        def add_property(prop)
+          raise unless prop.is_a?(Property)
+          @properties[prop.class.name] = prop
+        end
+
+        def add_properties(properties)
+          raise unless properties.is_a?(Array)
+          properties.each { |prop| add_property(prop) }
+        end
+
+        def get_property(typename)
+          return properties[typename]
+        end
+
+        def parse_properties(hash)
+          add_property(Bandwidth.new(hash['bandwidth'])) if hash['bandwidth']
+          add_property(Latency.new(hash['latency'])) if hash['latency']
+        end
+      end
+
+
       @@ids = 0
       # The unique identifier of the Interface
       attr_reader :id
@@ -67,33 +115,27 @@ module Wrekavoc
         return (vnetwork ? vnetwork.address.include?(@address) : false)
       end
 
-      def add_limitations(limitation)
+      def set_vtraffic(hash)
         vinput = nil
         voutput = nil
-        #Already parsed hash
-        if limitation.is_a?(Hash)
-          if limitation['INPUT']
-            raise Lib::InvalidParameterError, limitation['INPUT'] \
-              unless limitation['INPUT'].is_a?(Limitation::Network::Rule)
-            vinput = limitation['INPUT']
+
+        if hash.is_a?(Hash)
+          if hash['FULLDUPLEX']
+            hash['INPUT'] = hash['FULLDUPLEX']
+            hash['OUTPUT'] = hash['FULLDUPLEX']
           end
+
+          vinput = VTraffic.new(self,VTraffic::Direction::INPUT,hash['INPUT']) \
+            if hash['INPUT']
           
-          if limitation['OUTPUT']
-            raise Lib::InvalidParameterError, limitation['OUTPUT'] \
-              unless limitation['OUTPUT'].is_a?(Limitation::Network::Rule)
-            voutput = limitation['OUTPUT']
-          end
-        elsif limitation.is_a?(Limitation::Network::Rule)
-          if limitation.direction == Limitation::Network::Direction::INPUT
-            vinput = limitation
-          elsif limitation.direction == Limitation::Network::Direction::OUTPUT
-            voutput = limitation
-          else
-            raise Lib::InvalidParameterError, limitation
-          end
+          voutput = VTraffic.new(self,VTraffic::Direction::OUTPUT,hash['OUTPUT']) \
+            if hash['OUTPUT']
         else
-          raise Lib::InvalidParameterError, limitation
+          raise Lib::InvalidParameterError, hash.to_s
         end
+
+        raise Lib::InvalidParameterError, hash.to_s \
+          if !vinput and !voutput and !hash.empty?
 
         raise Lib::AlreadyExistingResourceError, vinput \
           if vinput and @vinput
@@ -104,12 +146,12 @@ module Wrekavoc
         @voutput = voutput
       end
 
-      def remove_limitations()
+      def reset_vtraffic()
         @vinput = nil
         @voutput = nil
       end
 
-      def limitation?
+      def vtraffic?
         return (@vinput or @voutput)
       end
 

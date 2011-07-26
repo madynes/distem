@@ -1,10 +1,9 @@
 require 'wrekavoc'
 
 module Wrekavoc
-  module Limitation
-    module Network
+  module Resource
 
-      class Bandwidth < Property
+      class Bandwidth < VIface::VTraffic::Property
         attr_reader :rate
         def initialize(paramshash={})
           super()
@@ -18,6 +17,5 @@ module Wrekavoc
         end
       end
 
-    end
   end
 end

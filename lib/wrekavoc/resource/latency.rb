@@ -1,10 +1,9 @@
 require 'wrekavoc'
 
 module Wrekavoc
-  module Limitation
-    module Network
+  module Resource
 
-      class Latency < Property
+      class Latency < VIface::VTraffic::Property
         attr_reader :delay
         def initialize(paramshash={})
           super()
@@ -18,7 +17,5 @@ module Wrekavoc
         end
       end
 
-    end
   end
 end
-

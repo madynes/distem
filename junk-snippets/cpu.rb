@@ -35,5 +35,5 @@ node = 'testnode'
 pp client.vnode_create(node, { 'image' => IMAGE })
 pp client.viface_create(node, 'if0')
 pp client.viface_attach(node,'if0', { 'vnetwork' => 'net1' })
-pp client.vcpu_create(node,3)
+pp client.vcpu_create(node,3,1000)
 pp client.vnode_start(node)

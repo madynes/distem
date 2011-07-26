@@ -569,7 +569,7 @@ module Wrekavoc
         end
       end
 
-      # Connect a virtual interface on a network with (optionally) some limitations
+      # Connect a virtual interface on a network and (optionally) specify the traffic the interface will have to emulate
       # ==== Attributes
       # * +vnode+ The name of the virtual node
       # * +viface+ The name of the virtual interface
@@ -577,7 +577,7 @@ module Wrekavoc
       # * * +vnetwork+ The name of the virtual network to connect the interface on
       # * * +address+ The address of the virtual interface
       # One of this two parameters have to be set (if it's vnetwork, the address is automatically set)
-      # * * +limitations+ ...
+      # * * +vtraffic+ ...
       # ==== Returns
       # The virtual interface (Hash)
       def viface_attach(vnode, viface, properties)
@@ -603,7 +603,6 @@ module Wrekavoc
       # ==== Attributes
       # * +vnode+ The name of the virtual node
       # * +viface+ The name of the virtual interface
-      # * * +limitations+ ...
       # ==== Returns
       # The virtual interface (Hash)
       def viface_detach(vnode, viface)

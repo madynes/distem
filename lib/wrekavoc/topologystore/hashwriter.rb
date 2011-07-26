@@ -132,12 +132,11 @@ module Wrekavoc
         }
       end
 
-      def visit_rule(rule)
+      def visit_vtraffic(vtraffic)
         return {
-          'vnode' => rule.vnode.name,
-          'viface' => rule.viface.name,
-          'direction' => rule.direction,
-          'properties' => visit(rule.properties),
+          'viface' => vtraffic.viface.name,
+          'direction' => vtraffic.direction,
+          'properties' => visit(vtraffic.properties),
         }
       end
 

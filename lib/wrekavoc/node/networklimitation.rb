@@ -23,18 +23,19 @@ module Wrekavoc
         end
       end
 
-      def self.apply_tbf(limitation)
-        iface = Lib::NetTools::get_iface_name(limitation.vnode,limitation.viface)
+      def self.apply_tbf(vtraffic)
+        iface = Lib::NetTools::get_iface_name(vtraffic.viface.vnode,
+          vtraffic.viface)
         baseiface = iface
 
-        case limitation.direction
-          when Limitation::Network::Direction::OUTPUT
+        case vtraffic.direction
+          when Resource::VIface::VTraffic::Direction::OUTPUT
             tcroot = TCWrapper::QdiscRoot.new(iface)
             tmproot = tcroot
-          when Limitation::Network::Direction::INPUT
+          when Resource::VIface::VTraffic::Direction::INPUT
             tcroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
-            iface = "ifb#{limitation.viface.id}"
+            iface = "ifb#{vtraffic.viface.id}"
             tmproot = TCWrapper::QdiscRoot.new(iface)
           else
             raise "Invalid direction"
@@ -42,8 +43,7 @@ module Wrekavoc
 
 
         primroot = nil
-        bwlim = limitation.get_property(\
-          Limitation::Network::Property::Type::BANDWIDTH)
+        bwlim = vtraffic.get_property(Resource::Bandwidth.name)
         if bwlim
           tmproot = TCWrapper::QdiscTBF.new(iface,tmproot, \
               { 'rate' => "#{bwlim.rate}", 'buffer' => 1800, \
@@ -52,8 +52,7 @@ module Wrekavoc
           Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
         end
 
-        latlim = limitation.get_property(\
-          Limitation::Network::Property::Type::LATENCY)
+        latlim = vtraffic.get_property(Resource::Latency.name)
         if latlim
           tmproot = TCWrapper::QdiscNetem.new(iface,tmproot, \
             {'delay' => "#{latlim.delay}"})
@@ -61,7 +60,7 @@ module Wrekavoc
           Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
         end
 
-        if limitation.direction == Limitation::Network::Direction::INPUT
+        if vtraffic.direction == Resource::VIface::VTraffic::Direction::INPUT
           filter = TCWrapper::FilterU32.new(baseiface,tcroot,primroot)
           filter.add_match_u32('0','0')
           filter.add_param("action","mirred egress")
@@ -71,7 +70,7 @@ module Wrekavoc
 
       end
 
-      def self.apply_htb(limitation)
+      def self.apply_htb(vtraffic)
       end
     end
 

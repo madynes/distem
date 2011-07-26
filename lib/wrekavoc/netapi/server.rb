@@ -1255,10 +1255,10 @@ module Wrekavoc
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       # Dettach the virtual interface if properties is empty
-      # You can change the limitations on the fly specifying only the limitation property
+      # You can change the traffic specification on the fly, only specifying the vtraffic property
       #
       # == Query parameters
-      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the limitations to apply on the interface (JSON, 'limitation', INPUT/OUTPUT/FULLDUPLEX)
+      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT/FULLDUPLEX)
       #
       # == Content-Types
       # <tt>application/json</tt>:: JSON
@@ -1272,7 +1272,7 @@ module Wrekavoc
       # <tt>501</tt>:: Not implemented yet
       # 
       # == Usage
-      # properties['limitation'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
+      # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       
       put '/vnodes/:vnode/vifaces/:viface' do 
         begin
@@ -1282,9 +1282,9 @@ module Wrekavoc
           if props and !props.empty?
             if (!props['address'] or props['address'].empty?) \
              and (!props['vnetwork'] or  props['vnetwork'].empty?) \
-             and (props['limitation'] and !props['limitation'].empty?)
-              ret = @daemon.viface_configure_limitations(vnodename,
-                vifacename,props['limitation'])
+             and (props['vtraffic'] and !props['vtraffic'].empty?)
+              ret = @daemon.viface_configure_vtraffic(vnodename,
+                vifacename,props['vtraffic'])
             else
               ret = @daemon.viface_attach(vnodename,vifacename,props)
             end
@@ -1529,8 +1529,8 @@ module Wrekavoc
 
       def result! #:nodoc:
         classname = @body.class.name.split('::').last
+          #or Wrekavoc::Limitation::Network.constants.include?(classname) \
         if Wrekavoc::Resource.constants.include?(classname) \
-          or Wrekavoc::Limitation::Network.constants.include?(classname) \
           or @body.is_a?(Array) or @body.is_a?(Hash)
           @body = TopologyStore::HashWriter.new.visit(@body)
         end

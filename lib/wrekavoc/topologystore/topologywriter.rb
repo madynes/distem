@@ -40,16 +40,16 @@ module Wrekavoc
         raise unless vroute.is_a?(Resource::VRoute)
       end
 
-      def visit_rule(rule)
-        raise unless vroute.is_a?(Limitation::Network::Rule)
+      def visit_vtraffic(vtraffic)
+        raise unless vtraffic.is_a?(Resource::VIface::VTraffic)
       end
 
       def visit_bandwidth(limitbw)
-        raise unless vroute.is_a?(Limitation::Network::Bandwidth)
+        raise unless limitbw.is_a?(Resource::Bandwidth)
       end
 
       def visit_latency(limitlat)
-        raise unless vroute.is_a?(Limitation::Network::Latency)
+        raise unless limitlat.is_a?(Resource::Latency)
       end
 
       def visit_nilclass(obj)

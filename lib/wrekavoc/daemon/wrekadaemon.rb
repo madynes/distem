@@ -720,9 +720,9 @@ module Wrekavoc
           #@node_config.vnode_configure(vnode.name)
         end
 
-        viface_configure_limitations(vnode.name,viface.name,
-          properties['limitation']
-        ) if properties['limitation'] and !properties['limitation'].empty?
+        viface_configure_vtraffic(vnode.name,viface.name,
+          properties['vtraffic']
+        ) if properties['vtraffic'] and !properties['vtraffic'].empty?
 
         return viface
 
@@ -753,31 +753,31 @@ module Wrekavoc
         return viface
       end
 
-      def viface_configure_limitations(vnodename,vifacename,limitations)
+      def viface_configure_vtraffic(vnodename,vifacename,vtraffichash)
       begin
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
-        raise MissingParameterError unless limitations
+        raise MissingParameterError unless vtraffichash
 
-        limits = Limitation::Network::Manager.parse_limitations(
-          vnode,viface,limitations
-        ) 
+        #vtraffic = Limitation::Network::Manager.parse_limitations(
+        #  vnode,viface,vtraffichash
+        #) 
 
-        if viface.limitation?
+        if viface.vtraffic?
           if target?(vnode) and vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
             @node_config.viface_flush(viface) 
             vnode.status = Resource::Status::RUNNING
           end
-          viface.remove_limitations()
+          viface.reset_vtraffic()
         end
-        viface.add_limitations(limits)
+        viface.set_vtraffic(vtraffichash)
 
         if daemon?
           unless target?(vnode)
             props = {}
-            props['limitation'] = limitations
+            props['vtraffic'] = vtraffichash
             cl = NetAPI::Client.new(vnode.host.address)
             cl.viface_attach(vnode.name,viface.name,props)
           end
@@ -794,8 +794,7 @@ module Wrekavoc
       rescue Lib::AlreadyExistingResourceError
         raise
       rescue Exception
-        viface.remove_limitations() \
-          if limitations
+        viface.reset_vtraffic() if vtraffichash
         raise
       end
       end
@@ -949,24 +948,24 @@ module Wrekavoc
               if !props['address'] and viface['vnetwork']
             # >>> TODO: Limitations
             if viface['voutput']
-              props['limitation'] = {}
-              props['limitation']['OUTPUT'] = {}
+              props['vtraffic'] = {}
+              props['vtraffic']['OUTPUT'] = {}
               if viface['voutput']['properties']
                 viface['voutput']['properties'].each do |limprop|
                   type = limprop['type'].downcase
                   limprop.delete('type')
-                  props['limitation']['OUTPUT'][type] = limprop.dup
+                  props['vtraffic']['OUTPUT'][type] = limprop.dup
                 end
               end
             end
             if viface['vinput']
-              props['limitation'] = {} unless props['limitation']
-              props['limitation']['INPUT'] = {}
+              props['vtraffic'] = {} unless props['vtraffic']
+              props['vtraffic']['INPUT'] = {}
               if viface['vinput']['properties']
                 viface['vinput']['properties'].each do |limprop|
                   type = limprop['type'].downcase
                   limprop.delete('type')
-                  props['limitation']['INPUT'][type] = limprop.dup
+                  props['vtraffic']['INPUT'][type] = limprop.dup
                 end
               end
             end

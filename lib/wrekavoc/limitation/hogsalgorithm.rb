@@ -12,9 +12,13 @@ module Wrekavoc
 
         def apply(vcpu)
           coresdesc = {}
-          vcpu.vcores.each_value do |vcore|
-            coresdesc[vcore.pcore.physicalid.to_i] = vcore.frequency / vcore.pcore.frequency \
-              if vcore.frequency < vcore.pcore.frequency
+
+          if vcpu and vcpu.vcores
+            vcpu.vcores.each_value do |vcore|
+              coresdesc[vcore.pcore.physicalid.to_i] = \
+                vcore.frequency / vcore.pcore.frequency \
+                if vcore.frequency < vcore.pcore.frequency
+            end
           end
 
           unless coresdesc.empty?
