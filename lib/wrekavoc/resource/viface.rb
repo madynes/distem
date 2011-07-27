@@ -68,7 +68,6 @@ module Wrekavoc
       attr_reader :voutput
       # The Limitation (input traffic) applied to this interface
       attr_reader :vinput
-      attr_accessor :limited
 
       # Create a new Virtual Interface
       # ==== Attributes
@@ -85,7 +84,6 @@ module Wrekavoc
         @vnetwork = nil
         @vinput = nil
         @voutput = nil
-        @limited = false
         @vroutes = []
         @@ids += 1
       end
@@ -137,11 +135,11 @@ module Wrekavoc
         raise Lib::InvalidParameterError, hash.to_s \
           if !vinput and !voutput and !hash.empty?
 
-        raise Lib::AlreadyExistingResourceError, vinput \
+        raise Lib::AlreadyExistingResourceError, hash['INPUT'] \
           if vinput and @vinput
         @vinput = vinput
 
-        raise Lib::AlreadyExistingResourceError, voutput \
+        raise Lib::AlreadyExistingResourceError, hash['OUTPUT'] \
           if voutput and @voutput
         @voutput = voutput
       end
@@ -153,10 +151,6 @@ module Wrekavoc
 
       def vtraffic?
         return (@vinput or @voutput)
-      end
-
-      def limited?
-        return @limited
       end
 
       def ==(viface)

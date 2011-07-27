@@ -53,37 +53,47 @@ module Wrekavoc
       def vnode_start(vnode)
         @containers[vnode.name].configure()
         @containers[vnode.name].start()
+=begin
         vnode.vifaces.each do |viface|
           if viface.vtraffic? and !viface.limited?
             viface_configure(viface)
           end
         end
+=end
       end
 
-      def viface_flush(viface)
-        raise Lib::ResourceNotFoundError, viface unless viface
+      def vnode_reconfigure(vnode)
+        raise Lib::ResourceNotFoundError, vnode unless vnode
 
+        @containers[vnode.name].reconfigure()
+      end
+
+=begin
         if viface.limited?
-          NetworkLimitation.undo(viface)
+          NetworkForge.undo(viface)
           viface.limited = false
         end
-      end
+=end
 
+=begin
       def viface_configure(viface)
         raise Lib::ResourceNotFoundError, viface unless viface
         raise Lib::AlreadyExistingResourceError, 'vtraffic' if viface.limited?
 
-        NetworkLimitation.apply(viface)
+        NetworkForge.apply(viface)
         viface.limited = true
       end
+=end
 
       def vnode_stop(vnode)
+=begin
         vnode.vifaces.each do |viface|
           unless viface.limited?
-            NetworkLimitation.undo(viface)
+            NetworkForge.undo(viface)
             viface.limited = false
           end
         end
+=end
         @containers[vnode.name].stop()
       end
 
@@ -96,10 +106,12 @@ module Wrekavoc
         viface_detach(viface)
       end
 
+=begin
       def viface_detach(viface)
-        NetworkLimitation.undo(viface)
+        NetworkForge.undo(viface)
         viface.detach()
       end
+=end
 
       def vnetwork_add(vnetwork)
         @vplatform.add_vnetwork(vnetwork)

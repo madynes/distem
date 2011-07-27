@@ -721,7 +721,7 @@ module Wrekavoc
         end
 
         viface_configure_vtraffic(vnode.name,viface.name,
-          properties['vtraffic']
+          properties['vtraffic'],false
         ) if properties['vtraffic'] and !properties['vtraffic'].empty?
 
         return viface
@@ -738,6 +738,7 @@ module Wrekavoc
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
         viface.detach()
+
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
@@ -746,14 +747,14 @@ module Wrekavoc
         end
 
         if target?(vnode)
-          @node_config.viface_detach(viface)
+          @node_config.vnode_reconfigure(vnode)
           #@node_config.vnode_configure(vnode.name)
         end
 
         return viface
       end
 
-      def viface_configure_vtraffic(vnodename,vifacename,vtraffichash)
+      def viface_configure_vtraffic(vnodename,vifacename,vtraffichash,forward=true)
       begin
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
@@ -764,6 +765,7 @@ module Wrekavoc
         #  vnode,viface,vtraffichash
         #) 
 
+=begin
         if viface.vtraffic?
           if target?(vnode) and vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
@@ -772,9 +774,10 @@ module Wrekavoc
           end
           viface.reset_vtraffic()
         end
+=end
         viface.set_vtraffic(vtraffichash)
 
-        if daemon?
+        if daemon? and forward
           unless target?(vnode)
             props = {}
             props['vtraffic'] = vtraffichash
@@ -786,7 +789,7 @@ module Wrekavoc
         if target?(vnode)
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
-            @node_config.viface_configure(viface)
+            @node_config.vnode_reconfigure(vnode)
             vnode.status = Resource::Status::RUNNING
           end
         end

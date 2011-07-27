@@ -22,7 +22,11 @@ module Wrekavoc
         end
 
         @vnode = vnode
-        @cpulim = CPULimitation.new(@vnode)
+        @cpuforge = CPUForge.new(@vnode)
+        @networkforges = {}
+        @vnode.vifaces.each do |viface|
+          @networkforges[viface] = NetworkForge.new(viface)
+        end
         @curname = ""
         @configfile = ""
         @id = 0
@@ -32,6 +36,18 @@ module Wrekavoc
 
       def setup()
         Lib::Shell.run("cp -R /root/.ssh #{vnode.filesystem.path}/root/")
+      end
+
+      def update()
+        iftocreate = @vnode.vifaces - @networkforges.keys
+        iftocreate.each do |viface|
+          @networkforges[viface] = NetworkForge.new(viface)
+        end
+        iftoremove = @networkforges.keys - @vnode.vifaces
+        iftoremove.each do |viface|
+          @networkforges[viface].undo
+          @networkforges.delete(viface)
+        end
       end
       
       def self.stop_all
@@ -46,12 +62,14 @@ module Wrekavoc
         #unless @vnode.status == Resource::Status::RUNNING
           #configure()
           #@vnode.status = Resource::Status::CONFIGURING
+          update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
             @@lxclock.synchronize {
               Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
-              @cpulim.apply
+              @cpuforge.apply
+              @networkforges.each_value { |netforge| netforge.apply }
             }
           else
             raise Lib::ResourceNotFoundError, @vnode.name
@@ -68,12 +86,14 @@ module Wrekavoc
       def stop
         #unless @vnode.status == Resource::Status::READY
           #@vnode.status = Resource::Status::CONFIGURING
+          update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
             @@lxclock.synchronize {
               Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
-              @cpulim.undo
+              @cpuforge.undo
+              @networkforges.each_value { |netforge| netforge.undo }
             }
           end
           #@vnode.status = Resource::Status::READY
@@ -99,7 +119,12 @@ module Wrekavoc
         @vnode.status = Resource::Status::READY
       end
 
-      #To configure or reconfigure (if the vnode has changed)
+      def reconfigure
+          update()
+          @cpuforge.apply
+          @networkforges.each_value { |netforge| netforge.apply }
+      end
+
       def configure
         remove()
 
