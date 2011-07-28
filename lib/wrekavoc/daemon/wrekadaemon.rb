@@ -1005,8 +1005,8 @@ module Wrekavoc
         ret = ''
 
         case format.upcase
-          #when 'XML'
-          #  visitor = TopologyStore::XMLWriter.new
+          when 'XML'
+            visitor = TopologyStore::XMLWriter.new
           when 'JSON'
             visitor = TopologyStore::HashWriter.new
             ret += JSON.pretty_generate(visitor.visit(@daemon_resources))

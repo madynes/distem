@@ -733,7 +733,7 @@ module Wrekavoc
           @resource[req].get(
             {}
           ) { |response, request, result|
-            ret = JSON.parse(check_error(result,response))
+            ret = check_error(result,response)
           }
           return ret
         rescue RestClient::RequestFailed
