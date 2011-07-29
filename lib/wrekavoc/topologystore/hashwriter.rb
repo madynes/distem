@@ -51,7 +51,7 @@ module Wrekavoc
         ret = {
           'id' => cpu.id.to_s,
           'cores' => visit(cpu.cores),
-          'cores_alloc' => {},
+          'cores_alloc' => [],
           'critical_cache_links' => [],
         }
 

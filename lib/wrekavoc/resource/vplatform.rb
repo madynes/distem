@@ -64,7 +64,8 @@ module Wrekavoc
           if vnetwork.get_vnode(vnode.name)
             # Remove every vroute vnode have a role on
             vnetwork.vroutes.each_value do |vroute|
-                if vnetwork.get_vnode_viface(vnode).address.to_s == vroute.gw.to_s
+                viface = vnetwork.get_vnode_viface(vnode)
+                if viface and viface.address.to_s == vroute.gw.to_s
                   vnetwork.remove_vroute(vroute)
                 end
             end

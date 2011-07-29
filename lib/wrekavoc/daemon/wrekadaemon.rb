@@ -256,6 +256,7 @@ module Wrekavoc
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
         vnode.remove_vcpu()
 
+
         if daemon?
           @daemon_resources.remove_vnode(vnode)
           unless target?(vnode)
@@ -896,8 +897,8 @@ module Wrekavoc
         hash = {}
 
         case format.upcase
-          #when 'XML'
-          #  visitor = TopologyStore::XMLReader.new
+          when 'XML'
+            parser = TopologyStore::XMLReader.new
           when 'JSON'
             hash = JSON.parse(data)
           when 'SIMGRID'
@@ -940,7 +941,12 @@ module Wrekavoc
           props['target'] = vnode['host'] if vnode['host']
           props['image'] = vnode['filesystem']['image']
           vnode_create(vnode['name'], props)
-          next unless vnode['vifaces']
+          if vnode['vcpu'] and vnode['vcpu']['vcores']
+            sleep(0.5)
+            vcpu_create(vnode['name'],vnode['vcpu']['vcores'].size,vnode['vcpu']['vcores'][0]['frequency'])
+          end
+
+          next if !vnode['vifaces'] or vnode['vifaces'].empty?
           sleep(0.5)
 
           vnode['vifaces'].each do |viface|
@@ -949,7 +955,7 @@ module Wrekavoc
             props['address'] = viface['address'] if viface['address'] 
             props['vnetwork'] = viface['vnetwork'] \
               if !props['address'] and viface['vnetwork']
-            # >>> TODO: Limitations
+
             if viface['voutput']
               props['vtraffic'] = {}
               props['vtraffic']['OUTPUT'] = {}
@@ -961,6 +967,7 @@ module Wrekavoc
                 end
               end
             end
+
             if viface['vinput']
               props['vtraffic'] = {} unless props['vtraffic']
               props['vtraffic']['INPUT'] = {}

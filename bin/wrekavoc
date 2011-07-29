@@ -39,6 +39,8 @@ options['f_pnodes_quit'] = false
 options['f_vnode_create'] = false
 options['f_viface_create'] = false
 options['f_vnetwork_create'] = false
+options['f_vplatform_save'] = false
+options['f_vplatform_load'] = false
 
 options['daemon_addr'] = 'localhost'
 options['daemon_port'] = 4567
@@ -48,6 +50,8 @@ options['vnode_image'] = false
 options['viface_name'] = false
 options['vnetwork_name'] = false
 options['vnetwork_address'] = false
+options['vplatform_format'] = false
+options['vplatform_file'] = false
 
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -104,6 +108,20 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnetwork_name'] = array[0]
     options['vnetwork_address'] = array[1]
   end
+  opts.on( '-s', '--save-config FORMAT,FILE', Array,\
+    'Save the vplatform in FILE using FORMAT (avaliable formats: JSON,XML)' ) \
+    do |array|
+    options['f_vplatform_save'] = true
+    options['vplatform_format'] = array[0]
+    options['vplatform_file'] = array[1]
+  end
+  opts.on( '-l', '--load-config FORMAT,FILE', Array,\
+    'Load a vplatform from a FILE in FORMAT (avaliable formats: JSON,XML,SIMGRID)' ) \
+    do |array|
+    options['f_vplatform_load'] = true
+    options['vplatform_format'] = array[0]
+    options['vplatform_file'] = array[1]
+  end
   opts.on( '-q', '--quit', 'Close the application' ) do
     options['f_pnodes_quit'] = true
   end
@@ -151,4 +169,21 @@ if (options['f_viface_create'])
 
   cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.viface_create(options['vnode_name'], options['viface_name'])
+end
+
+if (options['f_vplatform_save'])
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  ret = cl.vplatform_info(options['vplatform_format'])
+  File.open(options['vplatform_file'],'w') { |f| f.puts(ret) }
+end
+
+if (options['f_vplatform_load'])
+  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  if File.exists?(options['vplatform_file'])
+    str = File.read(options['vplatform_file'])
+  else
+    puts "File '#{options['vplatform_file']}' not found !"
+    exit 1
+  end
+  pp cl.vplatform_create(str,options['vplatform_format'])
 end

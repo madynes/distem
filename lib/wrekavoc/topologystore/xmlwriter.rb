@@ -14,7 +14,9 @@ module Wrekavoc
         ret = REXML::Document.new
         ret << REXML::XMLDecl.new
         ret.add_element(evplatform)
-        return ret.to_s
+        strret = ""
+        ret.write(strret,2)
+        return strret
       end
 
       def visit_pnode(pnode)
@@ -25,13 +27,37 @@ module Wrekavoc
         return ret
       end
 
+      def visit_cpu(cpu)
+        ret = REXML::Element.new("cpu")
+        ret.add_attribute('id',cpu.id.to_s)
+        visit(cpu.cores).each { |elem| ret.add_element(elem) }
+        return ret
+      end
+
+      def visit_core(core)
+        ret = REXML::Element.new("core")
+        ret.add_attribute('id',core.physicalid.to_s)
+        ret << REXML::Comment.new('frequency in MHz') 
+        ret.add_attribute('frequency',core.frequency.to_s)
+
+        return ret
+      end
+
+      def visit_memory(memory)
+        ret = REXML::Element.new("memory")
+        ret << REXML::Comment.new('Sizes in Mo') 
+        ret.add_attribute('capacity',memory.capacity.to_s)
+        ret.add_attribute('swap',memory.swap.to_s)
+        return ret
+      end
+
       def visit_vnode(vnode)
         ret = REXML::Element.new("vnode")
         ret.add_attribute('name',vnode.name)
         ret.add_attribute('host',vnode.host.address.to_s)
         ret.add_element(visit(vnode.filesystem))
         visit(vnode.vifaces).each { |elem| ret.add_element(elem) }
-        ret.add_element(visit(vnode.vcpu))
+        ret.add_element(visit(vnode.vcpu)) if vnode.vcpu
         ret.add_attribute('gateway',vnode.gateway.to_s)
         return ret
       end
@@ -46,21 +72,6 @@ module Wrekavoc
         return ret
       end
 
-      def visit_cpu(cpu)
-        ret = REXML::Element.new("cpu")
-        ret.add_attribute('id',cpu.id.to_s)
-        visit(cpu.cores).each { |elem| ret.add_element(elem) }
-        return ret
-      end
-
-      def visit_core(core)
-        ret = REXML::Element.new("core")
-        ret.add_attribute('id',core.physicalid.to_s)
-        ret.add_attribute('frequency',core.frequency.to_s + ' MHz')
-
-        return ret
-      end
-
       def visit_vcpu(vcpu)
         ret = REXML::Element.new("vcpu")
         ret.add_attribute('pcpu',vcpu.pcpu.id.to_s)
@@ -71,14 +82,8 @@ module Wrekavoc
       def visit_vcore(vcore)
         ret = REXML::Element.new("vcore")
         ret.add_attribute('pcore',vcore.pcore.physicalid.to_s)
-        ret.add_attribute('frequency',vcore.frequency.to_s + ' MHz')
-        return ret
-      end
-
-      def visit_memory(memory)
-        ret = REXML::Element.new("memory")
-        ret.add_attribute('capacity',memory.capacity.to_s + ' Mo')
-        ret.add_attribute('swap',memory.swap.to_s + ' Mo')
+        ret << REXML::Comment.new('frequency in MHz') 
+        ret.add_attribute('frequency',vcore.frequency.to_s)
         return ret
       end
 
@@ -108,21 +113,18 @@ module Wrekavoc
       def visit_vtraffic(vtraffic)
         ret = REXML::Element.new("vtraffic")
         ret.add_attribute('direction',vtraffic.direction)
-        ret.add_attribute('viface',vtraffic.viface.name)
         visit(vtraffic.properties).each { |elem| ret.add_element(elem) }
         return ret
       end
 
       def visit_bandwidth(limitbw)
         ret = REXML::Element.new("bandwidth")
-        ret.add_attribute('type',limitbw.to_s())
         ret.add_attribute('rate',limitbw.rate)
         return ret
       end
 
       def visit_latency(limitlat)
         ret = REXML::Element.new("latency")
-        ret.add_attribute('type',limitlat.to_s())
         ret.add_attribute('delay',limitlat.delay)
         return ret
       end

@@ -78,7 +78,7 @@ module Wrekavoc
       end
 
       def viface_remove(viface)
-        viface_detach(viface)
+        viface.detach()
       end
 
       def vnetwork_add(vnetwork)
