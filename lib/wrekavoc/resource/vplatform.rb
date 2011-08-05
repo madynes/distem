@@ -83,10 +83,9 @@ module Wrekavoc
         raise unless vnetwork.is_a?(VNetwork)
         raise Lib::AlreadyExistingResourceError, vnetwork.address.to_string \
           if @vnetworks[vnetwork.address.to_string]
-        @vnetworks.each_value do |vnet|
-          raise Lib::AlreadyExistingResourceError, vnetwork.name \
-            if vnetwork.name == vnet.name
-        end
+
+        raise Lib::AlreadyExistingResourceError, vnetwork.name \
+          @vnetworks.select{ |vnet| vnetwork.name == vnet.name }[0]
 
         @vnetworks[vnetwork.address.to_string] = vnetwork 
       end
@@ -105,14 +104,7 @@ module Wrekavoc
       end
 
       def get_vnetwork_by_name(name)
-        ret = nil
-        @vnetworks.each_value do |vnetwork|
-          if vnetwork.name == name
-            ret = vnetwork
-            break
-          end
-        end
-        return ret
+        return @vnetworks.select { |vnet| vnet.name == name }[0]
       end
 
       def get_vnetwork_by_address(address)
@@ -126,14 +118,8 @@ module Wrekavoc
         end
 
         ret = @vnetworks[address.to_string]
-        unless ret
-          @vnetworks.each_value do |vnetwork|
-            if vnetwork.address.include?(address)
-              ret = vnetwork
-              break
-            end
-          end
-        end
+        ret = @vnetworks.select{ |vnet| vnet.address.include?(address) }[0] \
+          unless ret
         return ret
       end
 
