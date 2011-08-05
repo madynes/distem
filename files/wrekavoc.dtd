@@ -1,0 +1,56 @@
+<!-- Wrekavoc XML input/output backups DTD -->
+<!ELEMENT vplatform (pnode|vnode|vnetwork)*>
+<!ATTLIST vplatform version CDATA #IMPLIED>
+
+<!-- PNode specification -->
+<!ELEMENT pnode (cpu,memory)>
+<!ATTLIST pnode address CDATA #REQUIRED>
+
+<!ELEMENT cpu core+>
+<!ATTLIST cpu id ID #REQUIRED>
+
+<!ELEMENT core EMPTY>
+<!ATTLIST core id ID #REQUIRED>
+<!ATTLIST core frequency CDATA #REQUIRED>
+
+
+<!-- VNode specification -->
+<!ELEMENT vnode (filesystem,vcpu?,viface*)>
+<!ATTLIST vnode name CDATA #REQUIRED>
+<!ATTLIST vnode host CDATA #IMPLIED>
+<!ATTLIST vnode gateway (true,false) "false">
+
+<!ELEMENT filesystem EMPTY>
+<!ATTLIST filesystem image CDATA #REQUIRED>
+
+<!ELEMENT vcpu vcores+>
+<!ATTLIST vcpu pcpu IDREF #REQUIRED>
+
+<!ELEMENT vcore EMPTY>
+<!ATTLIST vcore pcore IDREF #REQUIRED>
+<!ATTLIST vcore frequency CDATA #REQUIRED>
+
+<!ELEMENT viface vtraffic?>
+<!ATTLIST viface name CDATA #REQUIRED>
+<!ATTLIST viface address CDATA #IMPLIED>
+<!ATTLIST viface vnetwork CDATA #IMPLIED>
+
+<!ELEMENT vtraffic (bandwidth?,latency?)>
+<!ATTLIST vtraffic direction CDATA #REQUIRED>
+
+<!ELEMENT bandwidth EMPTY>
+<!ATTLIST bandwidth rate CDATA #REQUIRED>
+
+<!ELEMENT latency EMPTY>
+<!ATTLIST latency delay CDATA #REQUIRED>
+
+<!-- VNetwork specification -->
+<!ELEMENT vnetwork vroute*>
+<!ATTLIST vnetwork name CDATA #REQUIRED>
+<!ATTLIST vnetwork address CDATA #REQUIRED>
+
+<!ELEMENT vroute EMPTY>
+<!ATTLIST vroute id ID #IMPLIED>
+<!ATTLIST vroute destination CDATA #REQUIRED>
+<!ATTLIST vroute gateway CDATA #REQUIRED>
+

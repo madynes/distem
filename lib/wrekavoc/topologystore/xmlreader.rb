@@ -129,7 +129,7 @@ module Wrekavoc
         ret['address'] = xmldoc.attribute('address').to_s
         ret['vroutes'] = []
         xmldoc.elements.each("vroute") do |vroute|
-          ret['vroutes'] << parse_vroute(vroute)
+          ret['vroutes'] << parse_vroute(vroute,{ 'networksrc' => ret['name'] })
         end
         return ret
       end
@@ -137,8 +137,7 @@ module Wrekavoc
       def parse_vroute(xmldoc,tmp={})
         ret = tmp
         ret['id'] = xmldoc.attribute('id').to_s
-        ret['networksrc'] = xmldoc.attribute('networksrc').to_s
-        ret['networkdst'] = xmldoc.attribute('networkdst').to_s
+        ret['networkdst'] = xmldoc.attribute('destination').to_s
         ret['gateway'] = xmldoc.attribute('gateway').to_s
         return ret
       end

@@ -104,8 +104,7 @@ module Wrekavoc
       def visit_vroute(vroute)
         ret = REXML::Element.new("vroute")
         ret.add_attribute('id',vroute.id.to_s)
-        ret.add_attribute('networksrc',vroute.srcnet.name)
-        ret.add_attribute('networkdst',vroute.dstnet.name)
+        ret.add_attribute('destination',vroute.dstnet.name)
         ret.add_attribute('gateway',vroute.gw.to_s)
         return ret
       end
