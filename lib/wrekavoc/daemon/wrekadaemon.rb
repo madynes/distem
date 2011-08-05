@@ -43,20 +43,25 @@ module Wrekavoc
           pnode.status = Resource::Status::RUNNING
         }
         if daemon?
-          pnode = @daemon_resources.get_pnode_by_address(target)
-          pnode = Resource::PNode.new(target) unless pnode
+          if target?(target)
+            pnode = @node_config.pnode
+          else
+            pnode = @daemon_resources.get_pnode_by_address(target)
+            pnode = Resource::PNode.new(target) unless pnode
+          end
 
           @daemon_resources.add_pnode(pnode)
 
           block = Proc.new {
-            if target?(target)
-              @node_config.pnode = pnode
-              nodemodeblock.call
-            else
+            #if target?(target)
+              #@node_config.pnode = pnode
+              #nodemodeblock.call
+            unless target?(target)
+            #else
                 Admin.pnode_run_server(pnode)
                 sleep(1)
                 cl = NetAPI::Client.new(target)
-                ret = cl.pnode_init(target)
+                ret = cl.pnode_init()
                 pnode.memory.capacity = ret['memory']['capacity'].split()[0].to_i
                 pnode.memory.swap = ret['memory']['swap'].split()[0].to_i
 
@@ -79,11 +84,12 @@ module Wrekavoc
           else
             block.call
           end
-        else
+        #else
+        end
           if target?(target)
             nodemodeblock.call
           end
-        end
+        #end
 
         return pnode
       rescue Lib::AlreadyExistingResourceError
@@ -1046,6 +1052,8 @@ module Wrekavoc
             rescue Resolv::ResolvError
               raise Lib::InvalidParameterError, param
             end
+          elsif param == nil
+            ret = true
           end
           ret = Lib::NetTools.localaddr?(target) if target
         else

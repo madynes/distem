@@ -26,7 +26,7 @@ module Wrekavoc
       # * * +async+ Do not block waiting for the machine to install
       # ==== Returns
       # The physical node which have been initialized (Hash)
-      def pnode_init(target = NetAPI::TARGET_SELF, properties = {})
+      def pnode_init(target = nil, properties = {})
         begin
           properties = properties.to_json if properties.is_a?(Hash)
 
