@@ -815,7 +815,7 @@ module Wrekavoc
         vnode = vnode_get(vnodename) if vnodename
         srcnet = vnetwork_get(networksrc)
         destnet = vnetwork_get(networkdst,false)
-        if daemon? and !target?(vnode)
+        if daemon? and ((vnode and !target?(vnode)) or (!vnode))
           gw = vnode_get(nodegw)
           gwaddr = gw.get_viface_by_network(srcnet)
           gwaddr = gwaddr.address if gwaddr
@@ -823,7 +823,7 @@ module Wrekavoc
           begin
             gw = IPAddress.parse(nodegw)
           rescue ArgumentError
-            raise InvalidParameterError, nodegw
+            raise Lib::InvalidParameterError, nodegw
           end
           gwaddr = gw
           destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst) \
