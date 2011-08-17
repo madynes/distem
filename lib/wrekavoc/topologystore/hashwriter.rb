@@ -70,9 +70,14 @@ module Wrekavoc
       def visit_core(core)
         ret = {
           'physicalid' => core.physicalid,
-          'frequency' => core.frequency.to_s + ' MHz',
+          'coreid' => core.coreid,
+          'frequency' => (core.frequency / 1000).to_s + ' MHz',
+          'frequencies' => [],
           'cache_links' => [],
         }
+        core.frequencies.each do |corefreq|
+          ret['frequencies'] << (corefreq / 1000).to_s + ' MHz'
+        end
 
         core.cache_links.each do |linkedcore|
           ret['cache_links'] << linkedcore.physicalid
@@ -91,7 +96,7 @@ module Wrekavoc
       def visit_vcore(vcore)
         return {
           'pcore' => vcore.pcore.physicalid.to_s,
-          'frequency' => vcore.frequency.to_s + ' MHz',
+          'frequency' => (vcore.frequency / 1000).to_s + ' MHz',
         }
       end
 

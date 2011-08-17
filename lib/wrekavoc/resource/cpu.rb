@@ -5,11 +5,13 @@ module Wrekavoc
 
     class CPU
       class Core
-        attr_reader :physicalid,:frequency
+        attr_reader :physicalid,:coreid,:frequency,:frequencies
         attr_accessor :cache_links
-        def initialize(physicalid,freq)
+        def initialize(physicalid,coreid,freq,freqs)
           @physicalid = physicalid
+          @coreid = coreid
           @frequency = freq
+          @frequencies = freqs
           @cache_links = []
         end
       end
@@ -21,9 +23,9 @@ module Wrekavoc
         @critical_cache_links = []
       end
 
-      def add_core(physicalid,freq)
+      def add_core(physicalid,coreid,freq,freqs)
         raise Lib::AlreadyExistingResourceError if @cores[physicalid]
-        @cores[physicalid] = Core.new(physicalid,freq)
+        @cores[physicalid] = Core.new(physicalid,coreid,freq,freqs)
       end
 
       def get_core(physicalid)

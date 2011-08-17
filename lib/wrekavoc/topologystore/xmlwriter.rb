@@ -82,7 +82,7 @@ module Wrekavoc
       def visit_vcore(vcore)
         ret = REXML::Element.new("vcore")
         ret.add_attribute('pcore',vcore.pcore.physicalid.to_s)
-        ret << REXML::Comment.new('frequency in MHz') 
+        ret << REXML::Comment.new('frequency in Hz') 
         ret.add_attribute('frequency',vcore.frequency.to_s)
         return ret
       end
