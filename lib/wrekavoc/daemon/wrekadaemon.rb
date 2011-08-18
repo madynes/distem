@@ -66,7 +66,7 @@ module Wrekavoc
                 pnode.memory.swap = ret['memory']['swap'].split()[0].to_i
 
                 ret['cpu']['cores'].each do |core|
-                  core['frequencies'].collect{ |val| val.split()[0].to_i * 1000 }
+                  core['frequencies'].collect!{ |val| val.split()[0].to_i * 1000 }
                   core['frequency'] = core['frequency'].split[0].to_i * 1000
                   pnode.cpu.add_core(core['physicalid'],core['coreid'],
                     core['frequency'], core['frequencies']
