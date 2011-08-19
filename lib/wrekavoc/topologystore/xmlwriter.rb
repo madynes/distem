@@ -37,7 +37,7 @@ module Wrekavoc
       def visit_core(core)
         ret = REXML::Element.new("core")
         ret.add_attribute('id',core.physicalid.to_s)
-        ret << REXML::Comment.new('frequency in MHz') 
+        ret << REXML::Comment.new('frequency in KHz') 
         ret.add_attribute('frequency',core.frequency.to_s)
 
         return ret

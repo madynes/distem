@@ -10,6 +10,12 @@ Rake::ExtensionTask.new do |ext|
   ext.lib_dir = 'lib/ext'
 end
 
+Rake::ExtensionTask.new do |ext|
+  ext.name = 'cpugov'
+  ext.ext_dir = 'ext/cpugov'
+  ext.lib_dir = 'lib/ext'
+end
+
 Rake::TestTask.new('test:unit') do |t|
   t.libs << "test"
   t.test_files = FileList['test/unit/**/*.rb']

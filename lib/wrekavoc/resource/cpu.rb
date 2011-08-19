@@ -11,7 +11,7 @@ module Wrekavoc
           @physicalid = physicalid
           @coreid = coreid
           @frequency = freq
-          @frequencies = freqs
+          @frequencies = freqs.sort
           @cache_links = []
         end
       end

@@ -35,6 +35,7 @@ module Wrekavoc
               "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_available_frequencies"
             )
             core['frequencies'] = strcpufreq.strip.split.collect{ |val| val.to_i }
+            core['frequencies'].sort!
           end
 
           if core['physicalid'] and core['coreid'] \

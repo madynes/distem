@@ -118,7 +118,7 @@ module Wrekavoc
         cores.each do |core|
           frequency = 0.0
           if freq and freq.to_f > 0.0
-            raise Lib::InvalidParameterError, freq if (freq.to_f * 1000) > core.frequency.to_f
+            raise Lib::InvalidParameterError, freq if freq.to_f > core.frequency.to_f
             frequency = freq.to_f
           else
             frequency = core.frequency

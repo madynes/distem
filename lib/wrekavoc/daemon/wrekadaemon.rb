@@ -516,12 +516,14 @@ module Wrekavoc
         vnode = vnode_get(vnodename)
         raise Lib::MissingParameterError, 'corenb' unless corenb
         # >>> TODO: check if 'corenb' is an integer
+        frequency = frequency.to_f
+        frequency = frequency * 1000 if frequency > 1
         vnode.add_vcpu(corenb.to_i,frequency)
 
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vcpu_create(vnode.name,corenb,frequency)
+            cl.vcpu_create(vnode.name,corenb,frequency.to_s)
           end
         end
 

@@ -8,13 +8,13 @@ module Wrekavoc
         attr_reader :pcore,:frequency
         def initialize(pcore,freq)
           raise Lib::InvalidParameterError, freq \
-            if (freq * 1000) > pcore.frequency or freq <= 0
+            if freq > pcore.frequency or freq <= 0
           @pcore = pcore
 
           if freq > 0 and freq <= 1
             @frequency = (pcore.frequency * freq).to_i
           else
-            @frequency = (freq * 1000).to_i
+            @frequency = freq.to_i
           end
         end
       end
