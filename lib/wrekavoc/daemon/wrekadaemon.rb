@@ -527,6 +527,10 @@ module Wrekavoc
           end
         end
 
+        if target?(vnode)
+          @node_config.vcpu_attach(vnode)
+        end
+
         return vnode
 
       rescue Lib::AlreadyExistingResourceError

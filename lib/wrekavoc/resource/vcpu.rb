@@ -5,16 +5,23 @@ module Wrekavoc
 
     class VCPU
       class VCore
-        attr_reader :pcore,:frequency
-        def initialize(pcore,freq)
-          raise Lib::InvalidParameterError, freq \
-            if freq > pcore.frequency or freq <= 0
-          @pcore = pcore
+        @@ids = 0
+        attr_reader :pcore,:frequency,:id
+        def initialize(freq)
+          @pcore = nil
+          @frequency = freq
+          @id = @@ids
+          @@ids += 1
+        end
 
-          if freq > 0 and freq <= 1
-            @frequency = (pcore.frequency * freq).to_i
+        def attach(pcore)
+          raise Lib::InvalidParameterError, @frequency \
+            if @frequency > pcore.frequency or @frequency <= 0
+          @pcore = pcore
+          if @frequency > 0 and @frequency <= 1
+            @frequency = (pcore.frequency * @frequency).to_i
           else
-            @frequency = freq.to_i
+            @frequency = @frequency.to_i
           end
         end
       end
@@ -25,16 +32,17 @@ module Wrekavoc
         @vcores = {}
       end
 
-      def add_vcore(pcore,freq)
-        @vcores[pcore] = VCore.new(pcore,freq)
+      def add_vcore(freq)
+        vcore = VCore.new(freq)
+        @vcores[vcore.id] = vcore
       end
 
-      def get_vcore(pcore)
-        return @vcores[pcore]
+      def get_vcore(id)
+        return @vcores[id]
       end
 
-      def remove_vcore(pcore)
-        @vcores.delete(pcore)
+      def remove_vcore(id)
+        @vcores.delete(id)
       end
     end
 

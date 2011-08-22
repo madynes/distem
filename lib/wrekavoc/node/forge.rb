@@ -4,6 +4,7 @@ module Wrekavoc
   module Node
 
     class Forge
+      attr_reader :algorithm,:resource
       def initialize(resource,algorithm)
         @resource = resource
         raise Lib::InvalidParameterError, algorithm \

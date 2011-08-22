@@ -81,6 +81,11 @@ module Wrekavoc
         viface.detach()
       end
 
+      def vcpu_attach(vnode)
+        linkedcores = @containers[vnode.name].cpuforge.algorithm.is_a?(Algorithm::CPU::Gov)
+        vnode.attach_vcpu(linkedcores)
+      end
+
       def vnetwork_add(vnetwork)
         @vplatform.add_vnetwork(vnetwork)
       end

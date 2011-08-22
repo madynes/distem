@@ -65,7 +65,7 @@ module LXCWrapper
             end
             if vnode.vcpu
               cores = ""
-              vnode.vcpu.vcores.each_key { |pcore| cores += "#{pcore.physicalid}," }
+              vnode.vcpu.vcores.each_value { |vcore| cores += "#{vcore.pcore.physicalid}," }
               cores.chop! unless cores.empty?
               f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
             end

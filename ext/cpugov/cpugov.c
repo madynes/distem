@@ -28,10 +28,10 @@ static VALUE cpugov_init(
 )
 {
 	rb_iv_set(self, "@pitch", rb_float_new(DEFAULT_PITCH));
-	rb_iv_set(self, "@cores", cores);
+	rb_iv_set(self, "@cores", rb_ary_dup(cores));
 	rb_iv_set(self, "@freqmax", freqmax);
 	rb_iv_set(self, "@pid", INT2NUM(0));
-	rb_iv_set(self, "@cgrouppath", cgroup_path);
+	rb_iv_set(self, "@cgrouppath", rb_str_dup(cgroup_path));
 
   freq_max = freqmax;
 

@@ -153,7 +153,22 @@ int run(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh, d
   init_cores();
   printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
 
-  set_frequency_high();
-  while (1)
-    cycle();
+  if (lowtime == 0)
+  {
+    set_frequency_high();
+    while(1)
+      sleep(2);
+  }
+  else if (hightime == 0)
+  {
+    set_frequency_low();
+    while(1)
+      sleep(2);
+  }
+  else
+  {
+    set_frequency_high();
+    while (1)
+      cycle();
+  }
 }

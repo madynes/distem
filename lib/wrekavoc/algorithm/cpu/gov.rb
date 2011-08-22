@@ -22,23 +22,24 @@ module Wrekavoc
             vnode.vcpu.vcores.each_value do |vcore|
               freqmax = vcore.pcore.frequency unless freqmax
               freqs = vcore.pcore.frequencies
-              wfreq = vcore.frequency
-              hfreq = freqs.select{|val| val > wfreq} unless hfreq
+              wfreq = vcore.frequency unless wfreq
+              hfreq = freqs.select{|val| val >= wfreq}[0] unless hfreq
               if hfreq == freqs[0]
                 lfreq = 0 unless lfreq
               else
                 lfreq = freqs.index(hfreq) - 1 unless lfreq
+              end
                 
-              cores << vcore.pcore.coreid
+              cores << vcore.pcore.physicalid.to_i
             end
           end
 
           unless cores.empty?
             @ext = CPUExtension::CPUGov.new(
-              cores,freqmax"#{Node::Admin::PATH_CGROUP}/#{vnode.name}"
+              cores,freqmax,"#{Node::Admin::PATH_CGROUP}/#{vnode.name}"
             )
-            ratio = (wfreq - hfreq) / (lfreq - hfreq)
-            @ext.run(lfreq,hfreq,ratio)
+            ratio = (wfreq.to_f - hfreq) / (lfreq - hfreq)
+            @ext.run(lfreq.to_i,hfreq.to_i,ratio.to_f)
           end
         end
 

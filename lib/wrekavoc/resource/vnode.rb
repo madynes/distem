@@ -111,19 +111,25 @@ module Wrekavoc
         return ret
       end
 
-      def add_vcpu(corenb,freq=nil,linked_cores=false)
+      def add_vcpu(corenb,freq=nil)
         raise Lib::AlreadyExistingResourceError, 'VCPU' if @vcpu
-        cores = @host.cpu.alloc_cores(self,corenb)
         @vcpu = VCPU.new(@host.cpu)
-        cores.each do |core|
-          frequency = 0.0
-          if freq and freq.to_f > 0.0
-            raise Lib::InvalidParameterError, freq if freq.to_f > core.frequency.to_f
-            frequency = freq.to_f
-          else
-            frequency = core.frequency
-          end
-          @vcpu.add_vcore(core,frequency)
+        frequency = 0.0
+        if freq and freq.to_f > 0.0
+          frequency = freq.to_f
+        else
+          frequency = 1
+        end
+        corenb.times { @vcpu.add_vcore(frequency) }
+      end
+
+      def attach_vcpu(linked_cores=false)
+        raise Lib::UninitializedResourceError unless @vcpu
+        cores = @host.cpu.alloc_cores(self,@vcpu.vcores.size,linked_cores)
+        i = 0
+        @vcpu.vcores.each_value do |vcore|
+          vcore.attach(cores[i])
+          i += 1
         end
       end
 

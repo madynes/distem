@@ -8,7 +8,7 @@ module Wrekavoc
       PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
       @@lxclock = Mutex.new
 
-      attr_reader :vnode
+      attr_reader :vnode, :cpuforge, :networkforges
 
       def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
