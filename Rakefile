@@ -2,18 +2,23 @@ require 'rubygems'
 require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
-require 'rake/extensiontask'
 
-Rake::ExtensionTask.new do |ext|
-  ext.name = 'cpuhogs'
-  ext.ext_dir = 'ext/cpuhogs'
-  ext.lib_dir = 'lib/ext'
-end
+begin
+  require 'rake/extensiontask'
 
-Rake::ExtensionTask.new do |ext|
-  ext.name = 'cpugov'
-  ext.ext_dir = 'ext/cpugov'
-  ext.lib_dir = 'lib/ext'
+  Rake::ExtensionTask.new do |ext|
+    ext.name = 'cpuhogs'
+    ext.ext_dir = 'ext/cpuhogs'
+    ext.lib_dir = 'lib/ext'
+  end
+
+  Rake::ExtensionTask.new do |ext|
+    ext.name = 'cpugov'
+    ext.ext_dir = 'ext/cpugov'
+    ext.lib_dir = 'lib/ext'
+  end
+rescue LoadError
+  puts "You need the 'rake-compiler' to build extensions from the Rakefile"
 end
 
 Rake::TestTask.new('test:unit') do |t|
