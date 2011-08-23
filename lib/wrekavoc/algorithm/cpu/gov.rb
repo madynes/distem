@@ -18,19 +18,29 @@ module Wrekavoc
           lfreq = nil
           hfreq = nil
           wfreq = nil # wished frequency
+          ratio = nil
           if vnode.vcpu and vnode.vcpu.vcores
-            vnode.vcpu.vcores.each_value do |vcore|
-              freqmax = vcore.pcore.frequency unless freqmax
-              freqs = vcore.pcore.frequencies
-              wfreq = vcore.frequency unless wfreq
-              hfreq = freqs.select{|val| val >= wfreq}[0] unless hfreq
+            #check available frequencies table
+            pcores = vnode.host.cpu.get_allocated_cores(vnode)
+            cores = pcores.collect{ |core| core.physicalid.to_i }
+
+            vcore = vnode.vcpu.vcores[0]
+            freqs = vcore.pcore.frequencies
+            freqs.sort
+            freqmax = vcore.pcore.frequency
+            wfreq = vcore.frequency.to_i
+            # if the wished frequency is one of the cpu possible frequency
+            if freqs.index(wfreq)
+              lfreq = wfreq
+              hfreq = wfreq
+              ratio = 1.0
+            else
+              hfreq = freqs.select{|val| val >= wfreq}[0]
               if hfreq == freqs[0]
-                lfreq = 0 unless lfreq
+                lfreq = 0 
               else
-                lfreq = freqs.index(hfreq) - 1 unless lfreq
+                lfreq = freqs[freqs.index(hfreq) - 1]
               end
-                
-              cores << vcore.pcore.physicalid.to_i
             end
           end
 
@@ -38,7 +48,7 @@ module Wrekavoc
             @ext = CPUExtension::CPUGov.new(
               cores,freqmax,"#{Node::Admin::PATH_CGROUP}/#{vnode.name}"
             )
-            ratio = (wfreq.to_f - hfreq) / (lfreq - hfreq)
+            ratio = (wfreq.to_f - hfreq) / (lfreq - hfreq) unless ratio
             @ext.run(lfreq.to_i,hfreq.to_i,ratio.to_f)
           end
         end

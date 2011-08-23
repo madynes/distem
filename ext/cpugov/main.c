@@ -12,6 +12,10 @@ static unsigned int lowfreqstr_size, highfreqstr_size;
 static int corefds[MAX_CORES];
 static int cgroupfreezefd;
 
+#define DO_NOTHING() \
+while(1) \
+  sleep(2);
+
 /* Using of cores and corenb global var (see cpugov.h) */
 int init_cores()
 {
@@ -87,14 +91,22 @@ __inline__ int reset_frequency()
 
 __inline__ int cgroup_freeze()
 {
-  write(cgroupfreezefd,CGROUP_FREEZE,sizeof(CGROUP_FREEZE));
+  if (write(cgroupfreezefd,CGROUP_FREEZE,sizeof(CGROUP_FREEZE)) <= 0)
+  {
+        perror(__func__);
+        exit(1);
+  }
 
   return 0;
 }
 
 __inline__ int cgroup_thaw()
 {
-  write(cgroupfreezefd,CGROUP_THAW,sizeof(CGROUP_THAW));
+  if (write(cgroupfreezefd,CGROUP_THAW,sizeof(CGROUP_THAW)) <= 0)
+  {
+        perror(__func__);
+        exit(1);
+  }
 
   return 0;
 }
@@ -131,42 +143,40 @@ void stop(int num)
   reset_frequency();
 }
 
-int run(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh, double ratelow, char *cgroup_path)
+int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh, double ratelow, char *cgroup_path)
 {
   char strbuff[STRBUFF_SIZE];
 
 	if (signal(SIGINT, stop) == SIG_ERR || signal(SIGTERM, stop) == SIG_ERR)
 		return 1;
 
-  lowfreq = freqlow;
-  lowfreqstr_size = snprintf(lowfreqstr,sizeof(lowfreqstr),"%d",lowfreq);
-  lowtime = (__typeof__(lowtime)) (pitch * ratelow);
-
-  highfreq = freqhigh;
-  highfreqstr_size = snprintf(highfreqstr,sizeof(highfreqstr),"%d",highfreq);
-  hightime = (__typeof__(hightime)) (pitch * (1-ratelow));
-
-
-  snprintf(strbuff,sizeof(strbuff),"%d/freezer.state",cgroup_path);
-  cgroupfreezefd = open(strbuff,O_WRONLY);
-
-  init_cores();
-  printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
-
-  if (lowtime == 0)
+  if (ratelow == 0.0f)
   {
     set_frequency_high();
-    while(1)
-      sleep(2);
+    DO_NOTHING();
   }
-  else if (hightime == 0)
+  else if (ratelow == 1.0f)
   {
     set_frequency_low();
-    while(1)
-      sleep(2);
+    DO_NOTHING();
   }
   else
   {
+    lowfreq = freqlow;
+    lowfreqstr_size = snprintf(lowfreqstr,sizeof(lowfreqstr),"%d",lowfreq);
+    lowtime = (__typeof__(lowtime)) (pitch * ratelow);
+
+    highfreq = freqhigh;
+    highfreqstr_size = snprintf(highfreqstr,sizeof(highfreqstr),"%d",highfreq);
+    hightime = (__typeof__(hightime)) (pitch * (1-ratelow));
+
+
+    snprintf(strbuff,sizeof(strbuff),"%s/freezer.state",cgroup_path);
+    cgroupfreezefd = open(strbuff,O_WRONLY);
+
+    init_cores();
+    printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
+
     set_frequency_high();
     while (1)
       cycle();

@@ -33,6 +33,11 @@ module Wrekavoc
         return @cores[physicalid.to_i]
       end
 
+      def get_allocated_cores(vnode)
+        # Ruby Bug Hash.select should return an Hash
+        return @cores_alloc.select{ |core,node| vnode == node }.collect{|v| v[0]}
+      end
+
       def remove_core(physicalid)
         @cores.delete(physicalid.to_i)
       end
