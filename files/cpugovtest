@@ -1,0 +1,74 @@
+#!/usr/bin/ruby -w
+$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'wrekavoc'
+
+PATH_CGROUP="/dev/cgroup"
+PATH_CGROUP_TEST=File.join(PATH_CGROUP,'test')
+PATH_BENCHMARK="./cpubench"
+
+def reset_cores(cores)
+	cores.each do |coreid|
+		freqmin,freqmax = `cpufreq-info -c #{coreid} -l`.strip.split[0..1].collect!{|val| val.to_i}
+		`cpufreq-set -c #{coreid} -f #{freqmax.to_s}`
+	end
+end
+
+def test_core(core)
+	freqmin,freqmax = `cpufreq-info -c #{core.physicalid} -l`.strip.split[0..1].collect!{|val| val.to_i}
+	`echo #{Process.pid} > #{PATH_CGROUP_TEST}/tasks`
+	`echo #{core.physicalid} > #{PATH_CGROUP_TEST}/cpuset.cpus`
+	`echo 0 > #{PATH_CGROUP_TEST}/cpuset.mems`
+	
+	ratio = freqmin.to_f / freqmax
+	diffratio = (freqmax-freqmin).to_f/freqmax
+	diffratio /= 2
+
+	baseresult = `#{PATH_BENCHMARK} -p 1 -n 4`.to_f
+	puts "Base: #{baseresult.to_s}"
+
+	`cpufreq-set -c #{core.physicalid} -f #{freqmin.to_s}`
+	core.cache_links.each { |cor| `cpufreq-set -c #{cor.physicalid} -f #{freqmin.to_s}` }
+	cpuresult = `#{PATH_BENCHMARK} -p 1 -n 4`.to_f
+	core.cache_links.each { |cor| `cpufreq-set -c #{cor.physicalid} -f #{freqmax.to_s}` }
+
+	`cpufreq-set -c #{core.coreid} -f #{freqmin.to_s}`
+	core.cache_links.each { |cor| `cpufreq-set -c #{cor.coreid} -f #{freqmin.to_s}` }
+	coreresult = `#{PATH_BENCHMARK} -p 1 -n 4`.to_f
+	core.cache_links.each { |cor| `cpufreq-set -c #{cor.coreid} -f #{freqmax.to_s}` }
+
+	puts "CPU ID: #{cpuresult.to_s}"
+	puts "Core ID: #{coreresult.to_s}"
+
+	coreratio = coreresult.to_f / baseresult
+	cpuratio = cpuresult.to_f / baseresult
+
+	if ((coreratio >= (ratio - diffratio)) and (coreratio <= (ratio + diffratio)))
+		puts 'Core ID is correct to set cpufreq'
+	else	
+		puts 'Core ID is not correct to set cpufreq'
+	end
+
+	if ((cpuratio >= (ratio - diffratio)) and (cpuratio <= (ratio + diffratio)))
+		puts 'CPU ID is correct to set cpufreq'
+	else	
+		puts 'CPU ID is not correct to set cpufreq'
+	end
+	
+end
+
+`umount #{PATH_CGROUP}` if File.exists?(PATH_CGROUP)
+`mkdir #{PATH_CGROUP}` unless File.exists?(PATH_CGROUP)
+`mount -t cgroup -o cpu,cpuset test #{PATH_CGROUP}`
+puts "Failed to mount cgroups" unless $?.success?
+
+`mkdir #{PATH_CGROUP_TEST}` unless File.exists?(PATH_CGROUP_TEST)
+
+cpu = Wrekavoc::Resource::CPU.new
+Wrekavoc::Lib::CPUTools.set_resource(cpu)
+
+coreids = cpu.cores.values.collect{|core| core.physicalid}
+
+reset_cores(coreids)
+test_core(cpu.cores[0])
+
