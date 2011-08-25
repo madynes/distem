@@ -56,7 +56,7 @@ calibrate()
 	struct timeval time_start, time_end, time_diff;
 	double walltime;
 	unsigned long long int loopnb, prevloopnb;
-	unsigned int reloop,chdirnb, pitch;
+	unsigned int reloop,chdirnb, samedirnb, pitch;
 	char dir;
 
 	walltime = 0.0f;
@@ -73,6 +73,7 @@ calibrate()
 
 	prevloopnb = 0;
 	chdirnb = 0;
+	samedirnb = 0;
 	reloop = 0;
 	dir = 0;
 	pitch = (loopnb - (loopnb>>1))/8;
@@ -98,6 +99,8 @@ calibrate()
 
 			if (dir > 0)
 				chdirnb++;
+			else
+				samedirnb++;
 			dir = -1;
 		}
 		else
@@ -106,6 +109,8 @@ calibrate()
 
 			if (dir < 0)
 				chdirnb++;
+			else
+				samedirnb++;
 			dir = 1;
 		}
 
@@ -114,6 +119,13 @@ calibrate()
 			pitch /= 2;
 			chdirnb = 0;
 		}
+
+		if (samedirnb > CALIB_MAX_SAMEDIR)
+		{
+			pitch *= 2;
+			samedirnb = 0;
+		}
+
 		reloop++;
 	}
 
