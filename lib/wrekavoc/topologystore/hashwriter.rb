@@ -96,7 +96,7 @@ module Wrekavoc
       def visit_vcore(vcore)
         return {
           'id' => vcore.id.to_s,
-          'pcore' => vcore.pcore.physicalid.to_s,
+          'pcore' => (vcore.pcore ? vcore.pcore.physicalid.to_s : nil),
           'frequency' => (vcore.frequency / 1000).to_s + ' MHz',
         }
       end

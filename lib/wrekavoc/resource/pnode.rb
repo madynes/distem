@@ -3,29 +3,30 @@ require 'resolv'
 module Wrekavoc
   module Resource
 
-    # Wrekavoc Physical Node (the physical machine used to deploy Virtual Nodes)
+    # Abstract representation of a physical machine/node (the machine that will be used to launch some virtual nodes) 
     class PNode
       @@ids = 0
-      # The unique id of the Node
+      # The unique id of the machine
       attr_reader :id
-      # The IP address of the Node
+      # The IP address of the machine
       attr_reader :address
-      # The CPU description
+      # The machine's CPU description
       attr_accessor :cpu
-      # The Memory description
+      # The machine's memory description
       attr_accessor :memory
-      # The status in which the Node is
+      # The status in which the Node is (see Status)
       attr_accessor :status
 
       attr_reader :ssh_user, :ssh_password
 
-      # Create a new Virtual Node
+      # Create a new PNode
       # ==== Attributes
       # * +hostname+ The hostname/address of the physical machine 
       # ==== Examples
       #   pnode = PNode.new("10.16.0.1")
       #   OR
       #   pnode = PNode.new("my-node.lan")
+      #
       def initialize(hostname, ssh_user="root", ssh_password="")
         @id = @@ids
         begin
@@ -43,7 +44,9 @@ module Wrekavoc
         @@ids += 1
       end
 
-      # Comparaison between two PNodes (based on the host address)
+      # Compare two PNodes (based on the host address)
+      # ==== Returns
+      # Boolean value
       def ==(pnode)
         pnode.is_a?(PNode) and (@address == pnode.address)
       end

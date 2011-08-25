@@ -4,12 +4,23 @@ require 'ipaddress'
 module Wrekavoc
   module Resource
 
+    # Abstract representation of a virtual network
     class VNetwork
-      attr_reader :address, :name, :vnodes, :vroutes
-      @@id = 0
+      @ids = 0
       @@alreadyusedaddr = Array.new
+      # The IPAddress object describing the address range of this virtual network
+      attr_reader :address
+      # The (unique) name of this virtual network
+      attr_reader  :name
+      # An Hash describing the VNodes connected to this virtual network (key: VNode object, val: VIface object (the VIface used by the VNode to be connected to the network)
+      attr_reader  :vnodes
+      # An Hash of the VRoutes associated to this virtual network (key: VRoute.destnet, val: VRoute object)
+      attr_reader  :vroutes
 
-      #address = ip/mask or ip/cidr
+      # Create a new VNetwork
+      # ==== Attributes
+      # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
+      # * +name+ (optional) The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
       def initialize(address,name=nil)
         name = "vnetwork#{@@id}" unless name
         @name = name
@@ -26,9 +37,19 @@ module Wrekavoc
         @vroutes = {}
 
         @curaddress = @address.first
-        @@id += 1
+        @id = @@ids
+        @ids += 1
       end 
 
+      # Connect a VNode to this vitual network
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # * +viface+ The VIface object describing which virtual network interface of the virtual node to use to connect to this network
+      # * +address+ (optional) The IP address to set to the virtual node virtual network interface, if not set, picking automagically one of the IP of the range associated to this network
+      # ==== Exceptions
+      # * +AlreadyExistingResourceError+ if the virtual node is already connected to the network
+      # * +UnavailableResourceError+ if the specified IP address is already taken by another VNode
+      #
       def add_vnode(vnode,viface,address=nil)
         #Atm one VNode can only be attached one time to a VNetwork
         raise Lib::AlreadyExistingResourceError, vnode.name if @vnodes[vnode]
@@ -59,6 +80,7 @@ module Wrekavoc
         viface.attach(self,addr)
       end
 
+      # deprecated
       def get_vnode(vnodename)
         ret = nil
         @vnodes.each_pair do |vnode,viface|
@@ -70,17 +92,32 @@ module Wrekavoc
         return ret
       end
 
+      # Get the VIface a VNode is using to connect to this virtual network
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # ==== Returns
+      # VIface object
+      #
       def get_vnode_viface(vnode)
         raise unless vnode.is_a?(VNode)
         return @vnodes[vnode]
       end
 
+      # Disconnect a VNode from this virtual network
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # * +detach+ (optional) Also detach the virtual network interface from this virtual network (see VIface.detach).
+      #
       def remove_vnode(vnode,detach = true)
         #Atm one VNode can only be attached one time to a VNetwork
         @vnodes[vnode].detach() if @vnodes[vnode] and detach
         @vnodes.delete(vnode)
       end
 
+      # Add a new virtual route to this virtual network
+      # ==== Attributes
+      # * +vroute+ The VRoute object
+      #
       def add_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
         raise Lib::AlreadyExistingResourceError, vroute.to_s \
@@ -88,16 +125,25 @@ module Wrekavoc
         @vroutes[vroute.dstnet.address.to_string] = vroute
       end
 
+      # Remove a virtual route from this virtual network
+      # ==== Attributes
+      # * +vroute+ The VRoute object
+      #
       def remove_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
         @vroutes.delete(vroute.dstnet.address.to_string)
       end
 
+      # Get a virtual route specifying the route destination
+      # ==== Attributes
+      # * +dstnet+ The VNetwork object describing the destination virtual network of the virtual route
+      #
       def get_vroute(dstnet)
         raise unless dstnet.is_a?(VNetwork)
         return @vroutes[dstnet.address.to_string]
       end
 
+      # deprecated
       def get_list
         ret = ""
         @vnodes.each do |vnode,viface|
@@ -106,6 +152,13 @@ module Wrekavoc
         return ret
       end
 
+      # Get the virtual node which make the link with another virtual network
+      # ==== Attributes
+      # * +vnetwork+ The destination VNetwork object
+      # * +excludelist+ Recursive function purpose, do not use it
+      # ==== Returns
+      # VNode object
+      #
       def perform_vroute(vnetwork,excludelist=[])
         ret = nil
         excludelist << self
@@ -133,12 +186,17 @@ module Wrekavoc
         return ret
       end
 
+      # Destroy the object (remove every association with other resources)
       def destroy()
         @vnodes.each_key do |vnode|
           remove_vnode(vnode)
         end
       end
 
+      # Compare two virtual networks
+      # ==== Returns
+      # Boolean value
+      #
       def ==(vnetwork)
         ret = false
         if vnetwork.is_a?(VNetwork)
