@@ -5,12 +5,18 @@ module Wrekavoc
   module Algorithm 
     module CPU
 
+      # Algorithm based on CPU burning methods. A process is launched in background and consume 100-wished_% percent of the core calculation resources i.e. if the cpu have to be set at 80% of this performancy, the algorithm will consume 20% permanently
       class Hogs < Algorithm
+        # Create a new Hogs object
         def initialize()
           super()
           @ext = nil
         end
 
+        # Apply the algorithm on a resource (virtual node)
+        # ==== Attributes
+        # * +vnode+ The VNode object
+        #
         def apply(vnode)
           super(vnode)
           coresdesc = {}
@@ -29,6 +35,10 @@ module Wrekavoc
           end
         end
 
+        # Undo the algorithm on a resource (virtual node)
+        # ==== Attributes
+        # * +vnode+ The VNode object
+        #
         def undo(vnode)
           super(vnode)
           @ext.stop if @ext

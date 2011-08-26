@@ -4,12 +4,21 @@ require 'net/ssh'
 module Wrekavoc
   module Daemon
 
+    # Class that allow to manage daemon administration methods such as initializing another physical node
     class Admin
+      # The file used to store the stdout logs for the launched daemons
       PATH_WREKAD_LOG_OUT=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.out")
+      # The file used to store the stderr logs for the launched daemons
       PATH_WREKAD_LOG_ERR=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.err")
+      # Path to the ruby binary
       PATH_BIN_RUBY='/usr/bin/ruby'
+      # Paths to the SSH key files
       PATH_SSH_KEYS=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
 
+      # Run a daemon on a distant server (physical node)
+      # ==== Attributes
+      # * +pnode+ The PNode object
+      #
       def self.pnode_run_server(pnode)
         raise unless pnode.is_a?(Resource::PNode)
 
@@ -31,6 +40,11 @@ module Wrekavoc
         end
       end
 
+      # Execute a specific command on a (runned) virtual node using ssh
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # * +command+ The command (String)
+      #
       def self.vnode_run(vnode,command)
         raise unless vnode.is_a?(Resource::VNode)
         raise unless vnode.vifaces[0].is_a?(Resource::VIface)
@@ -44,6 +58,10 @@ module Wrekavoc
         return ret
       end
 
+      # Get the address to use on a virtual network for the ssh tasks (the last address of each virtual network is allocated to the main daemon to contact the virtual nodes (i.e. to use vnode_run)
+      # ==== Attributes
+      # * +vnetwork+ The VNetwork object
+      #
       def self.get_vnetwork_addr(vnetwork)
         vnetwork.address.last.to_string
       end

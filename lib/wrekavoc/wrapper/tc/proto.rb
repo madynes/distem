@@ -1,4 +1,4 @@
-module TCWrapper
+module TCWrapper # :nodoc: all
 
 require 'wrekavoc'
 

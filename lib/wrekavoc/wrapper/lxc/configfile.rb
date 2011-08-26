@@ -1,4 +1,4 @@
-module LXCWrapper
+module LXCWrapper # :nodoc: all
 
   class ConfigFile
     DEFAULT_CONFIG="lxc.tty = 4

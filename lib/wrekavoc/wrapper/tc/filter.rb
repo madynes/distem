@@ -1,6 +1,6 @@
 require 'wrekavoc'
 
-module TCWrapper
+module TCWrapper # :nodoc: all
 
   class Filter < Wrapper
     WTYPE="filter"

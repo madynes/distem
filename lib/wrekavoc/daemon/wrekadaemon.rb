@@ -8,13 +8,24 @@ require 'pp'
 module Wrekavoc
   module Daemon
 
+    # The main daemon class. Both used by the coordinator daemon to contact each physical nodes and create virtual resources in them and manage every virtual resources and by the physical nodes daemon to set up physical resources to fit to virtual resources specifications. See REST API documentation for the methods specifications.
     class WrekaDaemon
+      # The dameon is in coordinator mode
       MODE_DAEMON=0
+      # The daemon is in normal mode
       MODE_NODE=1
 
-      # >>> TODO: To be removed
-      attr_reader :daemon_resources, :node_config
+      # >>> TODO: Remove attr_readers
 
+      # The VPlatform object that describes each resources in the experimental platform
+      attr_reader :daemon_resources
+      # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
+      attr_reader  :node_config
+
+      # Create a new Daemon
+      # ==== Attribute
+      # * +mode+ The mode the daemon should be executed in (0 for Coordinator, 1 for Normal)
+      #
       def initialize(mode=MODE_NODE)
         Thread::abort_on_exception = true
         @node_name = Socket::gethostname

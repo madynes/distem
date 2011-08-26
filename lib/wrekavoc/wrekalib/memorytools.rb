@@ -3,7 +3,12 @@ require 'wrekavoc'
 module Wrekavoc
   module Lib
 
+    # Class that allow to perform physical operations on a physical Memory resource
     class MemoryTools
+      # Set up a Resource::Memory resource to fit with the physical machine (node) properties
+      # ==== Attributes
+      # * +pmem+ The Memory object
+      #
       def self.set_resource(pmem)
         str = File.read('/proc/meminfo')
         mem = {}

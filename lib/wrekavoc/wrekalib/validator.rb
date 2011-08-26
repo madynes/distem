@@ -3,7 +3,9 @@ require 'wrekavoc'
 module Wrekavoc
   module Lib
 
+    # Class used to validate that an hash have a specific form
     class Validator
+      # :nodoc:
       DEFAULT_WREKAVOC = {
         'vplatform' => {
           'pnodes' => {
@@ -59,10 +61,12 @@ module Wrekavoc
         }
       }
 
+      # :nodoc:
       def self.validate(object)
         return true
       end
 
+      # :nodoc:
       def self.validate_hash(hash,expected=DEFAULT_WREKAVOC)
         valid = expected.keys.size == hash.keys.size
         return false unless valid

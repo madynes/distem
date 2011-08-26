@@ -5,7 +5,12 @@ module Wrekavoc
 
     class Shell
 
+      # The file to save log of the executed commands
       PATH_WREKAD_LOG_CMD=File.join(FileManager::PATH_WREKAVOC_LOGS,"wrekad.cmd")
+      # Execute the specified command on the physical node (log the resuls in PATH_WREKAD_LOG_CMD)
+      # ==== Attributes
+      # * +cmd+ The command (String)
+      # * +simple+ Execute the command in simple mode (no logs of stderr)
       def self.run(cmd, simple=false)
         cmdlog = "(#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}) #{cmd}"
 

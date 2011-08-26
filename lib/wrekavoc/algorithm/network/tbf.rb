@@ -4,13 +4,19 @@ module Wrekavoc
   module Algorithm 
     module Network
 
+      # An algorithm that's using TC Token Bucket Filter (see http://en.wikipedia.org/wiki/Token_bucket) to limit network traffic
       class TBF < Algorithm
+        # Create a new TBF object
         def initialize()
           super()
           @limited_output = false
           @limited_input = false
         end
 
+        # Apply limitations on a specific virtual network interface
+        # ==== Attributes
+        # * +viface+ The VIface object
+        #
         def apply(viface)
           super(viface)
           if viface.voutput
@@ -23,6 +29,10 @@ module Wrekavoc
           end
         end
 
+        # Apply the limitation following a specific traffic instruction
+        # ==== Attributes
+        # * +vtraffic+ The VTraffic object
+        #
         def apply_vtraffic(vtraffic)
           iface = Lib::NetTools::get_iface_name(vtraffic.viface.vnode,
             vtraffic.viface)
@@ -69,6 +79,11 @@ module Wrekavoc
           end
         end
 
+  
+        # Undo limitations effective on a specific virtual network interface
+        # ==== Attributes
+        # * +viface+ The VIface object
+        #
         def undo(viface)
           super(viface)
           if @limited_input

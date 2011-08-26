@@ -3,7 +3,12 @@ require 'wrekavoc'
 module Wrekavoc
   module Lib
 
+    # Class that allow to perform physical operations on a physical CPU resource
     class CPUTools
+      # Set up a Resource::CPU resource to fit with the physical machine (node) properties
+      # ==== Attributes
+      # * +pcpu+ The CPU object
+      #
       def self.set_resource(pcpu)
         raise InvalidParameterError, pcpu unless pcpu.is_a?(Resource::CPU)
         #str = File.read('/proc/cpuinfo')

@@ -4,12 +4,23 @@ require 'thread'
 module Wrekavoc
   module Node
 
+    # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
     class Container
+      # The directory to save container configuration files
       PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
       @@lxclock = Mutex.new
 
-      attr_reader :vnode, :cpuforge, :networkforges
+      # The virtual node this container is set for
+      attr_reader :vnode
+      # The object used to set up physical CPU limitations
+      attr_reader  :cpuforge
+      # The object used to set up network limitations
+      attr_reader  :networkforges
 
+      # Create a new Container and associate it to a virtual node
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      #
       def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
         raise Lib::ResourceNotFoundError, vnode.filesystem.path \
@@ -34,10 +45,13 @@ module Wrekavoc
         setup()
       end
 
+      # Setup the virtual node container (copy ssh keys, ...)
+      #
       def setup()
         Lib::Shell.run("cp -R /root/.ssh #{vnode.filesystem.path}/root/")
       end
 
+      # Create new resource limitation objects if the virtual node resource has changed
       def update()
         iftocreate = @vnode.vifaces - @networkforges.keys
         iftocreate.each do |viface|
@@ -50,6 +64,7 @@ module Wrekavoc
         end
       end
       
+      # Stop all previously created containers (previous wrekavoc run, lxc, ...)
       def self.stop_all
         list = Lib::Shell::run("lxc-ls").split
         list.each do |name|
@@ -57,6 +72,7 @@ module Wrekavoc
         end
       end
 
+      # Start all the resources associated to a virtual node (Run the virtual node)
       def start
         #stop()
         #unless @vnode.status == Resource::Status::RUNNING
@@ -83,6 +99,7 @@ module Wrekavoc
         #end
       end
 
+      # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
         #unless @vnode.status == Resource::Status::READY
           #@vnode.status = Resource::Status::CONFIGURING
@@ -100,6 +117,7 @@ module Wrekavoc
         #end
       end
 
+      # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
         stop()
         #check if the lxc container name is already taken
@@ -111,6 +129,7 @@ module Wrekavoc
         #@vnode.status = Resource::Status::READY
       end
 
+      # Remove and shutdown the virtual node, remove it's filesystem, ...
       def destroy
         @vnode.status = Resource::Status::CONFIGURING
         stop()
@@ -119,12 +138,14 @@ module Wrekavoc
         @vnode.status = Resource::Status::READY
       end
 
+      # Update and reconfigure a virtual node (if the was some changes in the virtual resources description)
       def reconfigure
           update()
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
       end
 
+      # Congigure a virtual node (set LXC config files, ...) on a physical machine
       def configure
         remove()
 

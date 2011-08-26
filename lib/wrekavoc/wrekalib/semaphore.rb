@@ -1,8 +1,8 @@
-#Code snippet from : https://gist.github.com/305986
 module Wrekavoc
   module Lib
 
-    class Semaphore
+    #Code snippet from : https://gist.github.com/305986
+    class Semaphore # :nodoc:
       def initialize(val)
         raise InvalidParameterError unless val >= 0
         @val = val

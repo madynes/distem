@@ -3,13 +3,19 @@ require 'wrekavoc'
 module Wrekavoc
   module Lib
 
+    # Class that allow to perform physical operations on a physical network resource
     class NetTools
+      # Name used for the bridge set up on a physical machine
       NAME_BRIDGE='br0'
-      LOCALHOST='localhost'
+      LOCALHOST='localhost' # :nodoc:
+      # Maximal size for a network interface name (from GNU/Linux specifications)
       IFNAMEMAXSIZE=15
       @@nic_count=1
       @@addr_default=nil
 
+      # Gets the name of the default network interface used for network communications
+      # ==== Returns
+      # String object
       def self.get_default_iface
         cmdret = Shell.run("/sbin/route") 
         # | grep 'default' | awk '{print \$8}' | tr -d '\n'")
@@ -18,6 +24,12 @@ module Wrekavoc
         return ret
       end 
 
+      # Gets the IP address of a specified network interface
+      # ==== Attributes
+      # * +iface+ The network interface name (String)
+      # ==== Returns
+      # String object
+      #
       def self.get_iface_addr(iface)
         cmdret = Shell.run("/sbin/ifconfig #{iface}") 
         # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
@@ -26,6 +38,9 @@ module Wrekavoc
         return ret
       end
 
+      # Gets the IP address of the default network interface used for network communications
+      # ==== Returns
+      # String object
       def self.get_default_addr(cache=true)
         if !@@addr_default or !cache
           iface = self.get_default_iface()
@@ -34,6 +49,7 @@ module Wrekavoc
         return @@addr_default
       end
 
+      # Set up the default bridge that will be used to attach new network interfaces
       def self.set_bridge
         iface = self.get_default_iface()
         addr = self.get_default_addr()
@@ -55,24 +71,36 @@ module Wrekavoc
       end
 
       # >>> TODO: do unset_bridge 
+      # :nodoc:
       def self.unset_bridge
       end
 
+      # Set up the IFB module
       def self.set_ifb(nb=8)
         Shell.run("modprobe ifb numifbs=#{nb}")
       end
 
+      # Clean the IFB module
       def self.unset_ifb()
         Shell.run("rmmod ifb")
       end
 
+      # Create a new NIC network interface on the physical node (used to communicate with the VNodes, see Daemon::Admin)
       def self.set_new_nic(address)
         iface = self.get_default_iface()
         Shell.run("ifconfig #{iface}:#{@@nic_count} #{address}")
         @@nic_count += 1
       end
 
+      # Gets the physical name of a virtual network interface
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # * +viface+ The VIface object
+      # ==== Returns
+      # String object
+      #
       def self.get_iface_name(vnode,viface)
+        # >>> TODO: Remove vnode parameter)
         raise unless vnode.is_a?(Resource::VNode)
         raise unless viface.is_a?(Resource::VIface)
 
@@ -82,6 +110,12 @@ module Wrekavoc
         
       end
 
+      # Check if an IP address is local to this physical node
+      # ==== Attributes
+      # * +address+ The IP address (String)
+      # ==== Returns
+      # Boolean value
+      #
       def self.localaddr?(address)
         raise unless address.is_a?(String)
 

@@ -4,15 +4,26 @@ require 'resolv'
 module Wrekavoc
   module Resource
 
+    # Abstract representation of a virtual platform resource that's describing an experimental environment (PNodes,VNodes,VNetworks,...)
     class VPlatform
-      attr_reader :pnodes, :vnodes, :vnetworks
+      # Hash of the physical nodes associated to this virtual platform (key: PNode.address, val: PNode)
+      attr_reader :pnodes
+      # Hash of the virtual nodes associated to this virtual platform (key: VNode.name, val: VNode)
+      attr_reader  :vnodes
+      # Hash of the virtual networks associated to this virtual platform (key: VNetwork.name, val: VNetwork)
+      attr_reader  :vnetworks
 
+      # Create a new VPlatform
       def initialize
         @pnodes = {}
         @vnodes = {}
         @vnetworks = {}
       end
 
+      # Add a new physical node to the platform
+      # ==== Attributes
+      # * +pnode+ The PNode object
+      #
       def add_pnode(pnode)
         raise unless pnode.is_a?(PNode)
         raise Lib::AlreadyExistingResourceError, pnode.address.to_s \
@@ -21,11 +32,23 @@ module Wrekavoc
         @pnodes[pnode.address] = pnode 
       end
 
+      # Remove physical node from the platform
+      # ==== Attributes
+      # * +pnode+ The PNode object
+      #
       def remove_pnode(pnode)
         raise unless pnode.is_a?(PNode)
         @pnodes.delete(pnode.address)
       end
 
+      # Get a physical node specifying it's address
+      # ==== Attributes
+      # * +address+ The IP address (String)
+      # ==== Returns
+      # PNode object or nil if not found
+      # ==== Exceptions
+      # * +ResolvError+ if the address don't have a valid format
+      #
       def get_pnode_by_address(address)
         # >>> TODO: validate ip address
         ret = nil
@@ -38,16 +61,34 @@ module Wrekavoc
         end
       end
 
+      # Get a physical node specifying the name of a virtual node which it's connected on it
+      # ==== Attributes
+      # * +name+ The name of the VNode (String)
+      # ==== Returns
+      # PNode object or nil if not found
+      #
       def get_pnode_by_name(name)
         return (@vnodes[name] ? @vnodes[name].host : nil)
       end
 
+      # Gets a random physical node from the list of available ones
+      # ==== Returns
+      # PNode object or nil if not found
+      # ==== Exceptions
+      # * +UnavailableResourceError+ if no physical nodes are available (no PNode in this VPlatform)
+      #
       def get_pnode_randomly()
         raise Lib::UnavailableResourceError, 'PNODE' if @pnodes.empty?
         tmp = @pnodes.keys
         return @pnodes[tmp[rand(tmp.size)]]
       end
 
+      # Add a new virtual node to the platform
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # ==== Exceptions
+      # * +AlreadyExistingResourceError+ if a virtual node with the same name already exists
+      #
       def add_vnode(vnode)
         raise unless vnode.is_a?(VNode)
         raise unless vnode.host.is_a?(PNode)
@@ -57,6 +98,10 @@ module Wrekavoc
         @vnodes[vnode.name] = vnode 
       end
 
+      # Remove a virtual node from the platform. If the virtual node is acting as gateway in some virtual routes, also remove this vroutes from the platform.
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      #
       def remove_vnode(vnode)
         raise unless vnode.is_a?(VNode)
         # Remove the vnode on each vnetwork it's connected
@@ -75,10 +120,22 @@ module Wrekavoc
         @vnodes.delete(vnode.name)
       end
 
+      # Get a virtual node specifying it's name
+      # ==== Attributes
+      # * +name+ The name (String)
+      # ==== Returns
+      # VNode object or nil if not found
+      #
       def get_vnode(name)
         return (@vnodes.has_key?(name) ? @vnodes[name] : nil)
       end
 
+      # Add a new virtual network to the platform
+      # ==== Attributes
+      # * +vnetwork+ The VNetwork object
+      # ==== Exceptions
+      # * +AlreadyExistingResourceError+ if a virtual network with the same name or the same address range already exists
+      #
       def add_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
         raise Lib::AlreadyExistingResourceError, vnetwork.address.to_string \
@@ -90,6 +147,10 @@ module Wrekavoc
         @vnetworks[vnetwork.address.to_string] = vnetwork 
       end
 
+      # Remove a virtual network from the platform. Also remove all virtual routes this virtual network is playing a role in.
+      # ==== Attributes
+      # * +vnetwork+ The VNetwork object
+      #
       def remove_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
         # Remove all associated vroutes
@@ -103,10 +164,22 @@ module Wrekavoc
         @vnetworks.delete(vnetwork.address.to_string)
       end
 
+      # Get a virtual network specifying it's name
+      # ==== Attributes
+      # * +name+ The name (String)
+      # ==== Returns
+      # VNetwork object or nil if not found
+      #
       def get_vnetwork_by_name(name)
         return @vnetworks.values.select { |vnet| vnet.name == name }[0]
       end
 
+      # Get a virtual network specifying an IP address it's address range is including
+      # ==== Attributes
+      # * +address+ The address (String or IPAddress)
+      # ==== Returns
+      # VNetwork object or nil if not found
+      #
       def get_vnetwork_by_address(address)
         raise unless (address.is_a?(String) or address.is_a?(IPAddress))
         ret = nil
@@ -123,6 +196,12 @@ module Wrekavoc
         return ret
       end
 
+      # Add a new virtual network route to the platform
+      # ==== Attributes
+      # * +vroute+ The VRoute object
+      # ==== Exceptions
+      # * +ResourceNotFoundError+ if the source virtual network (VRoute.srcnet) is not found on the platform
+      #
       def add_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
         vnetwork = @vnetworks[vroute.srcnet.address.to_string]
@@ -130,6 +209,12 @@ module Wrekavoc
         vnetwork.add_vroute(vroute)
       end
 
+      # Remove a virtual network route from the platform
+      # ==== Attributes
+      # * +vroute+ The VRoute object
+      # ==== Exceptions
+      # * +ResourceNotFoundError+ if the source virtual network (VRoute.srcnet) is not found on the platform
+      #
       def remove_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
         vnetwork = @vnetworks[vroute.srcnet.address.to_string]
@@ -137,6 +222,10 @@ module Wrekavoc
         vnetwork.remove_vroute(vroute)
       end
 
+      # Delete a resource from the virtual platform
+      # ==== Attributes
+      # * +resource+ The resource object (have to be of class: PNode,VNode,VNetwork or VRoute)
+      #
       def destroy(resource)
         if resource.is_a?(PNode)
           remove_pnode(resource)

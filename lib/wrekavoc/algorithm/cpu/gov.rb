@@ -5,12 +5,18 @@ module Wrekavoc
   module Algorithm 
     module CPU
 
+      # Algorithm based on CPU throttling methods (see http://en.wikipedia.org/wiki/Dynamic_frequency_scaling). A core is changing his frequency periodatically between two values to reach the wished one i.e. if our physical core can change it's frequency to 1.5GHz, 2.0GHz and 2.5GHz and we want it to be set at 2.3GHz, this algorithm will make the core work 40% of the time at 2GHz and 60% at 2.5GHz.
       class Gov < Algorithm
+        # Create a new Gov object
         def initialize()
           super()
           @ext = nil
         end
 
+        # Apply the algorithm on a resource (virtual node)
+        # ==== Attributes
+        # * +vnode+ The VNode object
+        #
         def apply(vnode)
           super(vnode)
           cores = []
@@ -53,6 +59,10 @@ module Wrekavoc
           end
         end
 
+        # Undo the algorithm on a resource (virtual node)
+        # ==== Attributes
+        # * +vnode+ The VNode object
+        #
         def undo(vnode)
           super(vnode)
           @ext.stop if @ext
