@@ -17,6 +17,7 @@ module Wrekavoc
       # The status in which the Node is (see Status)
       attr_accessor :status
 
+      # Deprecated, used to contact the physical node if the SSH key file is not set
       attr_reader :ssh_user, :ssh_password
 
       # Create a new PNode

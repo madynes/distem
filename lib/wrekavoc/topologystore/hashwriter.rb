@@ -3,7 +3,14 @@ require 'wrekavoc'
 module Wrekavoc
   module TopologyStore
 
+    # Class that saves some virtual resource object as an Hash representing their properties. Based on the Visitor design pattern.
     class HashWriter < TopologyWriter
+      # Visit a virtual platform object. /All the other "visit_" methods are working the same way./
+      # ==== Attributes
+      # *+vplatform+ The VPlatform object
+      # ==== Returns
+      # Hash object representing the VPlatform properties
+      #
       def visit_vplatform(vplatform)
         return { 'vplatform' => {
           'pnodes' => visit(vplatform.pnodes),
@@ -12,6 +19,7 @@ module Wrekavoc
         } }
       end
 
+      # See the visit_vplatform documentation
       def visit_pnode(pnode)
         return {
           'id' => pnode.id.to_s,
@@ -22,6 +30,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_vnode(vnode)
         return {
           'id' => vnode.id.to_s,
@@ -35,6 +44,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_viface(viface)
         return {
           'id' => viface.id.to_s,
@@ -47,6 +57,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_cpu(cpu)
         ret = {
           'id' => cpu.id.to_s,
@@ -67,6 +78,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the visit_vplatform documentation
       def visit_core(core)
         ret = {
           'physicalid' => core.physicalid,
@@ -86,6 +98,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the visit_vplatform documentation
       def visit_vcpu(vcpu)
         return {
           'pcpu' => vcpu.pcpu.id.to_s,
@@ -93,6 +106,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_vcore(vcore)
         return {
           'id' => vcore.id.to_s,
@@ -101,6 +115,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_memory(memory)
         return {
           'capacity' => memory.capacity.to_s + ' Mo',
@@ -108,6 +123,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_filesystem(filesystem)
         return {
           'vnode' => filesystem.vnode,
@@ -116,6 +132,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_vnetwork(vnetwork)
         ret = {
           'name' => vnetwork.name,
@@ -129,6 +146,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the visit_vplatform documentation
       def visit_vroute(vroute)
         return {
           'id' => vroute.id.to_s,
@@ -138,6 +156,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_vtraffic(vtraffic)
         return {
           'viface' => vtraffic.viface.name,
@@ -146,6 +165,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_bandwidth(limitbw)
         return {
           'type' => limitbw.to_s(),
@@ -153,6 +173,7 @@ module Wrekavoc
         }
       end
 
+      # See the visit_vplatform documentation
       def visit_latency(limitlat)
         return {
           'type' => limitlat.to_s(),

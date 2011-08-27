@@ -4,15 +4,26 @@ require 'rexml/document'
 module Wrekavoc
   module TopologyStore
 
+    # Class that allow to load a configuration from an XML simgrid input. See "http://simgrid.gforge.inria.fr/files/simgrid.dtd" for more information about the input format. FIXME: document each method to explain how the translation is done
     class SimgridReader < TopologyReader
       IPHACKROOT='10.144'
       @@iphack = 0
 
+      # Create a new SimgridReader specifying the path to an image (see Resource::FileSystem) to use for the virtual nodes
+      # ==== Attributes
+      # * +image+ The path to a -compressed and bootstrapped- image (String)
+      #
       def initialize(image)
         super()
         @image = image
       end
 
+      # Parse a simgrid XML string value that represents the virtual environment.
+      # ==== Attributes
+      # * +inputstr+ The simgrid XML input (String)
+      # ==== Returns
+      # Hash object that describes the platform (see Lib::Validator)
+      #
       def parse(inputstr)
         result = {}
         xmldoc = REXML::Document.new(inputstr)
@@ -20,6 +31,14 @@ module Wrekavoc
         return result
       end
 
+      # Parse the <platform> XML field. All the "parse_" methods are working the same way, parsing the associated XML field that represents a simgrid resource.
+      # ==== Attributes
+      # * +xmldoc+ The REXML::Element object that describes the field
+      # * +result+ The Hash output result to write the result to
+      # * +tmp+ An object used to pass arguments through the methods
+      # ==== Returns
+      # Hash object that describes the virtual platform (see Lib::Validator)
+      # 
       def parse_platform(xmldoc,result,tmp={})
         raise Lib::NotImplementedError \
           unless xmldoc.root.attributes['version'] == '2'
@@ -50,6 +69,7 @@ module Wrekavoc
         return result
       end
 
+      # See the parse_platform method documentation
       def parse_cluster(xmldoc,result,tmp={})
         netname = xmldoc.attribute('id').to_s
         result['vnetworks'] << {
@@ -111,6 +131,7 @@ module Wrekavoc
         
       end
 
+      # See the parse_platform method documentation
       def parse_link(xmldoc,result,tmp={})
         switch = xmldoc.attribute('sharing_policy')
         if switch and switch.to_s == 'FATPIPE'
@@ -133,6 +154,7 @@ module Wrekavoc
         end
       end
 
+      # See the parse_platform method documentation
       def parse_switch(xmldoc,result,tmp={})
         return nil unless tmp['switches']
         completename = xmldoc.attribute('id').to_s
@@ -176,6 +198,7 @@ module Wrekavoc
         end
       end
 
+      # See the parse_platform method documentation
       def parse_route_multi(xmldoc,result,tmp={})
         srcnetstr = xmldoc.attribute('src').to_s
         dstnetstr = xmldoc.attribute('dst').to_s
@@ -260,6 +283,7 @@ module Wrekavoc
         end
       end
 
+      # See the parse_platform method documentation
       def parse_link_ctn(xmldoc,result,tmp)
         name = xmldoc.attribute('id').to_s
         switch = tmp['switches'].select{ |switch| switch['name'] == name }[0] \
@@ -277,7 +301,8 @@ module Wrekavoc
 
       protected
 
-      def self.connect_vnode(result,gw,vnodename,vnetworkname)
+      # Connect a virtual node to a virtual network
+      def self.connect_vnode(result,gw,vnodename,vnetworkname) 
         vnode = result['vnodes'].select{ |node| node['name'] == switch['name'] }[0]
         viface = {
           'name' => 'if' + switch['ifnb'].to_s,

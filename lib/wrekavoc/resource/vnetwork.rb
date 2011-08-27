@@ -6,7 +6,7 @@ module Wrekavoc
 
     # Abstract representation of a virtual network
     class VNetwork
-      @ids = 0
+      @@ids = 0
       @@alreadyusedaddr = Array.new
       # The IPAddress object describing the address range of this virtual network
       attr_reader :address
@@ -22,7 +22,8 @@ module Wrekavoc
       # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
       # * +name+ (optional) The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
       def initialize(address,name=nil)
-        name = "vnetwork#{@@id}" unless name
+        @id = @@ids
+        name = "vnetwork#{@id}" unless name
         @name = name
         if address.is_a?(IPAddress)
           @address = address.network.clone
@@ -37,7 +38,6 @@ module Wrekavoc
         @vroutes = {}
 
         @curaddress = @address.first
-        @id = @@ids
         @ids += 1
       end 
 
@@ -219,6 +219,7 @@ module Wrekavoc
       end
 
       protected
+      # Increment the current last automatically affected address
       def inc_curaddress
         tmp = @curaddress.u32
         begin

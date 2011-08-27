@@ -8,7 +8,8 @@ require 'cgi'
 module Wrekavoc
   module NetAPI
 
-    class Server < Sinatra::Base
+    # The REST API server, see doc/netapi for the documentation of the REST API.
+    class Server < Sinatra::Base # :nodoc: all
       HTTP_HEADER_ERR = 'X-Application-Error-Code'
       HTTP_STATUS_OK = 200
       HTTP_STATUS_NOT_FOUND = 404
@@ -30,7 +31,7 @@ module Wrekavoc
         raise "Server can not be run directly, use ServerDaemon or ServerNode"
       end
 
-      before do
+      before do #:nodoc:
         @status = HTTP_STATUS_OK
         @headers = {}
         @body = {}
@@ -38,7 +39,7 @@ module Wrekavoc
         content_type 'application/json', :charset => 'utf-8'
       end
 
-      not_found do
+      not_found do #:nodoc:
         #response.headers[HTTP_HEADER_ERR] = \
           "ServerResourceError #{request.request_method} #{request.url}"
       end
@@ -1558,7 +1559,7 @@ module Wrekavoc
     end
 
 
-    class ServerDaemon < Server #:nodoc:
+    class ServerDaemon < Server #:nodoc: all
       set :mode, Daemon::WrekaDaemon::MODE_DAEMON
 
       def initialize
@@ -1571,7 +1572,7 @@ module Wrekavoc
       end
     end
 
-    class ServerNode < Server #:nodoc:
+    class ServerNode < Server #:nodoc: all
       set :mode, Daemon::WrekaDaemon::MODE_NODE
 
       def run

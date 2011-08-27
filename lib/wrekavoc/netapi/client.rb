@@ -9,8 +9,14 @@ module Wrekavoc
   module NetAPI
 
     class Client
+      # The HTTP OK status value
       HTTP_STATUS_OK = 200
 
+      # Create a new Client and connect it to a specified REST(distem) server
+      # ==== Attributes
+      # * +serveraddr+ The REST server address (String)
+      # * +port+ The port the REST server is listening on
+      #
       def initialize(serveraddr,port=4567)
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
@@ -76,6 +82,11 @@ module Wrekavoc
         end
       end
 
+      # Retrieve informations about a physical node
+      # ==== Attributes
+      # * +pnodename+ The address/name of the physical node
+      # ==== Returns
+      # The physical node informations (Hash)
       def pnode_info(pnodename)
         begin
           ret = {}
@@ -94,8 +105,6 @@ module Wrekavoc
 
       # Quit Wrekavoc on every physical machines
       #
-      # ==== Attributes
-      # ==== Returns
       def pnodes_quit()
         begin
           ret = {}
@@ -113,6 +122,10 @@ module Wrekavoc
           raise Lib::UnavailableResourceError, @serverurl
         end
       end
+
+      # Retrieve informations about every physical nodes currently set on the platform
+      # ==== Returns
+      # The virtual nodes informations (Array of Hashes, see pnode_info)
       def pnodes_info()
         begin
           ret = {}
@@ -187,6 +200,11 @@ module Wrekavoc
         end
       end
 
+      # Retrieve informations about a virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # ==== Returns
+      # The virtual node informations (Hash)
       def vnode_info(vnodename)
         begin
           ret = {}
@@ -336,6 +354,12 @@ module Wrekavoc
         end
       end
 
+      # Retrieve informations about a virtual network interface associated to a virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +vifacename+ The name of the virtual network interface
+      # ==== Returns
+      # The virtual network interface informations (Hash)
       def viface_info(vnodename, vifacename)
         begin
           ret = {}
@@ -433,7 +457,6 @@ module Wrekavoc
       end
 
       # Remove every vnodes
-      # ==== Attributes
       # ==== Returns
       # Virtual nodes that have been removed (Array of Hash)
       def vnodes_remove()
@@ -453,6 +476,11 @@ module Wrekavoc
           raise Lib::UnavailableResourceError, @serverurl
         end
       end
+
+
+      # Retrieve informations about every virtual nodes currently set on the platform
+      # ==== Returns
+      # The virtual nodes informations (Array of Hashes, see vnode_info)
       def vnodes_info()
         begin
           ret = {}
@@ -516,6 +544,11 @@ module Wrekavoc
         end
       end
 
+      # Retrieve informations about a virtual network
+      # ==== Attributes
+      # * +vnetworkname+ The name of the virtual network
+      # ==== Returns
+      # The virtual network informations (Hash)
       def vnetwork_info(vnetworkname)
         begin
           ret = {}
@@ -553,6 +586,10 @@ module Wrekavoc
           raise Lib::UnavailableResourceError, @serverurl
         end
       end
+
+      # Retrieve informations about every virtual networks currently set on the platform
+      # ==== Returns
+      # The virtual networks informations (Array of Hash, see vnetwork_info)
       def vnetworks_info()
         begin
           ret = {}
@@ -653,7 +690,6 @@ module Wrekavoc
       # Create all possible virtual routes between all the virtual networks, automagically choosing the virtual nodes to use as gateway
       # ==== Returns
       # All the virtual routes which have been created (Array of Hashes)
-
       def vroute_complete()
         begin
           ret = {}
@@ -676,7 +712,6 @@ module Wrekavoc
       # * +command+ The command to be executed
       # ==== Returns
       # A Hash with the command which have been performed and the resold of it
-
       def vnode_execute(vnode, command)
         begin
           ret = {}
@@ -725,7 +760,6 @@ module Wrekavoc
       # * +format+ The wished output format (default is JSON)
       # ==== Returns
       # The description in the wished format
-
       def vplatform_info(format = 'JSON')
         begin
           ret = {}
@@ -746,6 +780,14 @@ module Wrekavoc
 
       protected
 
+      # Check if there was an error in the REST request
+      # ==== Attributes
+      # * +result+ the result header (see RestClient)
+      # * +response+ the response header (see RestClient)
+      # ==== Returns
+      # The response header object if no problems found (String)
+      # ==== Exceptions
+      # * +ClientError+ if the HTTP status returned performing the request is not HTTP_OK, the Exception object contains the description of the error
       def check_error(result,response)
         case result.code.to_i
           when HTTP_STATUS_OK

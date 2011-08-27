@@ -4,12 +4,26 @@ require 'rexml/document'
 module Wrekavoc
   module TopologyStore
 
+    # Class that allow to load a configuration from an XML input. See "files/distem.dtd" for more information about the input format.
     class XMLReader < TopologyReader
+      # Parse an XML string value that represents the virtual environment.
+      # ==== Attributes
+      # * +inputstr+ The XML input (String)
+      # ==== Returns
+      # Hash object that describes the platform (see Lib::Validator)
+      #
       def parse(inputstr)
         xmldoc = REXML::Document.new(inputstr)
         return parse_vplatform(xmldoc)
       end
 
+      # Parse the <vplatform> XML field. All the "parse_" methods are working the same way, parsing the associated XML field that represents a resource.
+      # ==== Attributes
+      # * +xmldoc+ The REXML::Element object that describes the field
+      # * +tmp+ A Hash object to be added to the returned value
+      # ==== Returns
+      # Hash object that describes the virtual platform (see Lib::Validator)
+      # 
       def parse_vplatform(xmldoc,tmp={})
         ret = {}
         ret['vplatform'] = {}
@@ -31,6 +45,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_pnode(xmldoc,tmp={})
         ret = tmp
         ret['address'] = xmldoc.attribute('address').to_s
@@ -45,6 +60,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_cpu(xmldoc,tmp={})
         ret = tmp
         ret['id'] = xmldoc.attribute('id').to_s
@@ -55,6 +71,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_core(xmldoc,tmp={})
         ret = tmp
         ret['id'] = xmldoc.attribute('id').to_s
@@ -62,6 +79,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_memory(xmldoc,tmp={})
         ret = tmp
         ret['capacity'] = xmldoc.attribute('capacity').to_s.split[0].to_f
@@ -69,6 +87,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vnode(xmldoc,tmp={})
         ret = tmp
         ret['name'] = xmldoc.attribute('name').to_s
@@ -89,6 +108,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_viface(xmldoc,tmp={})
         ret = tmp
         ret['name'] = xmldoc.attribute('name').to_s
@@ -100,6 +120,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vcpu(xmldoc,tmp={})
         ret = tmp
         ret['pcpu'] = xmldoc.attribute('pcpu').to_s
@@ -110,6 +131,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vcore(xmldoc,tmp={})
         ret = tmp
         ret['pcore'] = xmldoc.attribute('pcore').to_s
@@ -117,12 +139,14 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_filesystem(xmldoc,tmp={})
         ret = tmp
         ret['image'] = xmldoc.attribute('image').to_s
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vnetwork(xmldoc,tmp={})
         ret = tmp
         ret['name'] = xmldoc.attribute('name').to_s
@@ -134,6 +158,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vroute(xmldoc,tmp={})
         ret = tmp
         ret['id'] = xmldoc.attribute('id').to_s
@@ -142,6 +167,7 @@ module Wrekavoc
         return ret
       end
 
+      # See the parse_vplatform method documentation
       def parse_vtraffic(xmldoc,tmp={})
         if (xmldoc.attribute('direction').to_s.upcase == 'INPUT')
           ret = tmp['vinput'] = {}
@@ -154,6 +180,7 @@ module Wrekavoc
         end
       end
 
+      # See the parse_vplatform method documentation
       def parse_bandwidth(xmldoc,tmp={})
         ret = tmp
         ret['type'] = xmldoc.name.downcase
@@ -161,6 +188,7 @@ module Wrekavoc
         return ret 
       end
 
+      # See the parse_vplatform method documentation
       def parse_latency(xmldoc,tmp={})
         ret = tmp
         ret['type'] = xmldoc.name.downcase
@@ -168,7 +196,7 @@ module Wrekavoc
         return ret 
       end
 
-      def method_missing(method, *args)
+      def method_missing(method, *args) # :nodoc:
         raise args[0].class.name
       end
     end
