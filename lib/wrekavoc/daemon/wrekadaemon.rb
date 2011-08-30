@@ -43,6 +43,16 @@ module Wrekavoc
         end
       end
 
+
+      # Initialise a physical machine (launching daemon, creating cgroups, ...)
+      # This step have to be performed to be able to create virtual nodes on a machine 
+      # ==== Attributes 
+      # * +target+ the name/address of the physical machine
+      # * +properties+ async
+      # ==== Returns
+      # Resource::PNode object
+      # ==== Exceptions
+      #
       def pnode_init(target,properties={})
       begin
         pnode = nil
@@ -112,7 +122,8 @@ module Wrekavoc
         raise
       end
       end
-
+      
+      # Wait for a PNode to be ready
       def pnode_wait(target)
         pnode = pnode_get(target)
 
@@ -120,6 +131,11 @@ module Wrekavoc
           if @threads['pnode_init'][pnode.address.to_s]
       end
 
+      # Quit wrekavoc on a physical machine (remove everything that was created)
+      # ==== Returns
+      # Resource::PNode object
+      # ==== Exceptions
+      #
       def pnode_quit(target)
         pnode = pnode_get(target)
         if daemon?
@@ -151,6 +167,11 @@ module Wrekavoc
         return pnode
       end
 
+      # Quit wrekavoc on all the physical machines (remove everything that was created)
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
       def pnodes_quit()
         if daemon?
           me = nil
@@ -167,6 +188,10 @@ module Wrekavoc
         return ret
       end
 
+      # Get the description of a virtual node
+      #
+      # ==== Attributes
+      #
       def pnode_get(hostname, raising = true) 
         ret = nil
         begin
@@ -186,6 +211,11 @@ module Wrekavoc
         return pnode
       end
 
+      # Get the list of the the currently created physical nodes
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
       def pnodes_get()
         vplatform = nil
         if daemon?
@@ -197,6 +227,15 @@ module Wrekavoc
         return vplatform.pnodes
       end
 
+      # Create a virtual node using a compressed file system image.
+      #
+      # ==== Attributes
+      # * +name+ the -unique- name of the virtual node to create (it will be used in a lot of methods)
+      # * +properties+ target,image,async
+      # ==== Returns
+      # Resource::VNode object
+      # ==== Exceptions
+      #
       def vnode_create(name,properties)
       begin
         name = name.gsub(' ','_')
@@ -270,6 +309,11 @@ module Wrekavoc
 
       end
 
+      # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
+      # ==== Returns
+      # Resource::VNode object
+      # ==== Exceptions
+      #
       def vnode_remove(name)
         vnode = vnode_get(name)
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
@@ -302,6 +346,11 @@ module Wrekavoc
           if @threads['vnode_stop'][vnode.name]
       end
 
+      # Get the description of a virtual node
+      # ==== Returns
+      # Resource::VNode object
+      # ==== Exceptions
+      #
       def vnode_get(name, raising = true)
         name = name.gsub(' ','_')
         if daemon?
@@ -315,6 +364,15 @@ module Wrekavoc
         return vnode
       end
 
+      # Change the status of the -previously created- virtual node.
+      #
+      # ==== Attributes
+      # * +status+ the status to set: "Running" or "Ready"
+      # * +properties+ async
+      # ==== Returns
+      # Resource::VNode object
+      # ==== Exceptions
+      #
       def vnode_set_status(name,status,properties)
         vnode = nil
         raise Lib::InvalidParameterError, status \
@@ -330,6 +388,7 @@ module Wrekavoc
         return vnode
       end
 
+      # Same as vnode_set_status(name,Resource::Status::RUNNING,properties)
       def vnode_start(name,properties = {})
         vnode = vnode_get(name)
         raise Lib::BusyResourceError, vnode.name \
@@ -373,6 +432,7 @@ module Wrekavoc
         return vnode
       end
 
+      # Same as vnode_set_status(name,Resource::Status::READY,properties)
       def vnode_stop(name, properties = {})
         vnode = vnode_get(name)
         raise Lib::BusyResourceError, vnode.name \
@@ -413,7 +473,43 @@ module Wrekavoc
 
         return vnode
       end
+      
+      
+      # Change the mode of a virtual node (normal or gateway)
+      # ==== Attributes
+      # * +mode+ "Normal" or "Gateway"
+      # ==== Returns
+      # Resource::VNode object
+      # ==== Exceptions
+      #
+      def vnode_set_mode(name,mode)
+        # >>> TODO: Ability to unset gateway mode
+        vnode = vnode_get(name)
+        if mode.upcase == Resource::VNode::MODE_GATEWAY
+          if daemon?
+            unless target?(vnode)
+              cl = NetAPI::Client.new(vnode.host.address)
+              cl.vnode_gateway(vnode.name)
+            end
+          end
 
+          if target?(vnode)
+            vnode.gateway = true
+            #@node_config.vnode_configure(vnode.name)
+          end
+        elsif mode.upcase == Resource::VNode::MODE_NORMAL
+        else
+          raise Lib::InvalidParameterError, mode
+        end
+
+        return vnode
+      end
+
+      # Get the list of the the currently created virtual nodes
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
       def vnodes_get()
         vnodes = nil
         if daemon?
@@ -425,6 +521,11 @@ module Wrekavoc
         return vnodes
       end
 
+      # Remove every virtual nodes
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
       def vnodes_remove()
         vnodes = nil
         if daemon?
@@ -438,6 +539,13 @@ module Wrekavoc
         return vnodes
       end
 
+      # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
+      # ==== Attributes
+      # * +name+ the name of the virtual interface (need to be unique on this virtual node)
+      # ==== Returns
+      # Resource::VIface object
+      # ==== Exceptions
+      #
       def viface_create(vnodename,vifacename)
       begin
         vifacename = vifacename.gsub(' ','_')
@@ -468,6 +576,11 @@ module Wrekavoc
       end
       end
 
+      # Remove the virtual interface
+      # ==== Returns
+      # Resource::VIface object
+      # ==== Exceptions
+      #
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
@@ -489,6 +602,11 @@ module Wrekavoc
         return viface
       end
 
+      # Get the description of a virtual network interface
+      # ==== Returns
+      # Resource::VIface object
+      # ==== Exceptions
+      #
       def viface_get(vnodename,vifacename,raising = true)
         vifacename = vifacename.gsub(' ','_')
         vnode = vnode_get(vnodename,raising)
@@ -499,29 +617,16 @@ module Wrekavoc
         return viface
       end
 
-      def vnode_set_mode(name,mode)
-        # >>> TODO: Ability to unset gateway mode
-        vnode = vnode_get(name)
-        if mode.upcase == Resource::VNode::MODE_GATEWAY
-          if daemon?
-            unless target?(vnode)
-              cl = NetAPI::Client.new(vnode.host.address)
-              cl.vnode_gateway(vnode.name)
-            end
-          end
-
-          if target?(vnode)
-            vnode.gateway = true
-            #@node_config.vnode_configure(vnode.name)
-          end
-        elsif mode.upcase == Resource::VNode::MODE_NORMAL
-        else
-          raise Lib::InvalidParameterError, mode
-        end
-
-        return vnode
-      end
-
+      # Create a new virtual cpu on the targeted virtual node.
+      # By default all the virtual nodes on a same physical one are sharing available CPU resources, using this method you can allocate some cores to a virtual node and apply some limitations on them
+      #
+      # ==== Attributes
+      # * +corenb+ the number of cores to allocate (need to have enough free ones on the physical node)
+      # * +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
+      # ==== Returns
+      # Resource::VCPU object
+      # ==== Exceptions
+      #
       def vcpu_create(vnodename,corenb,frequency)
       begin
         vnode = vnode_get(vnodename)
@@ -542,7 +647,7 @@ module Wrekavoc
           @node_config.vcpu_attach(vnode)
         end
 
-        return vnode
+        return vnode.vcpu
 
       rescue Lib::AlreadyExistingResourceError
         raise
@@ -552,6 +657,11 @@ module Wrekavoc
       end
       end
 
+      # Retrieve informations about the virtual node filesystem
+      # ==== Returns
+      # Resource::FileSystem object
+      # ==== Exceptions
+      #
       def vnode_filesystem_get(vnodename)
         vnode = vnode_get(vnodename)
 
@@ -561,6 +671,12 @@ module Wrekavoc
         return vnode.filesystem
       end
 
+      # Get a compressed archive of the current filesystem (tgz)
+      # WARNING: You have to contact the physical node the vnode is hosted on directly
+      # ==== Returns
+      # String object that describes the path to the archive
+      # ==== Exceptions
+      #
       def vnode_filesystem_image_get(vnodename)
         vnode = vnode_get(vnodename)
         archivepath = nil
@@ -574,6 +690,13 @@ module Wrekavoc
         return archivepath
       end
 
+      # Execute and get the result of a command on a virtual node
+      # ==== Attributes
+      # * +command+ the command to be executed
+      # ==== Returns
+      # Hash object: { 'command' => <the command that was executed>, 'result' => <the result of the command> }
+      # ==== Exceptions
+      #
       def vnode_execute(vnodename,command)
         ret = {}
         if daemon?
@@ -591,6 +714,14 @@ module Wrekavoc
         return ret
       end
 
+      # Create a new virtual network specifying his range of IP address (IPv4 atm).
+      # ==== Attributes
+      # * +name+ the -unique- name of the virtual network (it will be used in a lot of methods)
+      # * +address+ the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
+      # ==== Returns
+      # Resource::VNetwork object
+      # ==== Exceptions
+      #
       def vnetwork_create(name,address)
       begin
         name = name.gsub(' ','_')
@@ -612,6 +743,11 @@ module Wrekavoc
       end
       end
 
+      # Delete the virtual network
+      # ==== Returns
+      # Resource::VNetwork object
+      # ==== Exceptions
+      #
       def vnetwork_remove(name)
         vnetwork = vnetwork_get(name)
 
@@ -636,6 +772,11 @@ module Wrekavoc
         return vnetwork
       end
 
+      # Delete every virtual networks
+      # ==== Returns
+      # Array of Resource::VNetwork objects
+      # ==== Exceptions
+      #
       def vnetworks_remove()
         vnetworks = nil
         if daemon?
@@ -649,6 +790,11 @@ module Wrekavoc
         return vnetworks
       end
 
+      # Get the description of a virtual network
+      # ==== Returns
+      # Resource::VNetwork object
+      # ==== Exceptions
+      #
       def vnetwork_get(name,raising = true)
         name = name.gsub(' ','_')
         if daemon?
@@ -662,6 +808,11 @@ module Wrekavoc
         return vnetwork
       end
 
+      # Get the list of the the currently created virtual networks
+      # ==== Returns
+      # Array of Resource::VNetwork objects
+      # ==== Exceptions
+      #
       def vnetworks_get()
         vnetworks = nil
         if daemon?
@@ -673,6 +824,20 @@ module Wrekavoc
         return vnetworks
      end
 
+      # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
+      # The IP address is auto assigned to the virtual interface
+      # Dettach the virtual interface if properties is empty
+      # You can change the traffic specification on the fly, only specifying the vtraffic property
+      # ==== Attributes
+      # * +vnodename+ The VNode name (String)
+      # * +vifacename+ The VIface name (String)
+      # * +properties+ the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT/FULLDUPLEX)
+      # == Usage
+      # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
+      # ==== Returns
+      # Resource::VIface object
+      # ==== Exceptions
+      #
       def viface_attach(vnodename,vifacename,properties)
       begin
         vnode = vnode_get(vnodename)
@@ -760,6 +925,14 @@ module Wrekavoc
       end
       end
 
+      # Disconnect a virtual network interface from every networks it's connected to
+      # ==== Attributes
+      # * +vnodename+ The VNode name (String)
+      # * +vifacename+ The VIface name (String)
+     # ==== Returns
+      # Resource::PNode object
+      # ==== Exceptions
+      #
       def viface_detach(vnodename,vifacename)
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
@@ -780,6 +953,17 @@ module Wrekavoc
         return viface
       end
 
+
+      # Configure the virtual traffic on a virtual network interface
+      # ==== Attributes
+      # * +vnodename+ The VNode name (String)
+      # * +vifacename+ The VIface name (String)
+      # * +vtraffichash+ Hash that represents the VTraffic description (see Lib::Validator)
+      # * +forward+ If in daemon mode: forward the request to another physical node or not
+      # ==== Returns
+      # Resource::VIface object
+      # ==== Exceptions
+      #
       def viface_configure_vtraffic(vnodename,vifacename,vtraffichash,forward=true)
       begin
         vnode = vnode_get(vnodename)
@@ -828,6 +1012,17 @@ module Wrekavoc
       end
       end
 
+      # Create a virtual route ("go from <networkname> to <destnetwork> via <gatewaynode>").
+      # The virtual route is applied to all the vnodes of <networkname>.
+      # This method automagically set <gatewaynode> in gateway mode (if it's not already the case) and find the right virtual interface to set the virtual route on
+      # ==== Attributes
+      # * +destnetwork+ the name of the destination network
+      # * +gatewaynode+ the name of the virtual node to use as a gateway
+      # Deprecated: * +vnode+ the virtual node to set the virtual route on (optional)
+      # ==== Returns
+      # Resource::VRoute object
+      # ==== Exceptions
+      #
       def vroute_create(networksrc,networkdst,nodegw,vnodename=nil)
       begin
         vnode = nil
@@ -896,6 +1091,14 @@ module Wrekavoc
       end
       end
 
+
+      # Try to create every possible virtual routes between the current 
+      # set of virtual nodes automagically finding and setting up 
+      # the gateways to use
+      # ==== Returns
+      # Array of Resource::VRoute objects
+      # ==== Exceptions
+      #
       def vroute_complete()
         ret = []
 
@@ -913,6 +1116,14 @@ module Wrekavoc
         return ret
       end
 
+      # Load a configuration
+      # ==== Attributes
+      # * +data+ data to be applied
+      # * +format+ the format of the data
+      # ==== Returns
+      # Resource::VPlatform object
+      # ==== Exceptions
+      #
       def vplatform_create(format,data)
         # >>> TODO: check if there is already a created vplatform
         raise Lib::InvalidParameterError unless daemon?
@@ -1031,6 +1242,13 @@ module Wrekavoc
         return @daemon_resources
       end
 
+      # Get the description file of the current platform in a specified format (JSON if not specified)
+      # ==== Attributes
+      # * +format+ the format of the returned data
+      # ==== Returns
+      # String value that reprents the platform in the _format_ form
+      # ==== Exceptions
+      #
       def vplatform_get(format)
         format = '' unless format
         visitor = nil
@@ -1055,11 +1273,20 @@ module Wrekavoc
 
       protected
       
-      def daemon? #:nodoc:
+      # Check if the server is launched in daemon mode
+      # ==== Returns
+      # Boolean value
+      #
+      def daemon?
         @mode == MODE_DAEMON
       end
 
-      def target?(param) #:nodoc:
+      # Guess that we are in a local context
+      # ==== Attributes
+      # * +param+ IP address (String) or VNode
+      # ==== Returns
+      # Boolean value
+      def target?(param)
         ret = false
         if daemon?
           target = nil
@@ -1081,6 +1308,7 @@ module Wrekavoc
         return ret
       end
 
+      # Destroy (clean) a resource
       def destroy(resource)
         if daemon?
           @daemon_resources.destroy(resource)

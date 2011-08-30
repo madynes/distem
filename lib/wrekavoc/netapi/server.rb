@@ -904,7 +904,7 @@ module Wrekavoc
       # :call-seq:
       #   GET /vnodes/:vnodename/vifaces/:vifacename
       # 
-      # Get the description of a virtual network
+      # Get the description of a virtual network interface
       #
       # == Query parameters
       #
