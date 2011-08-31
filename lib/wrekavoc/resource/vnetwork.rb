@@ -38,7 +38,7 @@ module Wrekavoc
         @vroutes = {}
 
         @curaddress = @address.first
-        @ids += 1
+        @@ids += 1
       end 
 
       # Connect a VNode to this vitual network

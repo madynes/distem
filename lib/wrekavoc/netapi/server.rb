@@ -717,7 +717,6 @@ module Wrekavoc
       # ...
       
       #
-
       get '/vnodes/:vnode/filesystem/image' do
         begin
           ret = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
@@ -1275,6 +1274,7 @@ module Wrekavoc
       # == Usage
       # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       
+      #
       put '/vnodes/:vnode/vifaces/:viface' do 
         begin
           vnodename = URI.unescape(params['vnode'])
