@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'optparse'
 
 USAGE="Usage: #{$0} [options]"
@@ -142,17 +142,17 @@ cl=false
 if options['f_vnetwork_create']
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
 end
 
 if options['f_vroute_create']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vroute_create(options['vroute_srcnet'],options['vroute_destnet'],options['vroute_gateway'])
 end
 
 if options['f_vroute_complete']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vroute_complete()
 end
 
@@ -160,7 +160,7 @@ if options['f_vnode_attach']
   errorcheck(ERR_VNODE,options['vnode_name'])
   errorcheck(ERR_VIFACE,options['viface_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
 
   if options['f_limitation_create']
     plimit = {}

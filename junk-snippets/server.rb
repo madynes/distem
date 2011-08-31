@@ -1,6 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 
-daemon = Wrekavoc::NetAPI::Server.new
+daemon = Distem::NetAPI::Server.new
 daemon.run

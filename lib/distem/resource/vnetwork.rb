@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'ipaddress'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of a virtual network

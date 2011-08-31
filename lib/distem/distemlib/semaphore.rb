@@ -1,4 +1,4 @@
-module Wrekavoc
+module Distem
   module Lib
 
     #Code snippet from : https://gist.github.com/305986

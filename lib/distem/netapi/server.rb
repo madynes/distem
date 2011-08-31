@@ -1,11 +1,11 @@
-require 'wrekavoc'
+require 'distem'
 require 'sinatra/base'
 require 'socket'
 require 'ipaddress'
 require 'json'
 require 'cgi'
 
-module Wrekavoc
+module Distem
   module NetAPI
 
     # The REST API server, see doc/netapi for the documentation of the REST API.
@@ -24,7 +24,7 @@ module Wrekavoc
       def initialize() #:nodoc:
         super
         @mode = settings.mode
-        @daemon = Daemon::WrekaDaemon.new(@mode)
+        @daemon = Daemon::DistemDaemon.new(@mode)
       end
 
       def run #:nodoc:
@@ -100,7 +100,7 @@ module Wrekavoc
       # :call-seq:
       #   DELETE /pnodes/:pnodename
       # 
-      # Quit wrekavoc on a physical machine (remove everything that was created)
+      # Quit distem on a physical machine (remove everything that was created)
       #
       # == Query parameters
       #
@@ -196,7 +196,7 @@ module Wrekavoc
       # :call-seq:
       #   DELETE /pnodes
       # 
-      # Quit wrekavoc on all the physical machines (remove everything that was created)
+      # Quit distem on all the physical machines (remove everything that was created)
       #
       # == Query parameters
       #
@@ -1530,8 +1530,8 @@ module Wrekavoc
 
       def result! #:nodoc:
         classname = @body.class.name.split('::').last
-          #or Wrekavoc::Limitation::Network.constants.include?(classname) \
-        if Wrekavoc::Resource.constants.include?(classname) \
+          #or Distem::Limitation::Network.constants.include?(classname) \
+        if Distem::Resource.constants.include?(classname) \
           or @body.is_a?(Array) or @body.is_a?(Hash)
           @body = TopologyStore::HashWriter.new.visit(@body)
         end
@@ -1560,7 +1560,7 @@ module Wrekavoc
 
 
     class ServerDaemon < Server #:nodoc: all
-      set :mode, Daemon::WrekaDaemon::MODE_DAEMON
+      set :mode, Daemon::DistemDaemon::MODE_DAEMON
 
       def initialize
         super()
@@ -1573,7 +1573,7 @@ module Wrekavoc
     end
 
     class ServerNode < Server #:nodoc: all
-      set :mode, Daemon::WrekaDaemon::MODE_NODE
+      set :mode, Daemon::DistemDaemon::MODE_NODE
 
       def run
         ServerNode.run!

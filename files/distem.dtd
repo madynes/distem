@@ -1,4 +1,4 @@
-<!-- Wrekavoc XML input/output backups DTD -->
+<!-- Distem XML input/output backups DTD -->
 <!ELEMENT vplatform (pnode|vnode|vnetwork)*>
 <!ATTLIST vplatform version CDATA #IMPLIED>
 

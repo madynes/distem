@@ -1,15 +1,15 @@
-require 'wrekavoc'
+require 'distem'
 require 'net/ssh'
 
-module Wrekavoc
+module Distem
   module Daemon
 
     # Class that allow to manage daemon administration methods such as initializing another physical node
     class Admin
       # The file used to store the stdout logs for the launched daemons
-      PATH_WREKAD_LOG_OUT=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.out")
+      PATH_DISTEMD_LOG_OUT=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.out")
       # The file used to store the stderr logs for the launched daemons
-      PATH_WREKAD_LOG_ERR=File.join(Lib::FileManager::PATH_WREKAVOC_LOGS,"wrekad.err")
+      PATH_DISTEMD_LOG_ERR=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.err")
       # Path to the ruby binary
       PATH_BIN_RUBY='/usr/bin/ruby'
       # Paths to the SSH key files
@@ -25,13 +25,13 @@ module Wrekavoc
         if pnode.status == Resource::Status::INIT
           begin
             Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEYS, :password => pnode.ssh_password) do |ssh|
-              ssh.exec!("mkdir -p #{Lib::FileManager::PATH_WREKAVOC_LOGS}")
-              ssh.exec!("echo '' > #{Lib::Shell::PATH_WREKAD_LOG_CMD}")
+              ssh.exec!("mkdir -p #{Lib::FileManager::PATH_DISTEM_LOGS}")
+              ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
 
               str = ssh.exec!("lsof -Pnl -i4")
-              unless /^wrekad .*/.match(str)
-              ssh.exec!("#{Lib::FileManager::PATH_WREKAVOC_BIN}/wrekad " \
-                "1>#{PATH_WREKAD_LOG_OUT} &>#{PATH_WREKAD_LOG_ERR} &")
+              unless /^distemd .*/.match(str)
+              ssh.exec!("#{Lib::FileManager::PATH_DISTEM_BIN}/distemd " \
+                "1>#{PATH_DISTEMD_LOG_OUT} &>#{PATH_DISTEMD_LOG_ERR} &")
               end
             end
           rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH

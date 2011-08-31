@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Node
 
     # Allows to modify CPU physical resources to fit with the virtual resources specifications

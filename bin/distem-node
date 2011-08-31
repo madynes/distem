@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'optparse'
 require 'pathname'
 require 'pp'
@@ -110,7 +110,7 @@ cl=false
 if (options['f_shell'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   vnode = cl.vnode_info(ARGV[0])
   system("ssh -t #{options['ssh_user']}@#{vnode['host']} 'lxc-console -n #{ARGV[0]}'")
 end
@@ -118,14 +118,14 @@ end
 if (options['f_exec'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   puts cl.vnode_execute(ARGV[0],options['exec_cmd'])['result']
 end
 
 if options['f_file_send'] or options['f_file_get']
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   vnode = cl.vnode_info(ARGV[0])
   pnode = vnode['host']
   rootfs = vnode['filesystem']['path']
@@ -148,22 +148,22 @@ end
 if (options['f_vnode_start'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_start(ARGV[0])
 end
 
 if (options['f_vnode_stop'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_stop(ARGV[0])
 end
 
 if options['f_image_get']
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   vnode = cl.vnode_info(ARGV[0])
-  cl2 = Wrekavoc::NetAPI::Client.new(vnode['host'])
+  cl2 = Distem::NetAPI::Client.new(vnode['host'])
   cl2.vnode_filesystem_get(vnode['name'],options['image_path'])
 end

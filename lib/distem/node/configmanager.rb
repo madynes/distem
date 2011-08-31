@@ -1,12 +1,12 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Node
 
     # Class that help to set up a physical node resource specifying virtual ones
     class ConfigManager
       # The directory used to save virtual nodes filesystem directories&files
-      PATH_DEFAULT_ROOTFS="/tmp/wrekavoc/rootfs/"
+      PATH_DEFAULT_ROOTFS="/tmp/distem/rootfs/"
 
       # The virtual platform that describes all virtual resources set on this physical node
       attr_reader  :vplatform
@@ -15,8 +15,8 @@ module Wrekavoc
 
       # Create a new ConfigManager object
       def initialize
-        @pnode = Wrekavoc::Resource::PNode.new(Lib::NetTools.get_default_addr())
-        @vplatform = Wrekavoc::Resource::VPlatform.new
+        @pnode = Distem::Resource::PNode.new(Lib::NetTools.get_default_addr())
+        @vplatform = Distem::Resource::VPlatform.new
         @containers = {}
         Container.stop_all()
       end

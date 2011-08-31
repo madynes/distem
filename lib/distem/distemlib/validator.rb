@@ -1,12 +1,12 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Lib
 
     # Class used to validate that an hash have a specific form
     class Validator
       # :nodoc:
-      DEFAULT_WREKAVOC = {
+      DEFAULT_DISTEM = {
         'vplatform' => {
           'pnodes' => {
             'id' => nil,
@@ -67,7 +67,7 @@ module Wrekavoc
       end
 
       # :nodoc:
-      def self.validate_hash(hash,expected=DEFAULT_WREKAVOC)
+      def self.validate_hash(hash,expected=DEFAULT_DISTEM)
         valid = expected.keys.size == hash.keys.size
         return false unless valid
 

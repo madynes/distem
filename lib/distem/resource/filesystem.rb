@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'uri'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract description of the filesystem used on a VNode

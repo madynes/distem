@@ -1,6 +1,6 @@
 module TCWrapper # :nodoc: all
 
-require 'wrekavoc'
+require 'distem'
 
 class Action
   ADD="add"

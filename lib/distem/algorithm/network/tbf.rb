@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Algorithm 
     module Network
 

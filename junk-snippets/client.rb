@@ -1,6 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 
-cl = Wrekavoc::NetAPI::Client.new("127.0.0.1")
+cl = Distem::NetAPI::Client.new("127.0.0.1")
 puts cl.vnode_create("127.0.0.1","toto","")

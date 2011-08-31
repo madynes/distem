@@ -1,6 +1,6 @@
 module TCWrapper # :nodoc: all
 
-require 'wrekavoc'
+require 'distem'
 
 class Id
   attr_reader :major, :minor

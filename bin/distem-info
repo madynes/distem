@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'optparse'
 require 'pp'
 
@@ -88,36 +88,36 @@ end
 cl=nil
 
 if options['f_pnodes']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnodes_info()
 end
 
 if options['f_pnode']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnode_info(options['pnode_name'])
 end
 
 if options['f_vnodes']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnodes_info()
 end
 
 if options['f_vnode']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_info(options['vnode_name'])
 end
 
 if options['f_vnetworks']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetworks_info()
 end
 
 if options['f_vnetwork']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetwork_info(options['vnetwork_name'])
 end
 
 if options['f_viface']
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.viface_info(options['vnode_name'],options['viface_name'])
 end

@@ -1,3 +1,3 @@
 # All the distem related classes
-module Wrekavoc
+module Distem
 end

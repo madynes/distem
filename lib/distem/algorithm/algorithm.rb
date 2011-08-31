@@ -1,4 +1,4 @@
-module Wrekavoc
+module Distem
   # A module containing classes that allow to apply different kind of limitations on physical resources
   module Algorithm
 

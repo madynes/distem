@@ -1,4 +1,4 @@
-require 'wrekavoc'
+require 'distem'
 
 module TCWrapper # :nodoc: all
 

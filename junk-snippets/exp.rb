@@ -1,6 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'ipaddr'
 
 IMAGE='file:///home/lsarzyniec/rootfs-squeeze.tar.bz2'
@@ -12,7 +12,7 @@ ipaddr = IPAddr.new('10.144.4.1')
 
 
 i=1
-client = Wrekavoc::NetAPI::Client.new(coord)
+client = Distem::NetAPI::Client.new(coord)
 
 machines.each do |machine|
   client.pnode_init(machine)

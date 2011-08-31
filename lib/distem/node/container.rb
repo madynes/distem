@@ -1,13 +1,13 @@
-require 'wrekavoc'
+require 'distem'
 require 'thread'
 
-module Wrekavoc
+module Distem
   module Node
 
     # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
     class Container
       # The directory to save container configuration files
-      PATH_DEFAULT_CONFIGFILE="/tmp/wrekavoc/config/"
+      PATH_DEFAULT_CONFIGFILE="/tmp/distem/config/"
       @@lxclock = Mutex.new
 
       # The virtual node this container is set for
@@ -64,7 +64,7 @@ module Wrekavoc
         end
       end
       
-      # Stop all previously created containers (previous wrekavoc run, lxc, ...)
+      # Stop all previously created containers (previous distem run, lxc, ...)
       def self.stop_all
         list = Lib::Shell::run("lxc-ls").split
         list.each do |name|

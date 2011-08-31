@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of a virtual CPU resource

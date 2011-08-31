@@ -1,8 +1,8 @@
-require 'wrekavoc'
+require 'distem'
 require 'uri'
 require 'ipaddress'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstact representation of a virtual node resource

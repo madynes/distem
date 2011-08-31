@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module TopologyStore
 
     # Base interface for the saving methods. Based on the Visitor design pattern.

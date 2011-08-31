@@ -30,7 +30,7 @@ end
 desc "Generate basic Documentation"
 Rake::RDocTask.new do |t|
   t.rdoc_dir = 'doc'
-  t.title    = 'Wrekavoc'
+  t.title    = 'Distem'
   t.options << '--line-numbers'
   t.options << '--charset' << 'utf-8'
   t.options << '--diagram'
@@ -48,7 +48,7 @@ Rake::TestTask.new("test_units") { |t|
 }
 
 desc "Generate source tgz package"
-Rake::PackageTask::new("wrekavoc","0.1") do |p|
+Rake::PackageTask::new("distem","0.1") do |p|
   p.need_tar_gz = true
   p.package_files.include('lib/**/*')
   p.package_files.include('ext/**/*')
@@ -62,7 +62,7 @@ task :doc_netapi do
   $LOAD_PATH.unshift File.join(File.dirname(__FILE__),'lib')
   require 'docapi'
   require 'rdoc/generator/docapi'
-  Docapi::CLI.new.generate(["lib/wrekavoc/netapi/server.rb"], "doc/netapi")
+  Docapi::CLI.new.generate(["lib/distem/netapi/server.rb"], "doc/netapi")
   system('scripts/gendoc-netapi.sh')
 end
 

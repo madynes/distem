@@ -1,6 +1,6 @@
 require 'resolv'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of a physical machine/node (the machine that will be used to launch some virtual nodes) 

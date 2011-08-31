@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module TopologyStore
 
     # Class that saves some virtual resource object as an Hash representing their properties. Based on the Visitor design pattern.

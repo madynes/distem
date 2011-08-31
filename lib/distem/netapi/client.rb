@@ -1,11 +1,11 @@
-require 'wrekavoc'
+require 'distem'
 require 'rest_client'
 require 'json'
 require 'cgi'
 require 'uri'
 require 'pp'
 
-module Wrekavoc
+module Distem
   module NetAPI
 
     class Client
@@ -58,7 +58,7 @@ module Wrekavoc
         return pnode_init(name,properties)
       end
 
-      # Quit Wrekavoc on a physical machine
+      # Quit distem on a physical machine
       #
       # ==== Attributes
       # * +target+ The hostname/address of the physical node
@@ -103,7 +103,7 @@ module Wrekavoc
         end
       end
 
-      # Quit Wrekavoc on every physical machines
+      # Quit distem on every physical machines
       #
       def pnodes_quit()
         begin

@@ -1,4 +1,4 @@
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of the physical memory resource

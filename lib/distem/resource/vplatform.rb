@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'resolv'
 
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of a virtual platform resource that's describing an experimental environment (PNodes,VNodes,VNetworks,...)

@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'optparse'
 require 'pp'
 
@@ -139,12 +139,12 @@ cl=false
 if (options['f_pnode_init'])
   errorcheck(ERR_HOST,options['pnode_addr'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnode_init(options['pnode_addr'])
 end
 
 if (options['f_pnodes_quit'])
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.pnodes_quit()
 end
 
@@ -153,32 +153,32 @@ if (options['f_vnode_create'])
   props['image'] = options['vnode_image']
   props['target'] = options['pnode_addr'] if options['pnode_addr']
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnode_create(options['vnode_name'], props)
 end
 
 if options['f_vnetwork_create']
   errorcheck(ERR_VNETWORK,options['vnetwork_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
 end
 
 if (options['f_viface_create'])
   errorcheck(ERR_VNODE,options['vnode_name'])
 
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.viface_create(options['vnode_name'], options['viface_name'])
 end
 
 if (options['f_vplatform_save'])
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   ret = cl.vplatform_info(options['vplatform_format'])
   File.open(options['vplatform_file'],'w') { |f| f.puts(ret) }
 end
 
 if (options['f_vplatform_load'])
-  cl = Wrekavoc::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   if File.exists?(options['vplatform_file'])
     str = File.read(options['vplatform_file'])
   else

@@ -1,4 +1,4 @@
-Source: wrekavoc
+Source: distem
 Section: ruby
 Priority: extra
 Maintainer: Lucas Nussbaum <lucas.nussbaum@loria.fr>
@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.4~)
 Standards-Version: 3.9.1
 XS-Ruby-Versions: all
 
-Package: wrekavoc
+Package: distem
 Architecture: all
 XB-Ruby-Versions: ${ruby:Versions}
 Depends: ${shlibs:Depends}, ${misc:Depends}, ruby | ruby-interpreter, ruby-net-ssh, ruby-ipaddress, ruby-rest-client, ruby-sinatra, ruby-json, lxc, bridge-utils

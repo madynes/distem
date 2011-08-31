@@ -1,4 +1,4 @@
-module Wrekavoc
+module Distem
   module Resource
 
     # Abstract representation of a virtual route used to link two virtual networks

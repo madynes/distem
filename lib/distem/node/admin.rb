@@ -1,13 +1,13 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Node
 
     # Class that allow to set up a physical node resources (init cgroups, tc, ...)
     class Admin
 
       # The directory used to store temporary files
-      PATH_WREKATMP='/tmp/wrekavoc/'
+      PATH_DISTEMTMP='/tmp/distem/'
       # The cgroups directory to use
       PATH_CGROUP='/dev/cgroup'
       # The maximum number of network interfaces (used with ifb)
@@ -32,7 +32,7 @@ module Wrekavoc
         Lib::NetTools.unset_bridge()
         Lib::NetTools.unset_ifb()
         unset_cgroups()
-        Lib::Shell.run("rm -R #{PATH_WREKATMP}") if File.exists?(PATH_WREKATMP)
+        Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exists?(PATH_DISTEMTMP)
       end
 
       # Initialize (mount) the CGroup filesystem that will be used by the system (LXC, ...)

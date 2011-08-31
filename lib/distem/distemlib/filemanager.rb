@@ -1,8 +1,8 @@
-require 'wrekavoc'
+require 'distem'
 require 'uri'
 require 'digest/sha2'
 
-module Wrekavoc
+module Distem
   module Lib
 
     # Class that allow to manage files and archives (extracting, downloading, ...)
@@ -11,15 +11,15 @@ module Wrekavoc
       MAX_SIMULTANEOUS_EXTRACT = 8
 
       PATH_CURRENT=File.expand_path(File.dirname(__FILE__)) # :nodoc:
-      PATH_WREKAVOC_BIN=File.expand_path('../../../bin/',PATH_CURRENT) # :nodoc:
-      PATH_WREKAVOC_LOGS=File.expand_path('../../../logs/',PATH_CURRENT) # :nodoc:
+      PATH_DISTEM_BIN=File.expand_path('../../../bin/',PATH_CURRENT) # :nodoc:
+      PATH_DISTEM_LOGS=File.expand_path('../../../logs/',PATH_CURRENT) # :nodoc:
 
       # The directory used to store downloaded files
-      PATH_DEFAULT_DOWNLOAD="/tmp/wrekavoc/downloads/"
+      PATH_DEFAULT_DOWNLOAD="/tmp/distem/downloads/"
       # The directory used to store archive extraction cache
-      PATH_DEFAULT_CACHE="/tmp/wrekavoc/extractcache/"
+      PATH_DEFAULT_CACHE="/tmp/distem/extractcache/"
       # The directory used to store compressed files
-      PATH_DEFAULT_COMPRESS="/tmp/wrekavoc/files/"
+      PATH_DEFAULT_COMPRESS="/tmp/distem/files/"
 
       BIN_TAR="tar" # :nodoc:
       BIN_GUNZIP="gunzip" # :nodoc:

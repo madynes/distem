@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'rexml/document'
 
-module Wrekavoc
+module Distem
   module TopologyStore
 
     # Class that allow to load a configuration from an XML simgrid input. See "http://simgrid.gforge.inria.fr/files/simgrid.dtd" for more information about the input format. FIXME: document each method to explain how the translation is done

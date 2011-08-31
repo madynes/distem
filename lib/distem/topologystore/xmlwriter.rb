@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'rexml/document'
 
-module Wrekavoc
+module Distem
   module TopologyStore
 
     # Class that saves some virtual resource object as an XML string representing their properties. Based on the Visitor design pattern. See "files/distem.dtd" for more information about the input format.

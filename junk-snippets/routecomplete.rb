@@ -1,6 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 
 IMAGE='file:///home/lsarzyniec/rootfs.tar.bz2'
 
@@ -19,7 +19,7 @@ networks['net6'] = '10.144.6.0/24'
 
 i = 1
 nodes = []
-client = Wrekavoc::NetAPI::Client.new(coord)
+client = Distem::NetAPI::Client.new(coord)
 
 networks.each_pair do |net,addr|
   puts client.vnetwork_create(net,addr)

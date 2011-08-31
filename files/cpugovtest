@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 
 PATH_CGROUP="/dev/cgroup"
 PATH_CGROUP_TEST=File.join(PATH_CGROUP,'test')
@@ -64,8 +64,8 @@ puts "Failed to mount cgroups" unless $?.success?
 
 `mkdir #{PATH_CGROUP_TEST}` unless File.exists?(PATH_CGROUP_TEST)
 
-cpu = Wrekavoc::Resource::CPU.new
-Wrekavoc::Lib::CPUTools.set_resource(cpu)
+cpu = Distem::Resource::CPU.new
+Distem::Lib::CPUTools.set_resource(cpu)
 
 coreids = cpu.cores.values.collect{|core| core.physicalid}
 

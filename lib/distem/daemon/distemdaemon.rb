@@ -1,15 +1,15 @@
-require 'wrekavoc'
+require 'distem'
 require 'thread'
 require 'socket'
 require 'ipaddress'
 require 'json'
 require 'pp'
 
-module Wrekavoc
+module Distem
   module Daemon
 
     # The main daemon class. Both used by the coordinator daemon to contact each physical nodes and create virtual resources in them and manage every virtual resources and by the physical nodes daemon to set up physical resources to fit to virtual resources specifications. See REST API documentation for the methods specifications.
-    class WrekaDaemon
+    class DistemDaemon
       # The dameon is in coordinator mode
       MODE_DAEMON=0
       # The daemon is in normal mode
@@ -131,7 +131,7 @@ module Wrekavoc
           if @threads['pnode_init'][pnode.address.to_s]
       end
 
-      # Quit wrekavoc on a physical machine (remove everything that was created)
+      # Quit distem on a physical machine (remove everything that was created)
       # ==== Returns
       # Resource::PNode object
       # ==== Exceptions
@@ -167,7 +167,7 @@ module Wrekavoc
         return pnode
       end
 
-      # Quit wrekavoc on all the physical machines (remove everything that was created)
+      # Quit distem on all the physical machines (remove everything that was created)
       # ==== Returns
       # Array of Resource::PNode objects
       # ==== Exceptions

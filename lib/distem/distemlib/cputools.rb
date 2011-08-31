@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Lib
 
     # Class that allow to perform physical operations on a physical CPU resource

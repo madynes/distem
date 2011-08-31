@@ -1,11 +1,11 @@
-module Wrekavoc
+module Distem
   module Lib
 
-    class WrekavocError < Exception # :nodoc:
+    class DistemError < Exception # :nodoc:
     end
 
     # An error related to the resource management
-    class ResourceError < WrekavocError
+    class ResourceError < DistemError
     end
 
     # The specified resource was not found
@@ -29,7 +29,7 @@ module Wrekavoc
     end
 
     # An error related with the parameters specified to a method
-    class ParameterError < WrekavocError
+    class ParameterError < DistemError
     end
 
     # The specified resource already exists
@@ -45,11 +45,11 @@ module Wrekavoc
     end
 
     # The specified method is not implemented (yet)
-    class NotImplementedError < WrekavocError
+    class NotImplementedError < DistemError
     end
 
     # An error occured during the execution of a shell command
-    class ShellError < WrekavocError
+    class ShellError < DistemError
       attr_reader :cmd, :ret, :err, :hostname
       def initialize(cmd, ret, err = "")
         @hostname = Socket.gethostname
@@ -64,7 +64,7 @@ module Wrekavoc
     end
 
     # An error occured when using the REST Client (see NetAPI::Client)
-    class ClientError < WrekavocError
+    class ClientError < DistemError
       attr_reader :num, :desc, :body
       def initialize(num = 0, desc = "", body = {})
         @num = num

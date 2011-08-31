@@ -1,6 +1,6 @@
-require 'wrekavoc'
+require 'distem'
 
-module Wrekavoc
+module Distem
   module Node
 
     # Interfaced used to "blacksmith" resources: apply a specify algorithm to a physical resource in order to modify it to fit with the virtual resources specifications

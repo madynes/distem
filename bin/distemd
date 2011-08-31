@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'optparse'
 
 USAGE="Usage: #{$0} [options]"
@@ -23,10 +23,10 @@ optparse.parse!
 
 if (options['f_daemon'])
   puts "Starting the server in Daemon mode"
-  daemon = Wrekavoc::NetAPI::ServerDaemon.new
+  daemon = Distem::NetAPI::ServerDaemon.new
   daemon.run
 else
   puts "Starting the server in Node mode"
-  daemon = Wrekavoc::NetAPI::ServerNode.new
+  daemon = Distem::NetAPI::ServerNode.new
   daemon.run
 end

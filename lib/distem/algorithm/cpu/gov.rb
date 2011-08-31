@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'ext/cpugov'
 
-module Wrekavoc
+module Distem
   module Algorithm 
     module CPU
 

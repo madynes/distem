@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#To be executed from wrekavoc root path
+#To be executed from distem root path
 
 OUTPUTFILE="doc/netapi/index.html"
 INPUTFILE="doc/netapi/documentation.html"

@@ -1,6 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
-require 'wrekavoc'
+require 'distem'
 require 'pp'
 
 IMAGE='file:///home/lsarzyniec/rootfs.tar.bz2'
@@ -18,7 +18,7 @@ networks = ['network1', 'network2']
 
 i = 1
 nodes = []
-client = Wrekavoc::NetAPI::Client.new(coord)
+client = Distem::NetAPI::Client.new(coord)
 
 #Physical node init
 machines.each do |machine|

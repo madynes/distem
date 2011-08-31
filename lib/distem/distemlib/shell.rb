@@ -1,13 +1,13 @@
 require 'open3'
 
-module Wrekavoc
+module Distem
   module Lib
 
     class Shell
 
       # The file to save log of the executed commands
-      PATH_WREKAD_LOG_CMD=File.join(FileManager::PATH_WREKAVOC_LOGS,"wrekad.cmd")
-      # Execute the specified command on the physical node (log the resuls in PATH_WREKAD_LOG_CMD)
+      PATH_DISTEMD_LOG_CMD=File.join(FileManager::PATH_DISTEM_LOGS,"distemd.cmd")
+      # Execute the specified command on the physical node (log the resuls in PATH_DISTEMD_LOG_CMD)
       # ==== Attributes
       # * +cmd+ The command (String)
       # * +simple+ Execute the command in simple mode (no logs of stderr)
@@ -27,14 +27,14 @@ module Wrekavoc
           Open3.popen3(cmd) do |stdin, stdout, stderr|
             ret = stdout.read
             err = stderr.read
-            Dir::mkdir(FileManager::PATH_WREKAVOC_LOGS) \
-              unless File.exists?(FileManager::PATH_WREKAVOC_LOGS)
+            Dir::mkdir(FileManager::PATH_DISTEM_LOGS) \
+              unless File.exists?(FileManager::PATH_DISTEM_LOGS)
             log = "#{cmdlog}\n#{ret}"
             log += "\nError: #{err}" unless err.empty? 
             error = !$?.success? or !err.empty?
           end
         end
-        File.open(PATH_WREKAD_LOG_CMD,'a+') { |f| f.write(log) }
+        File.open(PATH_DISTEMD_LOG_CMD,'a+') { |f| f.write(log) }
         raise ShellError.new(cmd,ret,err) if error
 
         return ret

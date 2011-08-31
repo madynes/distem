@@ -1,7 +1,7 @@
-require 'wrekavoc'
+require 'distem'
 require 'rexml/document'
 
-module Wrekavoc
+module Distem
   module TopologyStore
 
     # Class that allow to load a configuration from an XML input. See "files/distem.dtd" for more information about the input format.
