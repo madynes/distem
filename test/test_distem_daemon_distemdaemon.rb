@@ -6,6 +6,13 @@ require 'test/unit'
 class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
   def setup
     super
+    if not (ENV['DISTEM_RUN_TESTS_ANYWAY'] or `hostname --fqdn`.chomp =~ /grid5000.fr$/)
+      puts "The distem test suite is destructive for the system it is being run on."
+      puts "By default, it can only be run on Grid'5000 nodes."
+      puts "If you really want to run the test suite, set the"
+      puts "DISTEM_RUN_TESTS_ANYWAY environment variable."
+      exit(1)
+    end
     @daemon_d = Distem::Daemon::DistemDaemon.new( \
       Distem::Daemon::DistemDaemon::MODE_DAEMON \
     )
