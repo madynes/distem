@@ -1,5 +1,4 @@
 require 'distem'
-require 'ext/cpuhogs'
 
 module Distem
   module Algorithm 

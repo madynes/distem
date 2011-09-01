@@ -1,5 +1,4 @@
 require 'distem'
-require 'ext/cpugov'
 
 module Distem
   module Algorithm 
