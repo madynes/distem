@@ -1,5 +1,5 @@
-distem (0.0.1) UNRELEASED; urgency=low
+distem (0.5) unstable; urgency=low
 
   * Initial release.
 
- -- Lucas Nussbaum <lucas@lucas-nussbaum.net>  Fri, 29 Apr 2011 14:11:39 +0200
+ -- Lucas Nussbaum <lucas@debian.org>  Thu, 01 Sep 2011 19:51:08 +0200

@@ -1,13 +1,18 @@
 Source: distem
 Section: ruby
-Priority: extra
+Priority: optional
 Maintainer: Lucas Nussbaum <lucas.nussbaum@loria.fr>
-Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.4~)
-Standards-Version: 3.9.1
+Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.7~)
+Standards-Version: 3.9.2
+Vcs-Git: git://scm.gforge.inria.fr/distem/distem.git
+Vcs-Browser: https://gforge.inria.fr/scm/browser.php?group_id=3519
+Homepage: http://distem.gforge.inria.fr/
 XS-Ruby-Versions: all
 
 Package: distem
-Architecture: all
+Architecture: any
 XB-Ruby-Versions: ${ruby:Versions}
-Depends: ${shlibs:Depends}, ${misc:Depends}, ruby | ruby-interpreter, ruby-net-ssh, ruby-ipaddress, ruby-rest-client, ruby-sinatra, ruby-json, lxc, bridge-utils
+Depends: ${shlibs:Depends}, ${misc:Depends}, ruby | ruby-interpreter, ruby-net-ssh,
+ ruby-ipaddress, ruby-rest-client, ruby-sinatra, ruby-json, lxc, bridge-utils
 Description: FIXME
+ <insert long description, indented with spaces>
