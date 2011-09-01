@@ -48,7 +48,7 @@ Rake::TestTask.new("test_units") { |t|
 }
 
 desc "Generate source tgz package"
-Rake::PackageTask::new("distem","0.1") do |p|
+Rake::PackageTask::new("distem","0.5") do |p|
   p.need_tar_gz = true
   p.package_files.include('lib/**/*')
   p.package_files.include('ext/**/*')
