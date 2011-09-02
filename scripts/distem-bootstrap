@@ -1,0 +1,102 @@
+#!/usr/bin/ruby -w
+require 'rubygems'
+require 'net/ssh/multi'
+
+USAGE="Usage: #{$0} [options] <nodes_file> [<script_to_execute>]"
+
+UTILS=["htop"]
+
+TMP_DEPENDENCIES=[
+	"cpufrequtils",
+	"ethtool"
+]
+
+PKG_NAME="distem"
+DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
+HTTP_PROXY="http://proxy:3128/"
+
+PATH_DISTEMD_LOGS="/tmp/distem/logs"
+
+
+options = {}
+options['init-pnodes'] = false
+options['coordinator'] = nil
+
+
+optparse = OptionParser.new(USAGE) do |opts|
+	opts.on( '-h', '--help', 'Display this screen' ) do
+  		puts opts
+  		exit
+	end
+	opts.on( '-i', '--init-pnodes [<coordinator_address>]', 'Launch the daemon' ) do |c|
+  		options['init-pnodes'] = true
+  		options['coordinator'] = c || nil
+  		exit
+	end
+end
+optparse.parse!
+
+unless ARGV.length >= 1
+  puts USAGE
+  exit
+end
+
+nodelist = []
+
+File.open(ARGV[0], 'r') do |f|
+  f.each{ |line| nodelist << line unless nodelist.include?(line) }
+end
+nodelist.sort!
+
+Net::SSH::Multi.start do |session|
+  if options['coordinator']
+    coordinator = options['coordinator']
+  else
+    coordinator = nodelist[0]
+  end
+  
+  if nodelist.include?(options['coordinator'])
+    nodelist.delete(coordinator)
+  else
+    puts "Warning: Coordinator not present in <nodes_file>"
+  end
+  
+	session.group :coord { session.use("root@#{coordinator}") }
+	session.group :nodes { nodelist.each{ |node| session.use("root@#{node}") } }
+
+	session.exec "export http_proxy #{HTTP_PROXY}"
+
+	session.exec "echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list"
+
+	session.exec 'apt-get update')
+	session.exec "apt-get install -y --allow-unauthenticated #{PKG_NAME}"
+	session.exec "apt-get install -y #{TMP_DEPENDENCIES}"
+	session.exec "apt-get install -y #{UTILS}"
+	
+	if options['init-pnodes']
+	  puts "Running coordinator daemon on #{nodelist[0]}"
+	  session.with(:coord).exec "mkdir -p #{PATH_DISTEMD_LOGS}"
+	  session.with(:coord).exec "distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,"distemd.out"} &>#{File.join(PATH_DISTEMD_LOGS,"distemd.err"} &"
+	  sleep(1)
+	  nodelist.each do |node|
+	    session.with(:coord).exec "distem -i #{node}"
+    end
+	end
+	
+	if ARGV[1]
+	  puts "Executing script file"
+	  File.open(ARGV[1], 'r') do |f|
+	    filename = "/root/#{File.basename(ARGV[1])}"
+	    session.with(:coord).exec "echo '#{f.read}' > #{filename}"
+	    session.with(:coord).exec "chmod +x #{filename}"
+	    session.with(:coord).exec "./#{filename}"
+	  end
+	end
+
+end
+
+if ARGV[1]
+    puts "Script execution done"
+else
+  puts "Installation complete"
+end
