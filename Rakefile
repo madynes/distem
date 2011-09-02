@@ -79,3 +79,13 @@ task :snapshot do
   sh 'dpkg-buildpackage -us -uc'
   sh 'mv debian/changelog.git debian/changelog'
 end
+
+desc "Build the last distem package built inside sbuild"
+task :sbuild do
+  pkg = `cd .. ; ls distem*dsc | tail -1`.chomp
+
+  Dir::chdir('..') do
+    sh "sbuild -c distem32 --arch i386 #{pkg}"
+    sh "sbuild -c distem64 #{pkg}"
+  end
+end
