@@ -70,3 +70,12 @@ desc "Builds a Debian package"
 task :debian do
   sh 'dpkg-buildpackage -us -uc'
 end
+
+desc "Builds a git snapshot package"
+task :snapshot do
+  sh 'cp debian/changelog debian/changelog.git'
+  date = `date --iso=seconds |sed 's/+.*//' |sed 's/[-T:]//g'`.chomp
+  sh "sed -i '1 s/)/+git#{date})/' debian/changelog"
+  sh 'dpkg-buildpackage -us -uc'
+  sh 'mv debian/changelog.git debian/changelog'
+end
