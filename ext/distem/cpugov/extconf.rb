@@ -4,4 +4,4 @@ libs=[]
 
 libs.each { |lib| raise "Missing library '#{lib}'" unless have_library(lib) }
 
-create_makefile('cpugov')
+create_makefile('distem/cpugov')
