@@ -10,8 +10,6 @@ module Distem
       PATH_DISTEMD_LOG_OUT=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.out")
       # The file used to store the stderr logs for the launched daemons
       PATH_DISTEMD_LOG_ERR=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.err")
-      # Path to the ruby binary
-      PATH_BIN_RUBY='/usr/bin/ruby'
       # Paths to the SSH key files
       PATH_SSH_KEYS=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
 
@@ -30,8 +28,7 @@ module Distem
 
               str = ssh.exec!("lsof -Pnl -i4")
               unless /^distemd .*/.match(str)
-              ssh.exec!("#{Lib::FileManager::PATH_DISTEM_BIN}/distemd " \
-                "1>#{PATH_DISTEMD_LOG_OUT} &>#{PATH_DISTEMD_LOG_ERR} &")
+              ssh.exec!("distemd 1>#{PATH_DISTEMD_LOG_OUT} &>#{PATH_DISTEMD_LOG_ERR} &")
               end
             end
           rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH
