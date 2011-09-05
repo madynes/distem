@@ -1,8 +1,10 @@
-#!/usr/bin/ruby -w
+#!/usr/bin/ruby
 require 'rubygems'
 require 'net/ssh/multi'
+require 'net/scp'
 
-USAGE="Usage: #{$0} [options] <nodes_file> [<script_to_execute>]"
+USAGE="Usage: #{$0} [options] [<script_to_execute>]"
+SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 
 UTILS=["htop"]
 
@@ -18,9 +20,15 @@ HTTP_PROXY="http://proxy:3128/"
 PATH_DISTEMD_LOGS="/tmp/distem/logs"
 
 
+def g5k?
+  `hostname --fqdn`.chomp =~ /grid5000.fr$/
+end
+
+
 options = {}
 options['init-pnodes'] = false
 options['coordinator'] = nil
+options['node-list'] = nil
 
 
 optparse = OptionParser.new(USAGE) do |opts|
@@ -31,71 +39,127 @@ optparse = OptionParser.new(USAGE) do |opts|
 	opts.on( '-i', '--init-pnodes [<coordinator_address>]', 'Launch the daemon' ) do |c|
   		options['init-pnodes'] = true
   		options['coordinator'] = c || nil
-  		exit
+	end
+	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
+  		options['node-list'] = n
 	end
 end
 optparse.parse!
 
-unless ARGV.length >= 1
-  puts USAGE
-  exit
-end
-
 nodelist = []
 
-File.open(ARGV[0], 'r') do |f|
-  f.each{ |line| nodelist << line unless nodelist.include?(line) }
+if options['node-list']
+	nodelist_file = options['node-list']
+elsif (ENV['GOOD_NODES'])
+	nodelist_file = ENV['GOOD_NODES']
+elsif (ENV['OAR_FILE_NODES'])
+	nodelist_file = ENV['OAR_FILE_NODES']
+else
+  puts "<nodelist> not set"
+  exit 1
+end
+
+begin
+	File.open(nodelist_file, 'r') do |f|
+	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
+	end
+rescue Errno::ENOENT
+	puts "File '#{options['node-list']}' not found"
+	exit 1
+end
+
+
+if nodelist.empty?
+	puts "<nodelist> is empty"
+	exit
 end
 nodelist.sort!
 
-Net::SSH::Multi.start do |session|
-  if options['coordinator']
-    coordinator = options['coordinator']
-  else
-    coordinator = nodelist[0]
-  end
-  
-  if nodelist.include?(options['coordinator'])
-    nodelist.delete(coordinator)
-  else
-    puts "Warning: Coordinator not present in <nodes_file>"
-  end
-  
-	session.group :coord { session.use("root@#{coordinator}") }
-	session.group :nodes { nodelist.each{ |node| session.use("root@#{node}") } }
 
-	session.exec "export http_proxy #{HTTP_PROXY}"
+if options['coordinator']
+	coordinator = options['coordinator']
+else
+	coordinator = nodelist[0]
+end
+
+if nodelist.include?(coordinator)
+	nodelist.delete(coordinator)
+else
+	puts "### Warning: Coordinator not present in <nodes_file>"
+end
+
+sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
+if sshkeyfiles.empty?
+  puts "No ssh private key file found (specify one with -k)"
+  exit 1
+else
+  puts "Copying ssh private key file to the coordinator machine (#{coordinator})"
+  `scp #{sshkeyfiles[0]} root@#{coordinator}:/root/.ssh/`
+end
+
+
+if g5k? and `g5k-subnets`.strip.empty?
+  puts '### Warning: you did not make a subnet reservation (See g5k-subnets)'
+end
+
+Net::SSH::Multi.start do |session|  
+	session.group :coord do 
+    session.use("root@#{coordinator}")
+  end
+	session.group :nodes do
+    nodelist.each{ |node| session.use("root@#{node}") }
+  end
+
+	session.exec "export http_proxy=#{HTTP_PROXY}"
 
 	session.exec "echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list"
 
-	session.exec 'apt-get update')
-	session.exec "apt-get install -y --allow-unauthenticated #{PKG_NAME}"
-	session.exec "apt-get install -y #{TMP_DEPENDENCIES}"
-	session.exec "apt-get install -y #{UTILS}"
+  puts "Updating debian packages list"
+	session.exec('apt-get update -q') { |ch, stream, data| }
+  puts "Installing debian distem packages"
+  session.exec("yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{PKG_NAME}") { |ch, stream, data| }
+  puts "Installing debian misc packages"
+	session.exec("apt-get install -q -y #{TMP_DEPENDENCIES.join(' ')}") { |ch, stream, data| }
+	session.exec("apt-get install -q -y #{UTILS.join(' ')}") { |ch, stream, data| }
+  session.loop
 	
 	if options['init-pnodes']
 	  puts "Running coordinator daemon on #{nodelist[0]}"
-	  session.with(:coord).exec "mkdir -p #{PATH_DISTEMD_LOGS}"
-	  session.with(:coord).exec "distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,"distemd.out"} &>#{File.join(PATH_DISTEMD_LOGS,"distemd.err"} &"
+	  session.exec "killall distemd"
 	  sleep(1)
+	  session.with(:coord).exec "mkdir -p #{PATH_DISTEMD_LOGS}"
+	  session.with(:coord).exec "distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,'distemd.out')} &>#{File.join(PATH_DISTEMD_LOGS,'distemd.err')} &"
+	  sleep(2)
 	  nodelist.each do |node|
-	    session.with(:coord).exec "distem -i #{node}"
+	    session.with(:coord).exec "distem -d #{coordinator} -i #{node}" do |ch, stream, data|
+	      if stream == :stderr
+	        puts "### Error: Failed to initialize #{node}"
+	        puts data
+	      else
+	        puts "\tInitialized #{node}"
+	      end
+	    end
     end
 	end
 	
-	if ARGV[1]
+	if ARGV[0]
 	  puts "Executing script file"
-	  File.open(ARGV[1], 'r') do |f|
-	    filename = "/root/#{File.basename(ARGV[1])}"
-	    session.with(:coord).exec "echo '#{f.read}' > #{filename}"
-	    session.with(:coord).exec "chmod +x #{filename}"
-	    session.with(:coord).exec "./#{filename}"
-	  end
+	  begin
+		  File.open(ARGV[0], 'r') do |f|
+		    filename = "/root/#{File.basename(ARGV[0])}"
+		    session.with(:coord).exec "echo '#{f.read}' > #{filename}"
+		    session.with(:coord).exec "chmod +x #{filename}"
+		    session.with(:coord).exec "./#{filename}"
+		  end
+	  rescue Errno::ENOENT
+      puts "Script file '#{ARGV[0]}' not found"
+      exit 1
+    end
 	end
 
 end
 
-if ARGV[1]
+if ARGV[0]
     puts "Script execution done"
 else
   puts "Installation complete"
