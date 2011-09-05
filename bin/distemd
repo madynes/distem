@@ -23,10 +23,8 @@ optparse.parse!
 
 if (options['f_daemon'])
   puts "Starting the server in Daemon mode"
-  daemon = Distem::NetAPI::ServerDaemon.new
-  daemon.run
+  Distem::NetAPI::ServerDaemon.run!
 else
   puts "Starting the server in Node mode"
-  daemon = Distem::NetAPI::ServerNode.new
-  daemon.run
+  Distem::NetAPI::ServerNode.run!
 end

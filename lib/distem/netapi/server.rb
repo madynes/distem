@@ -17,7 +17,7 @@ module Distem
       HTTP_STATUS_INTERN_SERV_ERROR = 500
       HTTP_STATUS_NOT_IMPLEMENTED = 501
 
-      set :environment, :developpement
+      set :environment, :development
       set :run, true
       set :verbose, true
 
