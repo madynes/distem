@@ -10,21 +10,20 @@ module Distem
       # The maximum simultaneous extracting task number
       MAX_SIMULTANEOUS_EXTRACT = 8
 
-      PATH_CURRENT=File.expand_path(File.dirname(__FILE__)) # :nodoc:
-      PATH_DISTEM_BIN=File.expand_path('../../../bin/',PATH_CURRENT) # :nodoc:
-      PATH_DISTEM_LOGS=File.expand_path('../../../logs/',PATH_CURRENT) # :nodoc:
+      PATH_DISTEM_BIN='/usr/bin/' # :nodoc:
+      PATH_DISTEM_LOGS='/var/log/distem/' # :nodoc:
 
       # The directory used to store downloaded files
-      PATH_DEFAULT_DOWNLOAD="/tmp/distem/downloads/"
+      PATH_DEFAULT_DOWNLOAD='/tmp/distem/downloads/'
       # The directory used to store archive extraction cache
-      PATH_DEFAULT_CACHE="/tmp/distem/extractcache/"
+      PATH_DEFAULT_CACHE='/tmp/distem/extractcache/'
       # The directory used to store compressed files
-      PATH_DEFAULT_COMPRESS="/tmp/distem/files/"
+      PATH_DEFAULT_COMPRESS='/tmp/distem/files/'
 
-      BIN_TAR="tar" # :nodoc:
-      BIN_GUNZIP="gunzip" # :nodoc:
-      BIN_BUNZIP2="bunzip2" # :nodoc:
-      BIN_UNZIP="unzip" # :nodoc:
+      BIN_TAR='tar' # :nodoc:
+      BIN_GUNZIP='gunzip' # :nodoc:
+      BIN_BUNZIP2='bunzip2' # :nodoc:
+      BIN_UNZIP='unzip' # :nodoc:
 
       @@initcachelock = {}
       @@cachelock = {}
