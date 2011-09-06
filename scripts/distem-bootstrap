@@ -4,11 +4,10 @@ require 'net/ssh/multi'
 require 'net/scp'
 
 USAGE="Usage: #{$0} [options] [<script_to_execute>]"
-SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 
-UTILS=["htop"]
+pkg_utils=["htop"]
 
-TMP_DEPENDENCIES=[
+pkg_tmp_dependencies=[
 	"cpufrequtils",
 	"ethtool"
 ]
@@ -16,47 +15,145 @@ TMP_DEPENDENCIES=[
 PKG_NAME="distem"
 DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
 HTTP_PROXY="http://proxy:3128/"
+SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
+PATH_DISTEMD_LOGS="/var/log/distem"
 
-PATH_DISTEMD_LOGS="/tmp/distem/logs"
-
+options = {}
+@options = options
 
 def g5k?
   `hostname --fqdn`.chomp =~ /grid5000.fr$/
 end
 
 
-options = {}
-options['init-pnodes'] = false
-options['coordinator'] = nil
-options['node-list'] = nil
+MSG_ERROR=0
+MSG_WARNING=1
+MSG_INFO=2
 
+def msg(str, type=nil, quit=false)
+  case type
+  when MSG_ERROR
+    puts("### Error: #{str} ###")
+  when MSG_WARNING
+    puts("### Warning: #{str} ###")
+  when MSG_INFO
+    puts(">>> #{str}")
+  else
+    puts str
+  end
+  exit 1 if quit
+end
+
+def open_channel(session, group = nil)
+  if group.is_a?(Symbol)
+    session.with(group).open_channel do |channel|
+      yield(channel)
+    end
+  elsif group.is_a?(Array)
+    session.on(*group).open_channel do |channel|
+      yield(channel)
+    end
+  else
+    session.open_channel do |channel|
+      yield(channel)
+    end
+  end
+end
+
+def exec(session, cmd, group = nil, critical = false, showerr = true)
+  outs = {}
+  err = ""
+  
+  channel = open_channel(session,group) do |chtmp|
+    chtmp.exec(cmd) do |ch, success|
+      unless success
+        msg("unable to execute '#{cmd}' on #{ch.connection.host}",MSG_ERROR)
+      end
+      msg("Executing '#{cmd}' on #{ch.connection.host}]",MSG_INFO) if @options[:debug]
+    end
+  end
+  
+  channel.on_data do |chtmp,data|
+    outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
+    outs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host}] #{data.strip}") if @options[:debug]
+  end
+  
+  channel.on_extended_data do |chtmp,type,data|
+    err = data.strip
+  end
+  
+  channel.on_request("exit-status") do |chtmp, data|
+    status = data.read_long
+    if status != 0 and showerr
+      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed with return status #{status.to_s}",MSG_ERROR)
+      msg("---stderr dump---\n#{err}\n---")
+      exit 1 if critical
+    end
+  end
+  
+  channel.wait
+  
+  return outs
+end
+
+
+options[:init_pnodes] = false
+options[:coordinator] = nil
+options[:node_list] = nil
+options[:packages] = []
+options[:git_version] = nil
+options[:ssh_key] = nil
+options[:debug] = false
+options[:version] = nil
 
 optparse = OptionParser.new(USAGE) do |opts|
 	opts.on( '-h', '--help', 'Display this screen' ) do
   		puts opts
   		exit
 	end
+	
 	opts.on( '-i', '--init-pnodes [<coordinator_address>]', 'Launch the daemon' ) do |c|
-  		options['init-pnodes'] = true
-  		options['coordinator'] = c || nil
+  	options[:init_pnodes] = true
+  	options[:coordinator] = c || nil
 	end
+	
 	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
-  		options['node-list'] = n
+  	options[:node_list] = n
+	end
+	
+	opts.on( '-v', '--version <distem_version>', 'Specify the version of distem to be installed' ) do |v|
+  	options[:version] = v
+	end
+	
+	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
+  	options[:debug] = true
+	end
+	
+	opts.on( '-k', '--ssh-key', 'Specify the path of the ssh private key to use' ) do |k|
+  	options[:ssh_key] = k
+	end
+	
+	opts.on( '-g', '--git <git_hash|git_tag>', 'Specify a specific version to install from git repository' ) do |n|
+  	options[:git_version] = n
+	end
+	
+	opts.on( '-p', '--packages <package1>,<package2>,<...>', Array, 'Specify additional packages to be installed' ) do |p|
+  	options[:packages] = p
 	end
 end
 optparse.parse!
 
 nodelist = []
 
-if options['node-list']
-	nodelist_file = options['node-list']
+if options[:node_list]
+	nodelist_file = options[:node_list]
 elsif (ENV['GOOD_NODES'])
 	nodelist_file = ENV['GOOD_NODES']
-elsif (ENV['OAR_FILE_NODES'])
-	nodelist_file = ENV['OAR_FILE_NODES']
+elsif (ENV['OAR_NODEFILE'])
+	nodelist_file = ENV['OAR_NODEFILE']
 else
-  puts "<nodelist> not set"
-  exit 1
+  msg("nodelist parameter not set",MSG_ERROR,true)
 end
 
 begin
@@ -64,20 +161,19 @@ begin
 	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
 	end
 rescue Errno::ENOENT
-	puts "File '#{options['node-list']}' not found"
+	puts "File '#{nodelist_file}' not found"
 	exit 1
 end
 
 
 if nodelist.empty?
-	puts "<nodelist> is empty"
-	exit
+  msg("nodelist parameter empty",MSG_ERROR,true)
 end
 nodelist.sort!
 
 
-if options['coordinator']
-	coordinator = options['coordinator']
+if options[:coordinator]
+	coordinator = options[:coordinator]
 else
 	coordinator = nodelist[0]
 end
@@ -85,82 +181,92 @@ end
 if nodelist.include?(coordinator)
 	nodelist.delete(coordinator)
 else
-	puts "### Warning: Coordinator not present in <nodes_file>"
+	msg("Coordinator not present in <nodes_file>",MSG_WARNING)
 end
 
-sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
-if sshkeyfiles.empty?
-  puts "No ssh private key file found (specify one with -k)"
-  exit 1
+if options[:ssh_key]
+  if File.exists?(options[:ssh_key])
+    sshkeyfile = options[:ssh_key]
+  else
+    msg("ssh key #{options[:ssh_key]} not found",MSG_ERR,true)
+  end
 else
-  puts "Copying ssh private key file to the coordinator machine (#{coordinator})"
-  `scp #{sshkeyfiles[0]} root@#{coordinator}:/root/.ssh/`
+  sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
+  if sshkeyfiles.empty?
+    msg("no ssh private key file found (specify one with -k)",MSG_ERROR,true)
+  else
+    sshkeyfile = sshkeyfiles[0]
+  end
 end
+msg("Copying ssh private key file to the coordinator machine (#{coordinator})",MSG_INFO)
+`scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
 
 
 if g5k? and `g5k-subnets`.strip.empty?
-  puts '### Warning: you did not make a subnet reservation (See g5k-subnets)'
+  msg('you did not make a subnet reservation (See g5k-subnets)',MSG_WARNING)
 end
 
-Net::SSH::Multi.start do |session|  
+Net::SSH::Multi.start do |session|
+  nodeobjlist = {}
 	session.group :coord do 
-    session.use("root@#{coordinator}")
+    nodeobjlist[coordinator] = session.use("root@#{coordinator}")
   end
 	session.group :nodes do
-    nodelist.each{ |node| session.use("root@#{node}") }
+    nodelist.each{ |node| nodeobjlist[node] = session.use("root@#{node}") }
   end
+  
+	exec(session,"export http_proxy=#{HTTP_PROXY}")
 
-	session.exec "export http_proxy=#{HTTP_PROXY}"
+	exec(session,"echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
 
-	session.exec "echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list"
-
-  puts "Updating debian packages list"
-	session.exec('apt-get update -q') { |ch, stream, data| }
-  puts "Installing debian distem packages"
-  session.exec("yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{PKG_NAME}") { |ch, stream, data| }
-  puts "Installing debian misc packages"
-	session.exec("apt-get install -q -y #{TMP_DEPENDENCIES.join(' ')}") { |ch, stream, data| }
-	session.exec("apt-get install -q -y #{UTILS.join(' ')}") { |ch, stream, data| }
+  msg("Updating debian packages list",MSG_INFO)
+	exec(session,'apt-get update -q')
+  msg("Installing debian distem packages",MSG_INFO)
+  distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
+  exec(session,"yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
+  msg("Installing debian misc packages",MSG_INFO)
+	exec(session,"apt-get install -q -y #{pkg_tmp_dependencies.join(' ')}")
+	exec(session,"apt-get install -q -y #{pkg_utils.join(' ')}")
+	options[:packages].each do |pkg|
+	  msg("Installing additional debian package '#{pkg}'",MSG_INFO)
+	  exec(session,"apt-get install -q -y #{pkg}")
+	end
+	
   session.loop
 	
-	if options['init-pnodes']
-	  puts "Running coordinator daemon on #{nodelist[0]}"
-	  session.exec "killall distemd"
-	  sleep(1)
-	  session.with(:coord).exec "mkdir -p #{PATH_DISTEMD_LOGS}"
-	  session.with(:coord).exec "distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,'distemd.out')} &>#{File.join(PATH_DISTEMD_LOGS,'distemd.err')} &"
+	if options[:init_pnodes]
+	  msg("Running coordinator daemon on #{nodelist[0]}",MSG_INFO)
+	  tokill = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false).keys
+	  unless tokill.empty?
+	    tokill.collect!{ |node| nodeobjlist[node] }
+	    exec(session,"killall distemd",tokill)
+	    session.loop
+	    #sleep(1)
+	  end
+	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
+	  exec(session,"distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,'distemd.out')} &>#{File.join(PATH_DISTEMD_LOGS,'distemd.err')} &",:coord,true)
 	  sleep(2)
 	  nodelist.each do |node|
-	    session.with(:coord).exec "distem -d #{coordinator} -i #{node}" do |ch, stream, data|
-	      if stream == :stderr
-	        puts "### Error: Failed to initialize #{node}"
-	        puts data
-	      else
-	        puts "\tInitialized #{node}"
-	      end
-	    end
+	    exec(session,"distem -d #{coordinator} -i #{node}",:coord,true)
     end
 	end
 	
+	str = "Install done"
+  str += ", coordinator: #{coordinator}" if options[:init_pnodes]
+  msg(str)
+	
 	if ARGV[0]
-	  puts "Executing script file"
+	  msg("Executing script file",MSG_INFO)
 	  begin
 		  File.open(ARGV[0], 'r') do |f|
 		    filename = "/root/#{File.basename(ARGV[0])}"
-		    session.with(:coord).exec "echo '#{f.read}' > #{filename}"
-		    session.with(:coord).exec "chmod +x #{filename}"
-		    session.with(:coord).exec "./#{filename}"
+		    exec(session,"echo '#{f.read}' > #{filename}",:coord)
+		    exec(session,"chmod +x #{filename}",:coord)
+		    exec(session,filename,:coord)
 		  end
+		  msg("Script execution done",MSG_INFO)
 	  rescue Errno::ENOENT
-      puts "Script file '#{ARGV[0]}' not found"
-      exit 1
+      msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
     end
 	end
-
-end
-
-if ARGV[0]
-    puts "Script execution done"
-else
-  puts "Installation complete"
 end
