@@ -17,7 +17,7 @@ module Distem
       # * +serveraddr+ The REST server address (String)
       # * +port+ The port the REST server is listening on
       #
-      def initialize(serveraddr,port=4567)
+      def initialize(serveraddr="localhost",port=4567)
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
