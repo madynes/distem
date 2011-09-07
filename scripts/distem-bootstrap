@@ -14,18 +14,15 @@ pkg_tmp_dependencies=[
 
 pkg_build=[
   "git",
-  "debhelper",
-  "gem2deb",
-  "rubygems",
   "rake"
 ]
 pkg_build_gem=[
-  "rake-compiler"
+  #"rake-compiler"
 ]
 
 PKG_NAME="distem"
 DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
-GIT_REPOSITORY="scm.gforge.inria.fr//gitroot//distem/distem.git"
+GIT_REPOSITORY="http://public.nancy.grid5000.fr/~lsarzyniec/distem.git"
 HTTP_PROXY="http://proxy:3128/"
 SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS="/var/log/distem"
@@ -73,9 +70,9 @@ def open_channel(session, group = nil)
   end
 end
 
-def exec(session, cmd, group = nil, critical = false, showerr = true)
+def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
   outs = {}
-  err = ""
+  errs = {}
   
   channel = open_channel(session,group) do |chtmp|
     chtmp.exec(cmd) do |ch, success|
@@ -89,18 +86,23 @@ def exec(session, cmd, group = nil, critical = false, showerr = true)
   channel.on_data do |chtmp,data|
     outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
     outs[chtmp.connection.host] << data.strip
-    msg("[#{chtmp.connection.host}] #{data.strip}") if @options[:debug]
+    msg("[#{chtmp.connection.host}] #{data.strip}") if @options[:debug] or showout
   end
   
   channel.on_extended_data do |chtmp,type,data|
-    err = data.strip
+    errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
+    errs[chtmp.connection.host] << data.strip
   end
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
     if status != 0 and showerr
       msg("exec of '#{cmd}' on #{chtmp.connection.host} failed with return status #{status.to_s}",MSG_ERROR)
-      msg("---stderr dump---\n#{err}\n---")
+      msg("---stdout dump---")
+      outs[chtmp.connection.host].each { |out| msg(out) } if outs[chtmp.connection.host]
+      msg("---stderr dump---")
+      errs[chtmp.connection.host].each { |err| msg(err) } if errs[chtmp.connection.host]
+      msg("---\n")
       exit 1 if critical
     end
   end
@@ -147,8 +149,8 @@ optparse = OptionParser.new(USAGE) do |opts|
   	options[:ssh_key] = k
 	end
 	
-	opts.on( '-g', '--git <git_hash|git_tag>', 'Specify a specific version to install from git repository' ) do |n|
-  	options[:git] = n
+	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build.join(",")} + gem: #{pkg_build_gem.join(",")})" ) do |n|
+  	options[:git] = n || :git_last
 	end
 	
 	opts.on( '-p', '--packages <package1>,<package2>,<...>', Array, 'Specify additional packages to be installed' ) do |p|
@@ -183,7 +185,6 @@ if nodelist.empty?
   msg("nodelist parameter empty",MSG_ERROR,true)
 end
 nodelist.sort!
-
 
 if options[:coordinator]
 	coordinator = options[:coordinator]
@@ -228,14 +229,12 @@ Net::SSH::Multi.start do |session|
     nodelist.each{ |node| nodeobjlist[node] = session.use("root@#{node}") }
   end
   
-	#exec(session,"echo 'Host *\nStrictHostKeyChecking no' >> /root/.ssh/config",:coord)
-
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",nil,false,false).keys
 	needsources = (nodelist + [coordinator]) - havesources
 	
 	unless needsources.empty?
     needsources.collect!{ |node| nodeobjlist[node] }
-    exec(session,"echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list", needsources)
+    exec(session,"echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list", needsources)
     session.loop
   end
 
@@ -243,59 +242,92 @@ Net::SSH::Multi.start do |session|
   exec(session,'apt-get update -q')
   
   if options[:git]
+=begin
+    keycheck = exec(session,"grep StrictHostKeyChecking /root/.ssh/config",:coord)
+    if keycheck.empty?
+      msg("Disabling SSH StrictHostKeyChecking config on #{coordinator}",MSG_INFO)
+      exec(session,"echo 'Host *\nStrictHostKeyChecking no' >> /root/.ssh/config",:coord)
+    end
+=end
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
-    exec(session,"apt-get install -q -y --force-yes #{pkg_build.join(' ')}",:coord,true)
-    msg("Installing gems build packages on #{coordinator}",MSG_INFO)
-    exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem.join(' ')}",:coord,true)
-    exec(session,"rm -Rf #{TMP_DIR}")
-    exec(session,"mkdir -p #{TMP_DIR}")
+    exec(session,"apt-get build-dep -y --force-yes distem",:coord,true)
+    exec(session,"apt-get install -q -y --force-yes #{pkg_build.join(' ')}",:coord,true) unless pkg_build.empty?
+    unless pkg_build_gem.empty?
+      msg("Installing gems build packages on #{coordinator}",MSG_INFO)
+      exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem.join(' ')}",:coord,true)
+    end
     gitdir = "#{TMP_DIR}/git"
+    exec(session,"mkdir -p #{TMP_DIR}")
     exec(session,"rm -Rf #{gitdir}",:coord)
-    msg("Retriving git repository on #{coordinator}",MSG_INFO)
-    exec(session,"yes | head -n1 | git clone git+ssh://olbat@#{GIT_REPOSITORY} #{gitdir}",:coord,true)
-    msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",MSG_INFO)
-    exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",:coord,true)
+    msg("Retriving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
+    exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord,true)
+    unless options[:git] == :git_last
+      msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",MSG_INFO)
+      exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",:coord,true)
+    end
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
+    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord,true)
     
-    #>>> FIXME: Change this directory by the right path to the debian archive
-    debarchivefile = exec(session,"head -1 #{gitdir}/debian/files",:coord)[coordinator][0]
-    debarchivefile = "/#{debarchivefile.split[0]}"
-    msg("Copying generated debian package #{debarchivefile}",MSG_INFO)
-    exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
+    debarchivefile = exec(session,"find #{TMP_DIR} -name *.deb",:coord)[coordinator][0]
+    msg("Copying generated debian package #{File.basename(debarchivefile)}",MSG_INFO)
+    #exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
     nodelist.each {|node| exec(session,"scp #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
-    exec(session,"dpkg -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
-    exec(session,"yes | head -n1 | apt-get install -f -y --force-yes",nil,true)
+    msg("Installing generated debian package #{File.basename(debarchivefile)}",MSG_INFO)
+    depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",:coord)[coordinator][0]
+    depends = depends.split("|").last.gsub!(' ','')
+    exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,false,false)
+    exec(session,"apt-get install -f -y --force-yes",nil,true)
+    msg("Cleaning installation files on #{coordinator}",MSG_INFO)
+    exec(session,"rm -Rf #{gitdir}",:coord)
+    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
-    exec(session,"yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
+    exec(session,"apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
 	end
 	
 	msg("Installing debian misc packages",MSG_INFO)
-  exec(session,"apt-get install -q -y #{pkg_tmp_dependencies.join(' ')}")
-  exec(session,"apt-get install -q -y #{pkg_utils.join(' ')}")
+  exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies.join(' ')}") unless pkg_tmp_dependencies.empty?
+  exec(session,"apt-get install -q -y --force-yes #{pkg_utils.join(' ')}") unless pkg_utils.empty?
   options[:packages].each do |pkg|
     msg("Installing additional debian package '#{pkg}'",MSG_INFO)
-    exec(session,"apt-get install -q -y #{pkg}")
+    exec(session,"apt-get install -q -y --force-yes #{pkg}")
   end
   
   session.loop
 	
 	if options[:init_pnodes]
-	  msg("Running coordinator daemon on #{nodelist[0]}",MSG_INFO)
-	  tokill = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false).keys
-	  unless tokill.empty?
+	  launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false)
+	  unless launched.empty?
+	    tokill = launched.keys
 	    tokill.collect!{ |node| nodeobjlist[node] }
-	    exec(session,"killall distemd",tokill)
+	    tokill.each { |node| msg("Killed previous run of distem on #{node}",MSG_INFO) }
+	    exec(session,"killall distemd",tokill,false,false)
+	    until launched.empty?
+	      launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",tokill,false,false)
+	      if launched and !launched.empty?
+	        tokill = launched.keys
+	        tokill.collect!{ |node| nodeobjlist[node] }
+	      end
+	    end
 	    session.loop
-	    #sleep(1)
 	  end
+	  msg("Running coordinator daemon on #{coordinator}",MSG_INFO)
 	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-	  exec(session,"distemd -d 1>#{File.join(PATH_DISTEMD_LOGS,'distemd.out')} &>#{File.join(PATH_DISTEMD_LOGS,'distemd.err')} &",:coord,true)
-	  sleep(2)
+	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",:coord,true)
+	  
+	  launched = []
+	  while launched and launched.empty?
+	    launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",:coord,false,false)[coordinator]
+      sleep(0.1)
+    end
+    msg("Coordinator daemon launched on #{coordinator}",MSG_INFO)
+    session.loop
+	  exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true)
 	  nodelist.each do |node|
-	    exec(session,"distem -d #{coordinator} -i #{node}",:coord,true)
+	    msg("Initializing node #{node}",MSG_INFO)
+	    exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,false,true)
     end
 	end
 	
