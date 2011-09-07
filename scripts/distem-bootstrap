@@ -228,7 +228,7 @@ Net::SSH::Multi.start do |session|
     nodelist.each{ |node| nodeobjlist[node] = session.use("root@#{node}") }
   end
   
-	exec(session,"export http_proxy=#{HTTP_PROXY}")
+	#exec(session,"echo 'Host *\nStrictHostKeyChecking no' >> /root/.ssh/config",:coord)
 
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",nil,false,false).keys
 	needsources = (nodelist + [coordinator]) - havesources
@@ -244,7 +244,7 @@ Net::SSH::Multi.start do |session|
   
   if options[:git]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
-    exec(session,"apt-get install -q -y #{pkg_build.join(' ')}",:coord,true)
+    exec(session,"apt-get install -q -y --force-yes #{pkg_build.join(' ')}",:coord,true)
     msg("Installing gems build packages on #{coordinator}",MSG_INFO)
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem.join(' ')}",:coord,true)
     exec(session,"rm -Rf #{TMP_DIR}")
@@ -256,15 +256,16 @@ Net::SSH::Multi.start do |session|
     msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",MSG_INFO)
     exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",:coord,true)
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
-    exec(session,"rake -f #{gitdir}/Rakefile snapshot",:coord)
-    msg("Copying generated debian package of distem",MSG_INFO)
-    #>>> FIXME: Change this directory by the path to the debian archive
-    debarchivefile = "#{gitdir}/debian/copyright"
+    exec(session,"cd #{gitdir}; rake snapshot",:coord,true)
+    
+    #>>> FIXME: Change this directory by the right path to the debian archive
+    debarchivefile = exec(session,"head -1 #{gitdir}/debian/files",:coord)[coordinator][0]
+    debarchivefile = "/#{debarchivefile.split[0]}"
+    msg("Copying generated debian package #{debarchivefile}",MSG_INFO)
     exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
     nodelist.each {|node| exec(session,"scp #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
     exec(session,"dpkg -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
-    exec(session,"apt-get build-dep distem",nil,true)
-    exec(session,"apt-get install -f")
+    exec(session,"yes | head -n1 | apt-get install -f -y --force-yes",nil,true)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
