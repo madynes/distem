@@ -5,7 +5,9 @@ require 'net/scp'
 
 USAGE="Usage: #{$0} [options] [<script_to_execute>]"
 
-pkg_utils=["htop"]
+pkg_utils=[
+  "htop"
+]
 
 pkg_tmp_dependencies=[
 	"cpufrequtils",
@@ -16,6 +18,7 @@ pkg_build=[
   "git",
   "rake"
 ]
+
 pkg_build_gem=[
   #"rake-compiler"
 ]
@@ -61,6 +64,10 @@ def open_channel(session, group = nil)
     end
   elsif group.is_a?(Array)
     session.on(*group).open_channel do |channel|
+      yield(channel)
+    end
+  elsif group.is_a?(Net::SSH::Multi::Server)
+    session.on(group).open_channel do |channel|
       yield(channel)
     end
   else
@@ -121,6 +128,8 @@ options[:git] = nil
 options[:ssh_key] = nil
 options[:debug] = false
 options[:version] = nil
+options[:debug_distem] = false
+
 
 optparse = OptionParser.new(USAGE) do |opts|
 	opts.on( '-h', '--help', 'Display this screen' ) do
@@ -155,6 +164,10 @@ optparse = OptionParser.new(USAGE) do |opts|
 	
 	opts.on( '-p', '--packages <package1>,<package2>,<...>', Array, 'Specify additional packages to be installed' ) do |p|
   	options[:packages] = p
+	end
+	
+	opts.on( '-s', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+  	options[:debug_distem] = true
 	end
 end
 optparse.parse!
@@ -222,12 +235,30 @@ end
 
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
-	session.group :coord do 
-    nodeobjlist[coordinator] = session.use("root@#{coordinator}")
+  begin
+	  session.group :coord do 
+        nodeobjlist[coordinator] = session.use("root@#{coordinator}")
+    end
+    #test the connection
+    exec(session,"hostname",:coord)
+    msg("Connection with #{coordinator} established",MSG_INFO)
+  rescue SocketError
+    msg("can't connect to #{coordinator}",MSG_ERROR,true)
   end
+  
 	session.group :nodes do
-    nodelist.each{ |node| nodeobjlist[node] = session.use("root@#{node}") }
+    nodelist.each do |node|
+      begin
+        nodeobjlist[node] = session.use("root@#{node}")
+        #test the connection
+        exec(session,"hostname",nodeobjlist[node])
+        msg("Connection with #{node} established",MSG_INFO)
+      rescue SocketError
+        msg("can't connect to #{node}",MSG_ERROR,true)
+      end
+    end
   end
+  
   
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",nil,false,false).keys
 	needsources = (nodelist + [coordinator]) - havesources
@@ -269,18 +300,18 @@ Net::SSH::Multi.start do |session|
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord,true)
     
-    debarchivefile = exec(session,"find #{TMP_DIR} -name *.deb",:coord)[coordinator][0]
+    debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",:coord)[coordinator][0]
     msg("Copying generated debian package #{File.basename(debarchivefile)}",MSG_INFO)
     #exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
-    nodelist.each {|node| exec(session,"scp #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
+    nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
     msg("Installing generated debian package #{File.basename(debarchivefile)}",MSG_INFO)
     depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",:coord)[coordinator][0]
     depends = depends.split("|").last.gsub!(' ','')
     exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,false,false)
     exec(session,"apt-get install -f -y --force-yes",nil,true)
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
-    exec(session,"rm -Rf #{gitdir}",:coord)
-    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
+    #exec(session,"rm -Rf #{gitdir}",:coord)
+    #exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
@@ -302,9 +333,11 @@ Net::SSH::Multi.start do |session|
 	  unless launched.empty?
 	    tokill = launched.keys
 	    tokill.collect!{ |node| nodeobjlist[node] }
-	    tokill.each { |node| msg("Killed previous run of distem on #{node}",MSG_INFO) }
+	    tokill.each { |node| msg("Killing previous run of distem on #{node}",MSG_INFO) }
 	    exec(session,"killall distemd",tokill,false,false)
-	    until launched.empty?
+	    time_start = Time.now
+	    until !launched or launched.empty?
+	      exec(session,"killall -9 distemd",tokill,false,false) if (Time.now - time_start) > 2
 	      launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",tokill,false,false)
 	      if launched and !launched.empty?
 	        tokill = launched.keys
@@ -313,7 +346,7 @@ Net::SSH::Multi.start do |session|
 	    end
 	    session.loop
 	  end
-	  msg("Running coordinator daemon on #{coordinator}",MSG_INFO)
+	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
 	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
 	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",:coord,true)
 	  
@@ -322,12 +355,13 @@ Net::SSH::Multi.start do |session|
 	    launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",:coord,false,false)[coordinator]
       sleep(0.1)
     end
-    msg("Coordinator daemon launched on #{coordinator}",MSG_INFO)
     session.loop
+    
+    msg("Initializing node #{coordinator}",MSG_INFO)
 	  exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true)
 	  nodelist.each do |node|
 	    msg("Initializing node #{node}",MSG_INFO)
-	    exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,false,true)
+	    exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,options[:debug_distem],options[:debug_distem])
     end
 	end
 	
@@ -336,15 +370,16 @@ Net::SSH::Multi.start do |session|
   msg(str)
 	
 	if ARGV[0]
-	  msg("Executing script file",MSG_INFO)
 	  begin
 		  File.open(ARGV[0], 'r') do |f|
 		    filename = "/root/#{File.basename(ARGV[0])}"
-		    exec(session,"echo '#{f.read}' > #{filename}",:coord)
+		    msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
+		    exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
 		    exec(session,"chmod +x #{filename}",:coord)
-		    exec(session,filename,:coord)
+		    msg("Executing script file '#{File.basename(filename)}' on #{coordinator}",MSG_INFO)
+		    exec(session,filename,:coord,true,options[:debug_distem],options[:debug_distem])
 		  end
-		  msg("Script execution done",MSG_INFO)
+		  msg("Script execution done")
 	  rescue Errno::ENOENT
       msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
     end
