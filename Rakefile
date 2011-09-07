@@ -8,13 +8,13 @@ begin
 
   Rake::ExtensionTask.new do |ext|
     ext.name = 'cpuhogs'
-    ext.ext_dir = 'ext/cpuhogs'
+    ext.ext_dir = 'ext/distem/cpuhogs'
     ext.lib_dir = 'lib/ext'
   end
 
   Rake::ExtensionTask.new do |ext|
     ext.name = 'cpugov'
-    ext.ext_dir = 'ext/cpugov'
+    ext.ext_dir = 'ext/distem/cpugov'
     ext.lib_dir = 'lib/ext'
   end
 rescue LoadError
