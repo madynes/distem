@@ -12,11 +12,24 @@ pkg_tmp_dependencies=[
 	"ethtool"
 ]
 
+pkg_build=[
+  "git",
+  "debhelper",
+  "gem2deb",
+  "rubygems",
+  "rake"
+]
+pkg_build_gem=[
+  "rake-compiler"
+]
+
 PKG_NAME="distem"
 DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
+GIT_REPOSITORY="scm.gforge.inria.fr//gitroot//distem/distem.git"
 HTTP_PROXY="http://proxy:3128/"
 SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS="/var/log/distem"
+TMP_DIR="/tmp/distem"
 
 options = {}
 @options = options
@@ -102,7 +115,7 @@ options[:init_pnodes] = false
 options[:coordinator] = nil
 options[:node_list] = nil
 options[:packages] = []
-options[:git_version] = nil
+options[:git] = nil
 options[:ssh_key] = nil
 options[:debug] = false
 options[:version] = nil
@@ -135,7 +148,7 @@ optparse = OptionParser.new(USAGE) do |opts|
 	end
 	
 	opts.on( '-g', '--git <git_hash|git_tag>', 'Specify a specific version to install from git repository' ) do |n|
-  	options[:git_version] = n
+  	options[:git] = n
 	end
 	
 	opts.on( '-p', '--packages <package1>,<package2>,<...>', Array, 'Specify additional packages to be installed' ) do |p|
@@ -217,21 +230,55 @@ Net::SSH::Multi.start do |session|
   
 	exec(session,"export http_proxy=#{HTTP_PROXY}")
 
-	exec(session,"echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
+  havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",nil,false,false).keys
+	needsources = (nodelist + [coordinator]) - havesources
+	
+	unless needsources.empty?
+    needsources.collect!{ |node| nodeobjlist[node] }
+    exec(session,"echo 'deb #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list", needsources)
+    session.loop
+  end
 
   msg("Updating debian packages list",MSG_INFO)
-	exec(session,'apt-get update -q')
-  msg("Installing debian distem packages",MSG_INFO)
-  distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
-  exec(session,"yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
-  msg("Installing debian misc packages",MSG_INFO)
-	exec(session,"apt-get install -q -y #{pkg_tmp_dependencies.join(' ')}")
-	exec(session,"apt-get install -q -y #{pkg_utils.join(' ')}")
-	options[:packages].each do |pkg|
-	  msg("Installing additional debian package '#{pkg}'",MSG_INFO)
-	  exec(session,"apt-get install -q -y #{pkg}")
+  exec(session,'apt-get update -q')
+  
+  if options[:git]
+    msg("Installing debian build packages on #{coordinator}",MSG_INFO)
+    exec(session,"apt-get install -q -y #{pkg_build.join(' ')}",:coord,true)
+    msg("Installing gems build packages on #{coordinator}",MSG_INFO)
+    exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem.join(' ')}",:coord,true)
+    exec(session,"rm -Rf #{TMP_DIR}")
+    exec(session,"mkdir -p #{TMP_DIR}")
+    gitdir = "#{TMP_DIR}/git"
+    exec(session,"rm -Rf #{gitdir}",:coord)
+    msg("Retriving git repository on #{coordinator}",MSG_INFO)
+    exec(session,"yes | head -n1 | git clone git+ssh://olbat@#{GIT_REPOSITORY} #{gitdir}",:coord,true)
+    msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",MSG_INFO)
+    exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",:coord,true)
+    msg("Building debian package of distem on #{coordinator}",MSG_INFO)
+    exec(session,"rake -f #{gitdir}/Rakefile snapshot",:coord)
+    msg("Copying generated debian package of distem",MSG_INFO)
+    #>>> FIXME: Change this directory by the path to the debian archive
+    debarchivefile = "#{gitdir}/debian/copyright"
+    exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
+    nodelist.each {|node| exec(session,"scp #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
+    exec(session,"dpkg -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
+    exec(session,"apt-get build-dep distem",nil,true)
+    exec(session,"apt-get install -f")
+  else
+    msg("Installing debian distem packages",MSG_INFO)
+    distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
+    exec(session,"yes | head -n1 | apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
 	end
 	
+	msg("Installing debian misc packages",MSG_INFO)
+  exec(session,"apt-get install -q -y #{pkg_tmp_dependencies.join(' ')}")
+  exec(session,"apt-get install -q -y #{pkg_utils.join(' ')}")
+  options[:packages].each do |pkg|
+    msg("Installing additional debian package '#{pkg}'",MSG_INFO)
+    exec(session,"apt-get install -q -y #{pkg}")
+  end
+  
   session.loop
 	
 	if options[:init_pnodes]
