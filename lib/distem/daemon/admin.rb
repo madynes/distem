@@ -6,10 +6,8 @@ module Distem
 
     # Class that allow to manage daemon administration methods such as initializing another physical node
     class Admin
-      # The file used to store the stdout logs for the launched daemons
-      PATH_DISTEMD_LOG_OUT=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.out")
-      # The file used to store the stderr logs for the launched daemons
-      PATH_DISTEMD_LOG_ERR=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.err")
+      # The file used to store the stdout and stderr logs for the launched daemons
+      PATH_DISTEMD_LOG=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.log")
       # Paths to the SSH key files
       PATH_SSH_KEYS=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
 
@@ -28,7 +26,7 @@ module Distem
 
               str = ssh.exec!("lsof -Pnl -i4")
               unless /^distemd .*/.match(str)
-              ssh.exec!("distemd 1>#{PATH_DISTEMD_LOG_OUT} &>#{PATH_DISTEMD_LOG_ERR} &")
+              ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
               end
             end
           rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH
