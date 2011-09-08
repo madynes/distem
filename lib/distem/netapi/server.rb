@@ -72,7 +72,7 @@ module Distem
       # ...
       
       #
-      post '/pnodes' do
+      post '/pnodes/?' do
         begin 
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
@@ -119,7 +119,7 @@ module Distem
       # ...
       
       #
-      delete '/pnodes/:pnode' do
+      delete '/pnodes/:pnode/?' do
         begin 
           ret = @daemon.pnode_quit(params['pnode'])
         rescue Lib::ParameterError => pe
@@ -164,7 +164,7 @@ module Distem
       # ...
       
       #
-      get '/pnodes/:pnode' do
+      get '/pnodes/:pnode/?' do
         begin
           ret = @daemon.pnode_get(params['pnode'])
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -215,7 +215,7 @@ module Distem
       # ...
       
       #
-      delete '/pnodes' do
+      delete '/pnodes/?' do
         begin 
           ret = @daemon.pnodes_quit()
         rescue Lib::ParameterError => pe
@@ -255,7 +255,7 @@ module Distem
       # ...
       
       #
-      get '/pnodes' do
+      get '/pnodes/?' do
         begin
           ret = @daemon.pnodes_get()
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -303,7 +303,7 @@ module Distem
       # ...
       
       #
-      delete '/vnodes/:vnode' do
+      delete '/vnodes/:vnode/?' do
         begin
           ret = @daemon.vnode_remove(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -357,7 +357,7 @@ module Distem
       # ...
       
       #
-      post '/vnodes' do
+      post '/vnodes/?' do
         begin
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
@@ -410,7 +410,7 @@ module Distem
       # ...
       
       #
-      get '/vnodes/:vnode' do
+      get '/vnodes/:vnode/?' do
         begin
           ret = @daemon.vnode_get(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -458,7 +458,7 @@ module Distem
       # ...
       
       #
-      delete '/vnodes' do
+      delete '/vnodes/?' do
         begin
           ret = @daemon.vnodes_remove()
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -505,7 +505,7 @@ module Distem
       # ...
       
       #
-      get '/vnodes' do
+      get '/vnodes/?' do
         begin
           ret = @daemon.vnodes_get()
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -558,7 +558,7 @@ module Distem
       # ...
       
       #
-      put '/vnodes/:vnode' do
+      put '/vnodes/:vnode/?' do
         begin
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
@@ -613,7 +613,7 @@ module Distem
       # ...
       
       #
-      put '/vnodes/:vnode/mode' do
+      put '/vnodes/:vnode/mode/?' do
         begin
           ret = @daemon.vnode_set_mode(URI.unescape(params['vnode']),
             params['mode'])
@@ -665,7 +665,7 @@ module Distem
       # ...
       
       #
-      get '/vnodes/:vnode/filesystem' do
+      get '/vnodes/:vnode/filesystem/?' do
         begin
           ret = @daemon.vnode_filesystem_get(URI.unescape(params['vnode']))
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -717,7 +717,7 @@ module Distem
       # ...
       
       #
-      get '/vnodes/:vnode/filesystem/image' do
+      get '/vnodes/:vnode/filesystem/image/?' do
         begin
           ret = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
           send_file(ret, :filename => "#{params['vnode']}-fsimage.tar.gz")
@@ -766,7 +766,7 @@ module Distem
       # ...
       
       #
-      post '/vnodes/:vnode/commands' do
+      post '/vnodes/:vnode/commands/?' do
         begin
           ret = @daemon.vnode_execute(URI.unescape(params['vnode']),
             params['command'])
@@ -819,7 +819,7 @@ module Distem
       # ...
       
       #
-      post '/vnodes/:vnode/vifaces' do
+      post '/vnodes/:vnode/vifaces/?' do
         begin
           ret = @daemon.viface_create(URI.unescape(params['vnode']),params['name'])
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -870,7 +870,7 @@ module Distem
       # ...
       
       #
-      delete '/vnodes/:vnode/vifaces/:viface' do
+      delete '/vnodes/:vnode/vifaces/:viface/?' do
         begin
           ret = @daemon.viface_remove(URI.unescape(params['vnode']),
             URI.unescape(params['viface']))
@@ -922,7 +922,7 @@ module Distem
       # ...
       
       #
-      get '/vnodes/:vnode/vifaces/:viface' do
+      get '/vnodes/:vnode/vifaces/:viface/?' do
         begin
           ret = @daemon.viface_get(URI.unescape(params['vnode']),
             URI.unescape(params['viface']))
@@ -977,7 +977,7 @@ module Distem
       # ...
       
       #
-      post '/vnodes/:vnode/vcpu' do
+      post '/vnodes/:vnode/vcpu/?' do
         begin
           ret = @daemon.vcpu_create(URI.unescape(params['vnode']),
             params['corenb'],params['frequency'])
@@ -1029,7 +1029,7 @@ module Distem
       # ...
       
       #
-      post '/vnetworks' do
+      post '/vnetworks/?' do
         begin
           ret = @daemon.vnetwork_create(params['name'],params['address'])
         rescue Lib::ParameterError => pe
@@ -1077,7 +1077,7 @@ module Distem
       # ...
       
       #
-      delete '/vnetworks/:vnetwork' do
+      delete '/vnetworks/:vnetwork/?' do
         begin
           ret = @daemon.vnetwork_remove(URI.unescape(params['vnetwork']))
         rescue Lib::ParameterError => pe
@@ -1125,7 +1125,7 @@ module Distem
       # ...
       
       #
-      get '/vnetworks/:vnetwork' do
+      get '/vnetworks/:vnetwork/?' do
         begin
           ret = @daemon.vnetwork_get(URI.unescape(params['vnetwork']))
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -1176,7 +1176,7 @@ module Distem
       # ...
       
       #
-      delete '/vnetworks' do
+      delete '/vnetworks/?' do
         begin
           ret = @daemon.vnetworks_remove()
         rescue Lib::ParameterError => pe
@@ -1220,7 +1220,7 @@ module Distem
       # ...
       
       #
-      get '/vnetworks' do
+      get '/vnetworks/?' do
         begin
           ret = @daemon.vnetworks_get()
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -1275,7 +1275,7 @@ module Distem
       # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       
       #
-      put '/vnodes/:vnode/vifaces/:viface' do 
+      put '/vnodes/:vnode/vifaces/:viface/?' do 
         begin
           vnodename = URI.unescape(params['vnode'])
           vifacename = URI.unescape(params['viface'])
@@ -1343,7 +1343,7 @@ module Distem
       # ...
       
       #
-      post '/vnetworks/:vnetwork/vroutes' do
+      post '/vnetworks/:vnetwork/vroutes/?' do
         begin
           ret = @daemon.vroute_create(
             URI.unescape(params['vnetwork']),
@@ -1397,7 +1397,7 @@ module Distem
       # ...
       
       #
-      post '/vnetworks/vroutes/complete' do
+      post '/vnetworks/vroutes/complete/?' do
         begin
           ret = @daemon.vroute_complete()
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -1445,7 +1445,8 @@ module Distem
       # ...
       
       #
-      get '/vplatform/:format' do
+      ['/vplatform/?:format?/?', '/:format?/?'].each do |path|
+      get path do
         begin
           ret = @daemon.vplatform_get(params['format'])
           # >>> TODO: put the right format
@@ -1471,6 +1472,7 @@ module Distem
         end
 
         return result!
+      end
       end
 
       ##
@@ -1500,7 +1502,8 @@ module Distem
       # ...
       
       #
-      post '/vplatform' do
+      ['/vplatform/?', '/'].each do |path|
+      post path do
         begin
           ret = @daemon.vplatform_create(params['format'],params['data'])
         rescue JSON::ParserError, Lib::ParameterError => pe
@@ -1525,7 +1528,8 @@ module Distem
 
         return result!
       end
-      
+      end
+
       protected
 
       def result! #:nodoc:
