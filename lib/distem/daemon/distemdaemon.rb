@@ -1254,19 +1254,14 @@ module Distem
         visitor = nil
         ret = ''
 
-        if format
-          case format.upcase
-            when 'XML'
-              visitor = TopologyStore::XMLWriter.new
-            when 'JSON'
-              visitor = TopologyStore::HashWriter.new
-              ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
-            else
-              raise Lib::InvalidParameterError, format 
-          end
-        else
-          visitor = TopologyStore::HashWriter.new
-          ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
+        case format.upcase
+          when 'XML'
+            visitor = TopologyStore::XMLWriter.new
+          when 'JSON', ''
+            visitor = TopologyStore::HashWriter.new
+            ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
+          else
+            raise Lib::InvalidParameterError, format 
         end
 
         if ret.empty?
