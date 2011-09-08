@@ -632,9 +632,9 @@ module Distem
         vnode = vnode_get(vnodename)
         raise Lib::MissingParameterError, 'corenb' unless corenb
         # >>> TODO: check if 'corenb' is an integer
-        frequency = frequency.to_f
-        frequency = frequency * 1000 if frequency > 1
-        vnode.add_vcpu(corenb.to_i,frequency)
+        freq = frequency.to_f
+        freq = freq * 1000 if freq > 1
+        vnode.add_vcpu(corenb.to_i,freq)
 
         if daemon?
           unless target?(vnode)
