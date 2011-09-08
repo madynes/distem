@@ -10,7 +10,7 @@ module Distem
       # * +vnode+ The VNode object
       # * +algorithm+ The Algorithm::CPU object
       #
-      def initialize(vnode, algorithm=Algorithm::CPU::Gov.new)
+      def initialize(vnode, algorithm=Algorithm::CPU::Hogs.new)
         #raise unless algorithm.is_a?(Algorithm::CPU)
         super(vnode,algorithm)
       end
