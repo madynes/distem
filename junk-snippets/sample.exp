@@ -9,68 +9,99 @@ networks = ['network1', 'network2']
 
 i = 1
 nodes = []
+asyncnodes = []
 
 Distem.client do |cl|
   pp cl.vnetwork_create(networks[0],'10.144.2.0/24')
   pp cl.vnetwork_create(networks[1],'10.144.3.0/24')
   
   node = 'node1'
-  ifprops = {
-  	'vnetwork' => networks[0],
-  	'vtraffic' => { 
-  		"OUTPUT" => { 
-  			"bandwidth" => {"rate" => "20mbps"},
-  			"latency" => {"delay" => "5ms"}
-  		},
-  		"INPUT" => { 
-  			"bandwidth" => {"rate" => "100mbps"},
-  			"latency" => {"delay" => "2ms"}
-  		}
-  	}
-  }
   pp cl.vnode_create(node, { 'image' => IMAGE })
   pp cl.viface_create(node, 'if0')
-  pp cl.viface_attach(node, 'if0', ifprops)
+  pp cl.viface_attach(node, 'if0', {
+  	'vnetwork' => networks[0],
+  	'vtraffic' => { 
+  		'OUTPUT' => { 
+  			'bandwidth' => {'rate' => '20mbps'},
+  			'latency' => {'delay' => '5ms'}
+  		},
+  		'INPUT' => { 
+  			'bandwidth' => {'rate' => '100mbps'},
+  			'latency' => {'delay' => '2ms'}
+  		}
+  	}
+  })
+  pp cl.vcpu_create(node,3,1000)
   nodes << node
   
   node = 'node2'
-  ifprops['network'] = nil
-  ifprops['address'] = '10.144.3.7'
-  ifprops['vtraffic']['OUTPUT'] = nil
-  ifprops['vtraffic']['INPUT'] = nil
-  ifprops['vtraffic']['FULLDUPLEX'] = { 
-  	"bandwidth" => {"rate" => "2mbps"},
-  	"latency" => {"delay" => "50ms"}
-  }
-  
-  pp cl.vnode_create(node, { 'image' => IMAGE })
+  pp cl.vnode_create!(node, { 'image' => IMAGE })
   pp cl.viface_create(node, 'if0')
-  pp cl.viface_attach(node, 'if0', ifprops)
+  pp cl.viface_attach(node, 'if0', {
+    'address' => '10.144.3.7',
+    'vtraffic' => { 
+      'FULLDUPLEX' => { 
+        'bandwidth' => {'rate' => '2mbps'},
+        'latency' => {'delay' => '50ms'}
+      }
+    }
+  })
+  asyncnodes << node
   nodes << node
   
   node = 'node3'
-  pp cl.vnode_create(node, { 'image' => IMAGE })
+  pp cl.vnode_create!(node, { 'image' => IMAGE })
   pp cl.viface_create(node, 'if0')
   pp cl.viface_attach(node, 'if0', { 'vnetwork' => networks[0] })
+  asyncnodes << node
   nodes << node
   
   node = 'node4'
-  pp cl.vnode_create(node, { 'image' => IMAGE })
+  pp cl.vnode_create!(node, { 'image' => IMAGE })
   pp cl.viface_create(node, 'if0')
   pp cl.viface_attach(node, 'if0', { 'vnetwork' => networks[1] })
+  asyncnodes << node
   nodes << node
   
   node = 'nodegw'
-  pp cl.vnode_create(node, { 'image' => IMAGE })
+  pp cl.vnode_create!(node, { 'image' => IMAGE })
   pp cl.viface_create(node, 'if0')
   pp cl.viface_attach(node, 'if0', { 'vnetwork' => networks[0] })
   pp cl.viface_create(node, 'if1')
   pp cl.viface_attach(node, 'if1', { 'vnetwork' => networks[1] })
+  asyncnodes << node
   nodes << node
   
   pp cl.vroute_complete()
   
-  nodes.each do |node|
-    pp cl.vnode_start(node)
+  puts 'Waiting for the VNodes to be installed ...'
+  asyncnodes.each do |node|
+    begin
+      ret = cl.vnode_info(node)
+      sleep(0.2)
+    end until ret['status'] == Distem::Resource::Status::READY
+    puts "\t#{node} OK"
   end
+  puts 'done'
+
+  nodes.shuffle!
+  nodesync = nodes[0]
+  nodes -= [nodesync]
+  puts nodesync
+  puts nodes
+
+
+  puts 'Starting the VNodes ...'
+  pp cl.vnode_start(nodesync)
+  nodes.each do |node|
+    pp cl.vnode_start!(node)
+  end
+  nodes.each do |node|
+    begin
+      ret = cl.vnode_info(node)
+      sleep(0.2)
+    end until ret['status'] == Distem::Resource::Status::RUNNING
+    puts "\t#{node} OK"
+  end
+  puts 'done'
 end
