@@ -3,7 +3,6 @@ require 'rubygems'
 require 'net/ssh/multi'
 require 'net/scp'
 
-USAGE="Usage: #{$0} [options] [<script_to_execute>]"
 
 pkg_utils=[
   "htop"
@@ -30,6 +29,11 @@ HTTP_PROXY="http://proxy:3128/"
 SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS="/var/log/distem"
 TMP_DIR="/tmp/distem"
+VAR_DISTEM_NODES="DISTEM_NODES"
+VAR_DISTEM_COORD="DISTEM_COORDINATOR"
+
+USAGE="Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
+
 
 options = {}
 @options = options
@@ -123,7 +127,8 @@ end
 options[:init_pnodes] = false
 options[:coordinator] = nil
 options[:node_list] = nil
-options[:packages] = []
+options[:debpackages] = []
+options[:gempackages] = []
 options[:git] = nil
 options[:ssh_key] = nil
 options[:debug] = false
@@ -158,12 +163,16 @@ optparse = OptionParser.new(USAGE) do |opts|
   	options[:ssh_key] = k
 	end
 	
-	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build.join(",")} + gem: #{pkg_build_gem.join(",")})" ) do |n|
+	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build * ","} + gem: #{pkg_build_gem * ","})" ) do |n|
   	options[:git] = n || :git_last
 	end
 	
-	opts.on( '-p', '--packages <package1>,<package2>,<...>', Array, 'Specify additional packages to be installed' ) do |p|
-  	options[:packages] = p
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
+  	options[:debpackages] = p
+	end
+	
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
+  	options[:gempackages] = p
 	end
 	
 	opts.on( '-s', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
@@ -282,10 +291,10 @@ Net::SSH::Multi.start do |session|
 =end
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord,true)
-    exec(session,"apt-get install -q -y --force-yes #{pkg_build.join(' ')}",:coord,true) unless pkg_build.empty?
+    exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",:coord,true) unless pkg_build.empty?
     unless pkg_build_gem.empty?
       msg("Installing gems build packages on #{coordinator}",MSG_INFO)
-      exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem.join(' ')}",:coord,true)
+      exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem * ' '}",:coord,true)
     end
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
@@ -307,23 +316,27 @@ Net::SSH::Multi.start do |session|
     msg("Installing generated debian package #{File.basename(debarchivefile)}",MSG_INFO)
     depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",:coord)[coordinator][0]
     depends = depends.split("|").last.gsub!(' ','')
-    exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,false,false)
-    exec(session,"apt-get install -f -y --force-yes",nil,true)
+    exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
+    exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
     #exec(session,"rm -Rf #{gitdir}",:coord)
     #exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
-    exec(session,"apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
+    exec(session,"echo yes | apt-get install -q -y --force-yes --allow-unauthenticated #{distempkg}",nil,true)
 	end
 	
 	msg("Installing debian misc packages",MSG_INFO)
-  exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies.join(' ')}") unless pkg_tmp_dependencies.empty?
-  exec(session,"apt-get install -q -y --force-yes #{pkg_utils.join(' ')}") unless pkg_utils.empty?
-  options[:packages].each do |pkg|
-    msg("Installing additional debian package '#{pkg}'",MSG_INFO)
-    exec(session,"apt-get install -q -y --force-yes #{pkg}")
+  exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") unless pkg_tmp_dependencies.empty?
+  exec(session,"apt-get install -q -y --force-yes #{pkg_utils * ' '}") unless pkg_utils.empty?
+  options[:debpackages].each do |debpkg|
+    msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
+    exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+  end
+  options[:gempackages].each do |gempkg|
+    msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
+    exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",:coord,true)
   end
   
   session.loop
@@ -377,7 +390,8 @@ Net::SSH::Multi.start do |session|
 		    exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
 		    exec(session,"chmod +x #{filename}",:coord)
 		    msg("Executing script file '#{File.basename(filename)}' on #{coordinator}",MSG_INFO)
-		    exec(session,filename,:coord,true,options[:debug_distem],options[:debug_distem])
+		    
+		    exec(session,"export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}'; export #{VAR_DISTEM_COORD}='#{coordinator}';#{filename}",:coord,true,options[:debug_distem],options[:debug_distem])
 		  end
 		  msg("Script execution done")
 	  rescue Errno::ENOENT
