@@ -1,27 +1,62 @@
-= Iterations
-== Iteration 0:
-wrekad (wrekavoc daemon) starts and can answer queries sent from wrekavoc (client) using REST
-wrekavoc uses restclient and optparse for command line parsing
-wrekad uses sinatra
-wrekanode (wrekavoc node daemon) starts and can answer queries sent from wrekad
-wrekad can send queries to wrekanode
+=== Validation
+- test cases limits, remove, async, getters, resources
+- Mocking, Stubing
+- RESTfully pour client
+- RCOV
+- Retravailler hash validator : http://paste.pocoo.org/show/hCwbOenVunrvhHbUBfcF/
 
-== Iteration 1:
-LXC creation using fixed IP addresses
 
-== Iteration 2:
-IP address allocation + tests
+=== Features
+- vroute_remove
+- data size parser (KB,MB,kpbs,MHz,...)
+- pnode_quit, vnode_remove async
+- vcpu_remove
+- dynamic route setting
+- Add algorithms management
+- système de fichiers partagés
+- Auto affectation of the virtual resources on the physical nodes
+- créer script de nettoyage global (a lancer si probleme a l'execution)
+- start_all, copy_all, exec_all on command line tools
 
-== Iteration 3:
-network links + routing setup
 
-== Infrastructure:
-* Add gemspec and do the work so that Wrekavoc can be installed as a Gem
-* Prepare Debian package for Wrekavoc
-* Infrastructure for unit tests
+=== Optimisation
+- mutex pnode_init
+- copie image en local pour tests
+- remove tc limitations if there is some
+- stop server a better way than with exit
+- use taktuk to copy image on the pnodes
+- decompression archive avec logiciel parallele si présent
+- use directory as deploy image (faster)
+- remove sleep in pnode_init (try to connect and catch the exception)
+- call quit() on SIGTERM
+- creation d'un wrapper LXC propre (C API ?)
 
-== Implementation
-Add /vnodes/destroy in the API
-Rebuild lxc wrapper a better way
-Use debian /etc/network/interfaces to configure the routes
-Add the possibility to specify node ip address
+
+=== Bugs
+- check perform_vroute
+- pnodes_quit bug when using it throught the script
+- Command line wrong option bug ?
+- pnode_quit bug ?
+
+
+=== Structure
+- retrait target en mode node sur pnode_init
+- merge PUT vnodes and put vnode_mode
+- unique prop type (bw,lat) on rule
+- exception sur server (error partages)
+- remove destroy method
+- remove useless fields when saving with hash
+- dont start nodes when loading a config
+- apply gateway mode on node when loading config
+- rename node/configmanager.rb
+- route in /etc/network/interfaces
+- Remove parse_limitation from property&rule
+- Add CPU/Network/Memory/FS modules in Resource distem/daemon/admin.rb
+- Compile C extensions using Rake/ruby facilities instead of rake-compiler
+- use ruby Logger
+- Use ruby symbols in hashes
+- Resource::Physical and Resource::Virtual modules
+- replace a["abc"] access by a[:abc]
+- Forge->Smith
+- rename Core.frequency to Core.frequency_max
+- use hwloc c api to make a ruby module
