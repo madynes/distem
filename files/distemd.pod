@@ -1,0 +1,47 @@
+=encoding utf8
+
+=head1 NAME
+
+distem - an heterogeneity emulator
+
+=head1 SYNOPSIS
+
+ distemd [options]
+
+=head1 DESCRIPTION
+
+This command line tool allow you to run L<B<distem>> server (node mode or coordinator mode).
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+=item --help
+
+=back
+
+Displays a description of available options
+
+
+=over
+
+=item -d <address>
+
+=item --daemon <address>
+
+=back
+
+Run the server in daemon (coordinator) mode.
+
+
+=head1 SEE ALSO
+
+L<B<distem>>(1), L<B<distem-info>>(1), L<B<distem-net>>(1), L<B<distem-node>>(1)
+
+L<distem website|http://distem.gforge.inria.fr/>
+
+=head1 AUTHOR
+
+=head1 COPYRIGHT

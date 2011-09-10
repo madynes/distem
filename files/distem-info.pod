@@ -1,0 +1,135 @@
+=encoding utf8
+
+=head1 NAME
+
+distem - an heterogeneity emulator
+
+=head1 SYNOPSIS
+
+ distem-info [options]
+
+=head1 DESCRIPTION
+
+This command line tool allow you to get information about virtual resources you created using <B<distem>>.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+=item --help
+
+=back
+
+Displays a description of available options
+
+
+=over
+
+=item -z <number>
+
+=item --port <number>
+
+=back
+
+Specify the port to contact the coordinator daemon (default: 4567)
+
+
+=over
+
+=item -d <address>
+
+=item --daemon <address>
+
+=back
+
+Specify the address to contact the coordinator daemon (default: localhost)
+
+
+=over
+
+=item -P
+
+=item --pnodes
+
+=back
+
+Get information about every initialized physical nodes
+
+
+=over
+
+=item -p <pnodename>
+
+=item --pnode <pnodename>
+
+=back
+
+Get information about a specified physical node
+
+
+=over
+
+=item -N
+
+=item --vnodes
+
+=back
+
+Get information about every virtual virtual nodes
+
+
+=over
+
+=item -n <vnodename>
+
+=item --node <vnodename>
+
+=back
+
+Get information about a specified virtual node
+
+
+=over
+
+=item -R
+
+=item --vnetworks
+
+=back
+
+Get information about every created physical networks
+
+
+=over
+
+=item -r <vnetworkname>
+
+=item --vnetwork <vnetworkname>
+
+=back
+
+Get information about a specified virtual network
+
+
+=over
+
+=item -i <vnodename>,<vifacename>
+
+=item --viface <vnodename>,<vifacename>
+
+=back
+
+Get information about a specified virtual network interface
+
+
+=head1 SEE ALSO
+
+L<B<distem>>(1), L<B<distemd>>(1), L<B<distem-net>>(1), L<B<distem-node>>(1)
+
+L<distem website|http://distem.gforge.inria.fr/>
+
+=head1 AUTHOR
+
+=head1 COPYRIGHT

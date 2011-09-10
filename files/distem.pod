@@ -1,0 +1,169 @@
+=encoding utf8
+
+=head1 NAME
+
+distem - an heterogeneity emulator
+
+=head1 SYNOPSIS
+
+ distem [options]
+
+=head1 DESCRIPTION
+
+This command line tool allow you to manipulate (create) L<B<distem>> virtual resources.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+=item --help
+
+=back
+
+Displays a description of available options
+
+
+=over
+
+=item -p <number>
+
+=item --port <number>
+
+=back
+
+Specify the port to contact the coordinator daemon (default: 4567)
+
+
+=over
+
+=item -d <address>
+
+=item --daemon <address>
+
+=back
+
+Specify the address to contact the coordinator daemon (default: localhost)
+
+
+=over
+
+=item -N <vnetworkname>
+
+=item --vnetwork <vnetworkname>
+
+=back
+
+Specify a virtual network name (to be used with other options)
+
+
+=over
+
+=item -n <vnodename>
+
+=item --vnode <vnodename>
+
+=back
+
+Specify a virtual node name (to be used with other options)
+
+
+=over
+
+=item -I <vifacename>
+
+=item --viface <vifacename>
+
+=back
+
+Specify a virtual network interface name (to be used with other options)
+
+
+=over
+
+=item -c <vnode_name>,<filesystem_image_path>
+
+=item --create-vnode <vnode_name>,<filesystem_image_path>
+
+=back
+
+Create a virtual  specifying it's (unique) name and the file to use for it's filesystem (compressed archive of a root directory)
+
+
+=over
+
+=item -i <hostname>
+
+=item --init-pnode <hostname>
+
+=back
+
+Initialize a physical node (start daemon, ...). This is necessary to be able to use distem on it.
+
+
+=over
+
+=item -f <name>
+
+=item --create-viface
+
+=back
+
+Create a new virtual network interface on a specified (-n) virtual node.
+
+
+=over
+
+=item -C <vnetworkname>,<vnetwork_address>
+
+=item --create-vnetwork <vnetworkname>,<vnetwork_address>
+
+=back
+
+Create a virtual network specifying it's (unique) name and it's address (ip/mask, ip/prefix (cidr))
+
+
+=over
+
+=item -s <format>,<outputfile>
+
+=item --save-config <format>,<outputfile>
+
+=back
+
+Save the current virtual platform configuration in a specified format (JSON,XML, ...).
+
+
+=over
+
+=item -l <format>,<inputfile>
+
+=item --load-config <format>,<inputfile>
+
+=back
+
+Load a virtual platform configuration file which is in a specified format (JSON,XML, ...).
+
+
+=over
+
+=item -q
+
+=item --quit
+
+=back
+
+Quit distem (quit the daemon on every initialized physical nodes and clean the resources)
+
+
+
+=head1 SEE ALSO
+
+L<B<distem>>(1), L<B<distemd>>(1), L<B<distem-info>>(1), L<B<distem-node>>(1)
+
+L<distem website|http://distem.gforge.inria.fr/>
+
+=head1 AUTHOR
+
+=head1 COPYRIGHT

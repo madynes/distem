@@ -1,0 +1,180 @@
+=encoding utf8
+
+=head1 NAME
+
+distem - an heterogeneity emulator
+
+=head1 SYNOPSIS
+
+ distem-net [options]
+
+=head1 DESCRIPTION
+
+This command line tool allow you to manipulate L<B<distem>> virtual networking resources.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+=item --help
+
+=back
+
+Displays a description of available options
+
+
+=over
+
+=item -p <number>
+
+=item --port <number>
+
+=back
+
+Specify the port to contact the coordinator daemon (default: 4567)
+
+
+=over
+
+=item -d <address>
+
+=item --daemon <address>
+
+=back
+
+Specify the address to contact the coordinator daemon (default: localhost)
+
+
+=over
+
+=item -N <vnetworkname>
+
+=item --vnetwork <vnetworkname>
+
+=back
+
+Specify a virtual network name (to be used with other options)
+
+
+=over
+
+=item -n <vnodename>
+
+=item --vnode <vnodename>
+
+=back
+
+Specify a virtual node name (to be used with other options)
+
+
+=over
+
+=item -I <vifacename>
+
+=item --viface <vifacename>
+
+=back
+
+Specify a virtual network interface name (to be used with other options)
+
+
+=over
+
+=item -c <vnetworkname>,<vnetwork_address>
+
+=item --create-vnetwork <vnetworkname>,<vnetwork_address>
+
+=back
+
+Create a virtual network specifying it's (unique) name and it's address (ip/mask, ip/prefix (cidr))
+
+
+=over
+
+=item -r <srcnet>,<dstnet>,<gatewaynode>
+
+=item --create-vroute <srcnet>,<dstnet>,<gatewaynode>
+
+=back
+
+Create a virtual route between two virtual networks using the node specified node as gateway (the virtual route is set up for every virtual nodes connected to the source virtual network)
+
+
+=over
+
+=item -X
+
+=item --complete-vroute
+
+=back
+
+Create every possible virtual route in the virtual platform: automatically connecting virtual networks together if there is a link between them (a virtual node connected on both of them)
+
+
+=over
+
+=item -A [<address>]
+
+=item --attach-viface [<address>]
+
+=back
+
+Connect a virtual node (specified with -n) on a virtual network (specified with -N) using a specified virtual network interface (-I). If you don't specify the address one is affected automatically.
+
+
+=over
+
+=item -i 
+
+=item --vtraffic-input
+
+=back
+
+Specify an input vtraffic (to be used with other options)
+
+
+=over
+
+=item -o
+
+=item --vtraffic-output
+
+=back
+
+Specify an output vtraffic (to be used with other options)
+
+
+=over
+
+=item -l
+
+=item --limit-latency <value>
+
+=back
+
+Limit the latency of a virtual node (-n) on a specified virtual network infterface (-I). The value is at linux-tc format (1ms,10s,...).
+
+
+=over
+
+=item -b
+
+=item --limit-bandwidth <value>
+
+=back
+
+Limit the bandwidth of a virtual node (-n) on a specified virtual network infterface (-I). The value is at linux-tc format (10mbps,...).
+
+
+
+=head1 SEE ALSO
+
+L<B<distem>>(1), L<B<distemd>>(1), L<B<distem-info>>(1), L<B<distem-node>>(1)
+
+L<distem website|http://distem.gforge.inria.fr/>
+
+=head1 AUTHOR
+
+=head1 COPYRIGHT
