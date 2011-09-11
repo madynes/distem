@@ -364,7 +364,7 @@ Net::SSH::Multi.start do |session|
 	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",:coord,true)
 	  
 	  launched = []
-	  while launched and launched.empty?
+	  until launched and !launched.empty?
 	    launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",:coord,false,false)[coordinator]
       sleep(0.1)
     end
