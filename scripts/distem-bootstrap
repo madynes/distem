@@ -24,7 +24,7 @@ pkg_build_gem=[
 
 PKG_NAME="distem"
 DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
-GIT_REPOSITORY="http://public.nancy.grid5000.fr/~lsarzyniec/distem.git"
+GIT_REPOSITORY="git://beaujolais.nancy.grid5000.fr/distem/distem.git"
 HTTP_PROXY="http://proxy:3128/"
 SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS="/var/log/distem"
