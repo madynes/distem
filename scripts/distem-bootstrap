@@ -223,6 +223,10 @@ else
 	msg("Coordinator not present in <nodes_file>",MSG_WARNING)
 end
 
+if g5k? and `g5k-subnets`.strip.empty?
+  msg('you did not make a subnet reservation (See g5k-subnets)',MSG_WARNING)
+end
+
 if options[:ssh_key]
   if File.exists?(options[:ssh_key])
     sshkeyfile = options[:ssh_key]
@@ -240,10 +244,6 @@ end
 msg("Copying ssh private key file to the coordinator machine (#{coordinator})",MSG_INFO)
 `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
 
-
-if g5k? and `g5k-subnets`.strip.empty?
-  msg('you did not make a subnet reservation (See g5k-subnets)',MSG_WARNING)
-end
 
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
