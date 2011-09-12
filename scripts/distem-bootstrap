@@ -302,7 +302,7 @@ Net::SSH::Multi.start do |session|
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
     exec(session,"rm -Rf #{gitdir}",:coord)
-    msg("Retriving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
+    msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
     exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord,true)
     unless options[:git] == :git_last
       msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",MSG_INFO)
