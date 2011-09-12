@@ -12,6 +12,9 @@ module Distem
       # The HTTP OK status value
       HTTP_STATUS_OK = 200
 
+      # The default timeout
+      TIMEOUT=900
+
       # Create a new Client and connect it to a specified REST(distem) server
       # ==== Attributes
       # * +serveraddr+ The REST server address (String)
@@ -21,7 +24,8 @@ module Distem
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
-        @resource = RestClient::Resource.new(@serverurl)
+        @resource = RestClient::Resource.new @serverurl, :timeout => TIMEOUT, :open_timeout => TIMEOUT
+        @resource
       end
 
       # Initialize a physical node (create cgroups structure, set up the network interfaces, ...)
