@@ -10,7 +10,8 @@ pkg_utils=[
 
 pkg_tmp_dependencies=[
 	"cpufrequtils",
-	"ethtool"
+	"ethtool",
+  "lsof" # needed until hack to wait for distemd startup is removed
 ]
 
 pkg_build=[
