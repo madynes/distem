@@ -50,14 +50,17 @@ MSG_ERROR=0
 MSG_WARNING=1
 MSG_INFO=2
 
+$start = Time::now
+
 def msg(str, type=nil, quit=false)
+  t = "[#{(Time::now - $start).to_i}]"
   case type
   when MSG_ERROR
     puts("### Error: #{str} ###")
   when MSG_WARNING
     puts("### Warning: #{str} ###")
   when MSG_INFO
-    puts(">>> #{str}")
+    puts("#{t} >>> #{str}")
   else
     puts str
   end
