@@ -130,7 +130,7 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
 end
 
 
-options[:init_pnodes] = false
+options[:init_pnodes] = true
 options[:coordinator] = nil
 options[:node_list] = nil
 options[:debpackages] = []
@@ -148,9 +148,12 @@ optparse = OptionParser.new(USAGE) do |opts|
   		exit
 	end
 	
-	opts.on( '-i', '--init-pnodes [<coordinator_address>]', 'Launch the daemon' ) do |c|
-  	options[:init_pnodes] = true
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
   	options[:coordinator] = c || nil
+	end
+
+	opts.on( '', '--no-init-pnodes', 'Do not initialize pnodes' ) do |c|
+    options[:init_pnodes] = false
 	end
 	
 	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
