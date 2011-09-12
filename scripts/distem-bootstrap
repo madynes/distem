@@ -247,7 +247,7 @@ end
 msg("Copying ssh private key file to the coordinator machine (#{coordinator})",MSG_INFO)
 `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
 
-
+msg("Establishing SSH connections to all nodes", MSG_INFO)
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
   begin
@@ -256,7 +256,6 @@ Net::SSH::Multi.start do |session|
     end
     #test the connection
     exec(session,"hostname",:coord)
-    msg("Connection with #{coordinator} established",MSG_INFO)
   rescue SocketError
     msg("can't connect to #{coordinator}",MSG_ERROR,true)
   end
@@ -267,7 +266,6 @@ Net::SSH::Multi.start do |session|
         nodeobjlist[node] = session.use("root@#{node}")
         #test the connection
         exec(session,"hostname",nodeobjlist[node])
-        msg("Connection with #{node} established",MSG_INFO)
       rescue SocketError
         msg("can't connect to #{node}",MSG_ERROR,true)
       end
