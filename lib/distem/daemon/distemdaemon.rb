@@ -255,7 +255,11 @@ module Distem
       #
       def vnode_create(name,properties)
       begin
-        name = name.gsub(' ','_')
+        if name
+          name = name.gsub(' ','_') 
+        else
+          raise Lib::ArgumentMissingError "name"
+        end
         if daemon?
           if properties['target']
             pnode = @daemon_resources.get_pnode_by_address(properties['target'])
@@ -289,29 +293,23 @@ module Distem
         if daemon?
           @daemon_resources.add_vnode(vnode)
 
-          block = Proc.new {
-            if target?(pnode.address.to_s)
-              nodemodeblock.call
-            else
-              vnode.status = Resource::Status::CONFIGURING
-              cl = NetAPI::Client.new(pnode.address.to_s)
-              ret = cl.vnode_create(vnode.name,properties)
-              vnode.filesystem.path = ret['filesystem']['path']
-              vnode.status = Resource::Status::READY
-            end
-          }
+          unless target?(pnode.address.to_s)
+            vnode.status = Resource::Status::CONFIGURING
+            cl = NetAPI::Client.new(pnode.address.to_s)
+            ret = cl.vnode_create(vnode.name,properties)
+            vnode.filesystem.path = ret['filesystem']['path']
+            vnode.status = Resource::Status::READY
+          end
+        end
 
+        if target?(pnode.address.to_s)
           if properties['async']
             thr = @threads['vnode_create'][vnode.name] = Thread.new {
-              block.call
+              nodemodeblock.call
             }
             thr.abort_on_exception = true
           else
-            block.call
-          end
-        else
-          if target?(pnode.address.to_s)
-            nodemodeblock.call
+              nodemodeblock.call
           end
         end
 
