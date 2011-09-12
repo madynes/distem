@@ -24,7 +24,7 @@ module Distem
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
-        @resource = RestClient::Resource.new @serverurl, :timeout => TIMEOUT, :open_timeout => TIMEOUT
+        @resource = RestClient::Resource.new @serverurl, :timeout => TIMEOUT
         @resource
       end
 
