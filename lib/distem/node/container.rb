@@ -21,7 +21,7 @@ module Distem
       # ==== Attributes
       # * +vnode+ The VNode object
       #
-      def initialize(vnode)
+      def initialize(vnode,cpu_algorithm=nil)
         raise unless vnode.is_a?(Resource::VNode)
         raise Lib::ResourceNotFoundError, vnode.filesystem.path \
           unless File.exists?(vnode.filesystem.path)
@@ -33,7 +33,7 @@ module Distem
         end
 
         @vnode = vnode
-        @cpuforge = CPUForge.new(@vnode)
+        @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
         @networkforges = {}
         @vnode.vifaces.each do |viface|
           @networkforges[viface] = NetworkForge.new(viface)

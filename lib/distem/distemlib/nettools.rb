@@ -76,7 +76,7 @@ module Distem
       end
 
       # Set up the IFB module
-      def self.set_ifb(nb=8)
+      def self.set_ifb(nb=64)
         Shell.run("modprobe ifb numifbs=#{nb}")
       end
 

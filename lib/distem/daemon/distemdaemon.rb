@@ -48,7 +48,7 @@ module Distem
       # This step have to be performed to be able to create virtual nodes on a machine 
       # ==== Attributes 
       # * +target+ the name/address of the physical machine
-      # * +properties+ async
+      # * +properties+ async,max_vnodes,cpu_algorithm
       # ==== Returns
       # Resource::PNode object
       # ==== Exceptions
@@ -59,7 +59,24 @@ module Distem
 
         nodemodeblock = Proc.new {
           pnode = @node_config.pnode
-          Node::Admin.init_node(pnode)
+          if properties['max_vnodes']
+            Node::Admin.init_node(pnode,properties['max_vnodes'].to_i)
+          else
+            Node::Admin.init_node(pnode)
+          end
+          if properties['cpu_algorithm']
+            algo = nil
+            case properties['cpu_algorithm'].upcase
+              when Algorithm::CPU::GOV.upcase
+                algo = Algorithm::CPU::GOV
+              when Algorithm::CPU::HOGS.upcase
+                algo = Algorithm::CPU::HOGS
+              else
+                raise InvalidParameterError "cpu_algorithm"
+            end
+
+            @node_config.set_cpu_algorithm(algo)
+          end
           @node_config.vplatform.add_pnode(pnode)
           pnode.status = Resource::Status::RUNNING
         }
