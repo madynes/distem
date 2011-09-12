@@ -293,23 +293,29 @@ module Distem
         if daemon?
           @daemon_resources.add_vnode(vnode)
 
-          unless target?(pnode.address.to_s)
-            vnode.status = Resource::Status::CONFIGURING
-            cl = NetAPI::Client.new(pnode.address.to_s)
-            ret = cl.vnode_create(vnode.name,properties)
-            vnode.filesystem.path = ret['filesystem']['path']
-            vnode.status = Resource::Status::READY
-          end
-        end
+          block = Proc.new {
+            if target?(pnode.address.to_s)
+              nodemodeblock.call
+            else
+              vnode.status = Resource::Status::CONFIGURING
+              cl = NetAPI::Client.new(pnode.address.to_s)
+              ret = cl.vnode_create(vnode.name,properties)
+              vnode.filesystem.path = ret['filesystem']['path']
+              vnode.status = Resource::Status::READY
+            end
+          }
 
-        if target?(pnode.address.to_s)
           if properties['async']
             thr = @threads['vnode_create'][vnode.name] = Thread.new {
-              nodemodeblock.call
+              block.call
             }
             thr.abort_on_exception = true
           else
-              nodemodeblock.call
+            block.call
+          end
+        else
+          if target?(pnode.address.to_s)
+            nodemodeblock.call
           end
         end
 
