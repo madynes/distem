@@ -24,7 +24,6 @@ pkg_build_gem=[
 
 PKG_NAME="distem"
 DEB_REPOSITORY="http://distem.gforge.inria.fr/deb"
-GIT_REPOSITORY="git://beaujolais.nancy.grid5000.fr/distem/distem.git"
 HTTP_PROXY="http://proxy:3128/"
 SSH_KEYS=["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS="/var/log/distem"
@@ -32,16 +31,20 @@ TMP_DIR="/tmp/distem"
 VAR_DISTEM_NODES="DISTEM_NODES"
 VAR_DISTEM_COORD="DISTEM_COORDINATOR"
 
-USAGE="Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
-
-
-options = {}
-@options = options
-
 def g5k?
   `hostname --fqdn`.chomp =~ /grid5000.fr$/
 end
 
+if g5k?
+  GIT_REPOSITORY="git://beaujolais.nancy.grid5000.fr/distem/distem.git"
+else
+  GIT_REPOSITORY="git://scm.gforge.inria.fr/distem/distem.git"
+end
+
+USAGE="Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
+
+options = {}
+@options = options
 
 MSG_ERROR=0
 MSG_WARNING=1
