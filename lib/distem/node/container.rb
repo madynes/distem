@@ -6,14 +6,14 @@ module Distem
 
     # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
     class Container
-      # The directory to save container configuration files
-      PATH_DEFAULT_CONFIGFILE="/tmp/distem/config/"
       @@lxclock = Mutex.new
 
       # The virtual node this container is set for
       attr_reader :vnode
       # The object used to set up physical CPU limitations
       attr_reader  :cpuforge
+      # The object used to set up physical filesystem
+      attr_reader  :fsforge
       # The object used to set up network limitations
       attr_reader  :networkforges
 
@@ -23,17 +23,14 @@ module Distem
       #
       def initialize(vnode,cpu_algorithm=nil)
         raise unless vnode.is_a?(Resource::VNode)
-        raise Lib::ResourceNotFoundError, vnode.filesystem.path \
-          unless File.exists?(vnode.filesystem.path)
-        raise Lib::InvalidParameterError, vnode.filesystem.path \
-          unless File.directory?(vnode.filesystem.path)
-
-        unless File.exists?(PATH_DEFAULT_CONFIGFILE)
-          Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CONFIGFILE}")
-        end
 
         @vnode = vnode
         @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
+        @fsforge = FileSystemForge.new(@vnode)
+        raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
+          unless File.exists?(@vnode.filesystem.path)
+        raise Lib::InvalidParameterError, @vnode.filesystem.path \
+          unless File.directory?(@vnode.filesystem.path)
         @networkforges = {}
         @vnode.vifaces.each do |viface|
           @networkforges[viface] = NetworkForge.new(viface)
@@ -48,7 +45,7 @@ module Distem
       # Setup the virtual node container (copy ssh keys, ...)
       #
       def setup()
-        Lib::Shell.run("cp -R /root/.ssh #{vnode.filesystem.path}/root/")
+        Lib::Shell.run("cp -R /root/.ssh #{@vnode.filesystem.path}/root/")
       end
 
       # Create new resource limitation objects if the virtual node resource has changed
@@ -151,7 +148,7 @@ module Distem
 
         #@vnode.status = Resource::Status::CONFIGURING
         @curname = "#{@vnode.name}-#{@id}"
-        configfile = File.join(PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
+        configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
 
         LXCWrapper::ConfigFile.generate(@vnode,configfile)
 

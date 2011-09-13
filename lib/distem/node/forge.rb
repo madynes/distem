@@ -18,7 +18,7 @@ module Distem
       def initialize(resource,algorithm)
         @resource = resource
         raise Lib::InvalidParameterError, algorithm \
-          unless algorithm.is_a?(Algorithm::Algorithm)
+          if algorithm and !algorithm.is_a?(Algorithm::Algorithm)
         @algorithm = algorithm
       end
 

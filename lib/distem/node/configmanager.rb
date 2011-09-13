@@ -5,9 +5,6 @@ module Distem
 
     # Class that help to set up a physical node resource specifying virtual ones
     class ConfigManager
-      # The directory used to save virtual nodes filesystem directories&files
-      PATH_DEFAULT_ROOTFS="/tmp/distem/rootfs/"
-
       # The virtual platform that describes all virtual resources set on this physical node
       attr_reader  :vplatform
       # The physical node to work on
@@ -60,12 +57,6 @@ module Distem
       def vnode_add(vnode)
         # >>> TODO: Add the ability to modify a VNode
         @vplatform.add_vnode(vnode)
-
-        rootfsfile = Lib::FileManager.download(vnode.filesystem.image)
-        rootfspath = File.join(PATH_DEFAULT_ROOTFS,vnode.name)
-
-        rootfspath = Lib::FileManager.extract(rootfsfile,rootfspath)
-        vnode.filesystem.path = rootfspath
 
         @containers[vnode.name] = Node::Container.new(vnode,@cpu_algorithm)
       end
