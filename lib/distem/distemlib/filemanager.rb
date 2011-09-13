@@ -69,16 +69,12 @@ module Distem
       # * +ResourceNotFoundError+ if can't reach the specified archive file
       # * +NotImplementedError+ if the archive file format is not supported (available: tar, gzip, bzip, zip, (tgz,...))
       #
-      def self.extract(archivefile,targetdir="")
+      def self.extract(archivefile,targetdir="",override=true)
         raise Lib::ResourceNotFoundError, archivefile \
           unless File.exists?(archivefile)
         
         if targetdir.empty?
           targetdir = File.dirname(archivefile)
-        else
-          unless File.exists?(targetdir)
-            Lib::Shell.run("mkdir -p #{targetdir}")
-          end
         end
 
         cachedir = cache_archive(archivefile)
@@ -88,9 +84,13 @@ module Distem
           @@cachelock[filehash] = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT)
         end
 
-        @@cachelock[filehash].synchronize {
-          Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
-        }
+        exists = File.exists?(targetdir) 
+        if !exists or override
+          Lib::Shell.run("mkdir -p #{targetdir}") unless exists
+          @@cachelock[filehash].synchronize {
+            Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+          }
+        end
 
         return targetdir
       end
