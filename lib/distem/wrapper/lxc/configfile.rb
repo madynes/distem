@@ -34,7 +34,15 @@ module LXCWrapper # :nodoc: all
             "sysfs defaults  0 0"
 
           open("#{vnode.filesystem.path}/etc/network/interfaces", "w") do |froute|
+          myrclocal="/etc/rc.local-#{vnode.name}"
+
           open("#{vnode.filesystem.path}/etc/rc.local", "w") do |frclocal|
+            frclocal.puts("#!/bin/sh -e\n")
+            frclocal.puts("sh #{myrclocal}")
+            frclocal.puts("exit 0")
+          end
+
+          open("#{vnode.filesystem.path}#{myrclocal}", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
             frclocal.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if vnode.gateway?
             froute.puts("auto lo\niface lo inet loopback")
