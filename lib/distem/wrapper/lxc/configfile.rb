@@ -21,14 +21,17 @@ module LXCWrapper # :nodoc: all
       lxc.cgroup.devices.allow = c 254:0 rwm"
 
       def self.generate(vnode,filepath)
+        rootfspath = nil
+        if vnode.filesystem.shared
+          rootfspath = vnode.filesystem.sharedpath
+        else
+          rootfspath = vnode.filesystem.path
+        end
+
         File.open(filepath, 'w') do |f| 
           f.puts DEFAULT_CONFIG
           f.puts "lxc.utsname = #{vnode.name}"
-          if vnode.filesystem.shared
-            f.puts "lxc.rootfs = #{vnode.filesystem.sharedpath}"
-          else
-            f.puts "lxc.rootfs = #{vnode.filesystem.path}"
-          end
+          f.puts "lxc.rootfs = #{rootfspath}"
           f.puts "# mounts point"
           f.puts "lxc.mount.entry=proc #{vnode.filesystem.path}/proc " \
             "proc nodev,noexec,nosuid 0 0"
@@ -37,14 +40,14 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.mount.entry=sysfs #{vnode.filesystem.path}/sys " \
             "sysfs defaults  0 0"
 
-          open("#{vnode.filesystem.path}/etc/network/interfaces", "w") do |froute|
-          open("#{vnode.filesystem.path}/etc/rc.local", "w") do |frclocal|
+          open("#{rootfspath}/etc/network/interfaces", "w") do |froute|
+          open("#{rootfspath}/etc/rc.local", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
             frclocal.puts('sh /etc/rc.local-`hostname`')
             frclocal.puts("exit 0")
           end
 
-          open("#{vnode.filesystem.path}/etc/rc.local-#{vnode.name}", "w") do |frclocal|
+          open("#{rootfspath}/etc/rc.local-#{vnode.name}", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
             frclocal.puts("echo Connected to virtual node #{vnode.name}")
             frclocal.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if vnode.gateway?
