@@ -38,7 +38,7 @@ module LXCWrapper # :nodoc: all
 
           open("#{vnode.filesystem.path}/etc/rc.local", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
-            frclocal.puts("sh #{myrclocal}")
+            frclocal.puts('sh /etc/rc.local-`hostname`')
             frclocal.puts("exit 0")
           end
 
