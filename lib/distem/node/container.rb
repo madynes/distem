@@ -45,7 +45,14 @@ module Distem
       # Setup the virtual node container (copy ssh keys, ...)
       #
       def setup()
-        Lib::Shell.run("cp -R /root/.ssh #{@vnode.filesystem.path}/root/")
+        rootfspath = nil
+        if @vnode.filesystem.shared
+          rootfspath = @vnode.filesystem.sharedpath
+        else
+          rootfspath = @vnode.filesystem.path
+        end
+
+        Lib::Shell.run("cp -Rf /root/.ssh #{rootfspath}/root/")
       end
 
       # Create new resource limitation objects if the virtual node resource has changed
