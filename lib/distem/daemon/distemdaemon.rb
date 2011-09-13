@@ -282,7 +282,8 @@ module Distem
         raise Lib::MissingParameterError, "image" unless properties['image']
 
         #Create the resource
-        vnode = Resource::VNode.new(pnode,name,properties['image'])
+        fs = Resource::FileSystem.new(properties['image'],properties['fs_shared'])
+        vnode = Resource::VNode.new(pnode,name,fs)
 
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING

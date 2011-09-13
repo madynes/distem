@@ -7,21 +7,27 @@ module Distem
     # Abstract description of the filesystem used on a VNode
     class FileSystem
       # The VNode associated to this FileSystem
-      attr_reader :vnode
+      attr_accessor :vnode
       # The URI to the -bootstrapped and compressed- image file
       attr_accessor :image
+      # Is the file system shared between several nodes ?
+      attr_reader :shared
       # The path to the filesystem on the physical machine
       attr_accessor :path
+      # The path to shared parts of the filesystem on the physical machine (if there is one)
+      attr_accessor :sharedpath
 
       # Create a new FileSystem
-      def initialize(vnode,image,path = '')
-        @vnode = vnode
+      def initialize(image,shared = false)
+        @vnode = nil
         @image = URI.encode(image)
-        @path = path
+        @shared = shared
+        @path = nil
+        @sharedpath = nil
       end
 
       def to_s
-        return "vnode: #{@vnode.name}, image: #{@image}, path: #{@image}"
+        return "vnode: #{@vnode.name}, image: #{@image}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}"
       end
     end
 

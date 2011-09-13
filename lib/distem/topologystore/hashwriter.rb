@@ -128,7 +128,9 @@ module Distem
         return {
           'vnode' => filesystem.vnode,
           'image' => filesystem.image,
+          'shared' => filesystem.shared,
           'path' => filesystem.path,
+          'sharedpath' => filesystem.sharedpath,
         }
       end
 

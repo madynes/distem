@@ -32,17 +32,16 @@ module Distem
       attr_accessor :gateway
 
       
-      # Create a new Virtual Node
+      # Create a new Virtual Node specifying it's filesystem
       # ==== Attributes
       # * +host+ The Physical Node that will host the Virtual one
       # * +name+ The name of that Virtual Node
-      # * +image+ The URI to the image that will be used to deploy the node
+      # * +filesystem+ The FileSystem object
       #
-      def initialize(host, name, image)
+      def initialize(host, name, filesystem)
         raise unless host.is_a?(PNode)
         raise unless name.is_a?(String)
-        raise unless image.is_a?(String)
-        # >>> TODO: validate and check image availability
+        raise unless filesystem.is_a?(FileSystem)
 
         @id = @@ids
 
@@ -53,7 +52,8 @@ module Distem
         end
 
         @host = host
-        @filesystem = FileSystem.new(self,image)
+        @filesystem = filesystem 
+        @filesystem.vnode = self
         @gateway = false
         @vifaces = []
         @vcpu = nil
