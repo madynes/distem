@@ -327,8 +327,8 @@ Net::SSH::Multi.start do |session|
     exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
     exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
-    #exec(session,"rm -Rf #{gitdir}",:coord)
-    #exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
+    exec(session,"rm -Rf #{gitdir}",:coord)
+    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
