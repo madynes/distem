@@ -10,6 +10,8 @@ module Distem
     class FileManager
       # The maximum simultaneous extracting task number
       MAX_SIMULTANEOUS_EXTRACT = 8
+      # The maximum simultaneous caching archive task number
+      MAX_SIMULTANEOUS_CACHE = 4
       # The maximum simultaneous hashing task number
       MAX_SIMULTANEOUS_HASH = 4
 
@@ -28,11 +30,12 @@ module Distem
       BIN_BUNZIP2='bunzip2' # :nodoc:
       BIN_UNZIP='unzip' # :nodoc:
 
-      @@initcachelock = {} # :nodoc:
-      @@cachelock = {} # :nodoc:
-      @@hashcache = {} # :nodoc:
+      @@extractsem = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT) # :nodoc:
+      @@cachesem = Semaphore.new(MAX_SIMULTANEOUS_CACHE) # :nodoc:
+      @@hashsem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
+      @@archivecachelock = {} # :nodoc:
       @@hashcachelock = {} # :nodoc:
-      @@hashcachesem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
+      @@hashcache = {} # :nodoc:
       
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
@@ -86,16 +89,12 @@ module Distem
         cachedir = cache_archive(archivefile)
         filehash = file_hash(archivefile)
 
-        unless @@cachelock[filehash]
-          @@cachelock[filehash] = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT)
-        end
-
         exists = File.exists?(targetdir) 
         if !exists or override
-          Lib::Shell.run("mkdir -p #{targetdir}") unless exists
-          @@cachelock[filehash].synchronize {
+          @@extractsem.synchronize do
+            Lib::Shell.run("mkdir -p #{targetdir}") unless exists
             Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
-          }
+          end
         end
 
         return targetdir
@@ -156,16 +155,18 @@ module Distem
         filehash = file_hash(archivefile)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
-        if @@initcachelock[filehash]
-          @@initcachelock[filehash].synchronize {}
+        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
+        if @@archivecachelock[filehash].locked?
+          @@archivecachelock[filehash].synchronize {}
         else
-          @@initcachelock[filehash] = Mutex.new
-          @@initcachelock[filehash].synchronize {
-            if File.exists?(cachedir)
-              Lib::Shell.run("rm -R #{cachedir}")
+          @@archivecachelock[filehash].synchronize do
+            @@cachesem.synchronize do
+              if File.exists?(cachedir)
+                Lib::Shell.run("rm -R #{cachedir}")
+              end
+              extract!(archivefile,cachedir)
             end
-            extract!(archivefile,cachedir)
-          }
+          end
         end
 
         return cachedir
@@ -200,12 +201,11 @@ module Distem
       def self.file_hash(filename)
         unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
           @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
-
           if @@hashcachelock[filename].locked?
             @@hashcachelock[filename].synchronize{}
           else
             @@hashcachelock[filename].synchronize do
-              @@hashcachesem.synchronize do
+              @@hashsem.synchronize do
                 mtime = File.mtime(filename) unless mtime
                 @@hashcache[filename] = {
                   :mtime => mtime,
