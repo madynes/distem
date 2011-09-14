@@ -51,8 +51,12 @@ module Distem
         else
           rootfspath = @vnode.filesystem.path
         end
+        rootfspath = File.join(rootfspath,'root','.ssh')
 
-        Lib::Shell.run("cp -Rf /root/.ssh #{rootfspath}/root/")
+        unless File.exists?(rootfspath)
+          Lib::Shell.run("mkdir -p #{rootfspath}")
+          Lib::Shell.run("cp -f #{File.join(ENV['HOME'],'.ssh')}/* #{rootfspath}/")
+        end
       end
 
       # Create new resource limitation objects if the virtual node resource has changed
