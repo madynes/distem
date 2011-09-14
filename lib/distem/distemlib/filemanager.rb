@@ -36,6 +36,7 @@ module Distem
       @@archivecachelock = {} # :nodoc:
       @@hashcachelock = {} # :nodoc:
       @@hashcache = {} # :nodoc:
+      @@archivecache = [] # :nodoc:
       
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
@@ -155,18 +156,21 @@ module Distem
         filehash = file_hash(archivefile)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
-        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
-        if @@archivecachelock[filehash].locked?
-          @@archivecachelock[filehash].synchronize {}
-        else
-          @@archivecachelock[filehash].synchronize do
-            @@cachesem.synchronize do
-              if File.exists?(cachedir)
-                Lib::Shell.run("rm -R #{cachedir}")
+        unless @@archivecache.include?(filehash)
+          @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
+          if @@archivecachelock[filehash].locked?
+            @@archivecachelock[filehash].synchronize {}
+          else
+            @@archivecachelock[filehash].synchronize do
+              @@cachesem.synchronize do
+                if File.exists?(cachedir)
+                  Lib::Shell.run("rm -R #{cachedir}")
+                end
+                extract!(archivefile,cachedir)
               end
-              extract!(archivefile,cachedir)
             end
           end
+          @@archivecache << filehash unless @@archivecache.include?(filehash)
         end
 
         return cachedir
@@ -210,7 +214,7 @@ module Distem
                 @@hashcache[filename] = {
                   :mtime => mtime,
                   :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{Digest::SHA256.file(filename).hexdigest}"
-                }
+                } unless @@hashcache[filename]
               end
             end
           end
