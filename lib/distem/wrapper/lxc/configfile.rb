@@ -1,24 +1,21 @@
 module LXCWrapper # :nodoc: all
 
   class ConfigFile
-    DEFAULT_CONFIG="lxc.tty = 4
+    DEFAULT_DEV_RULES="
+      lxc.tty = 4
       lxc.pts = 1024
       lxc.cgroup.devices.deny = a
-      # /dev/null and zero
-      lxc.cgroup.devices.allow = c 1:3 rwm
-      lxc.cgroup.devices.allow = c 1:5 rwm
-      # consoles
-      lxc.cgroup.devices.allow = c 5:1 rwm
-      lxc.cgroup.devices.allow = c 5:0 rwm
-      lxc.cgroup.devices.allow = c 4:0 rwm
-      lxc.cgroup.devices.allow = c 4:1 rwm
-      # /dev/{,u}random
-      lxc.cgroup.devices.allow = c 1:9 rwm
-      lxc.cgroup.devices.allow = c 1:8 rwm
-      lxc.cgroup.devices.allow = c 136:* rwm
-      lxc.cgroup.devices.allow = c 5:2 rwm
-      # rtc
-      lxc.cgroup.devices.allow = c 254:0 rwm"
+      lxc.cgroup.devices.allow = c 1:3 rwm  # /dev/null
+      lxc.cgroup.devices.allow = c 1:5 rwm  # /dev/zero
+      lxc.cgroup.devices.allow = c 5:1 rwm  # /dev/console
+      lxc.cgroup.devices.allow = c 5:0 rwm  # /dev/tty
+      lxc.cgroup.devices.allow = c 4:0 rwm  # /dev/tty0
+      lxc.cgroup.devices.allow = c 4:1 rwm  # /dev/tty1
+      lxc.cgroup.devices.allow = c 1:8 rwm  # /dev/random
+      lxc.cgroup.devices.allow = c 1:9 rwm  # /dev/urandom
+      lxc.cgroup.devices.allow = c 136:* rwm  # /dev/pts/*
+      lxc.cgroup.devices.allow = c 5:2 rwm  #  /dev/pts/ptmx
+      lxc.cgroup.devices.allow = c 254:0 rwm  # rtc"  
 
       def self.generate(vnode,filepath)
         rootfspath = nil
@@ -29,7 +26,7 @@ module LXCWrapper # :nodoc: all
         end
 
         File.open(filepath, 'w') do |f| 
-          f.puts DEFAULT_CONFIG
+          f.puts DEFAULT_DEV_RULES
           f.puts "lxc.utsname = #{vnode.name}"
           f.puts "lxc.rootfs = #{rootfspath}"
           f.puts "# mounts point"
@@ -43,7 +40,7 @@ module LXCWrapper # :nodoc: all
           open("#{rootfspath}/etc/network/interfaces", "w") do |froute|
           open("#{rootfspath}/etc/rc.local", "w") do |frclocal|
             frclocal.puts("#!/bin/sh -e\n")
-            frclocal.puts('sh /etc/rc.local-`hostname`')
+            frclocal.puts('. /etc/rc.local-`hostname`')
             frclocal.puts("exit 0")
           end
 
