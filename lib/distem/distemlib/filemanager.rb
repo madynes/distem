@@ -1,4 +1,5 @@
 require 'distem'
+require 'thread'
 require 'uri'
 require 'digest/sha2'
 
@@ -9,6 +10,8 @@ module Distem
     class FileManager
       # The maximum simultaneous extracting task number
       MAX_SIMULTANEOUS_EXTRACT = 8
+      # The maximum simultaneous hashing task number
+      MAX_SIMULTANEOUS_HASH = 4
 
       PATH_DISTEM_BIN='/usr/bin/' # :nodoc:
       PATH_DISTEM_LOGS='/var/log/distem/' # :nodoc:
@@ -25,8 +28,11 @@ module Distem
       BIN_BUNZIP2='bunzip2' # :nodoc:
       BIN_UNZIP='unzip' # :nodoc:
 
-      @@initcachelock = {}
-      @@cachelock = {}
+      @@initcachelock = {} # :nodoc:
+      @@cachelock = {} # :nodoc:
+      @@hashcache = {} # :nodoc:
+      @@hashcachelock = {} # :nodoc:
+      @@hashcachesem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
       
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
@@ -192,8 +198,24 @@ module Distem
       # String value describing the "unique" hash
       #
       def self.file_hash(filename)
-        File.basename(filename) + "-" + File.stat(filename).size.to_s \
-          + "-" +Digest::SHA256.file(filename).hexdigest
+        unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
+          @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
+
+          if @@hashcachelock[filename].locked?
+            @@hashcachelock[filename].synchronize{}
+          else
+            @@hashcachelock[filename].synchronize do
+              @@hashcachesem.synchronize do
+                mtime = File.mtime(filename) unless mtime
+                @@hashcache[filename] = {
+                  :mtime => mtime,
+                  :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{Digest::SHA256.file(filename).hexdigest}"
+                }
+              end
+            end
+          end
+        end
+        return @@hashcache[filename][:hash]
       end
     end
 
