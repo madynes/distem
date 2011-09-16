@@ -87,11 +87,11 @@ module Distem
           targetdir = File.dirname(archivefile)
         end
 
-        cachedir = cache_archive(archivefile)
+        cachedir,new = cache_archive(archivefile)
         filehash = file_hash(archivefile)
 
         exists = File.exists?(targetdir) 
-        if !exists or override
+        if !exists or override or new
           @@extractsem.synchronize do
             Lib::Shell.run("mkdir -p #{targetdir}") unless exists
             Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
@@ -156,10 +156,15 @@ module Distem
         filehash = file_hash(archivefile)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
-        unless @@archivecache.include?(filehash)
+        newcache = true
+        if @@archivecache.include?(filehash)
+          newcache = false
+        else
+          @@archivecache << filehash unless @@archivecache.include?(filehash)
           @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
           if @@archivecachelock[filehash].locked?
             @@archivecachelock[filehash].synchronize {}
+            newcache = false
           else
             @@archivecachelock[filehash].synchronize do
               @@cachesem.synchronize do
@@ -170,10 +175,9 @@ module Distem
               end
             end
           end
-          @@archivecache << filehash unless @@archivecache.include?(filehash)
         end
 
-        return cachedir
+        return cachedir,newcache
       end
 
       # Compress a file using TGZ archive format.
