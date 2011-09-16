@@ -33,6 +33,7 @@ module Distem
       @@extractsem = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT) # :nodoc:
       @@cachesem = Semaphore.new(MAX_SIMULTANEOUS_CACHE) # :nodoc:
       @@hashsem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
+      @@extractlock = {} # :nodoc:
       @@archivecachelock = {} # :nodoc:
       @@hashcachelock = {} # :nodoc:
       @@hashcache = {} # :nodoc:
@@ -87,14 +88,22 @@ module Distem
           targetdir = File.dirname(archivefile)
         end
 
+        targethash = targetdir + file_hash(archivefile)
+        @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash] 
+
         cachedir,new = cache_archive(archivefile)
-        filehash = file_hash(archivefile)
 
         exists = File.exists?(targetdir) 
         if !exists or override or new
-          @@extractsem.synchronize do
-            Lib::Shell.run("mkdir -p #{targetdir}") unless exists
-            Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+          if @@extractlock[targethash].locked?
+            @@extractlock[targethash].synchronize {}
+          else
+            @@extractlock[targethash].synchronize do
+              @@extractsem.synchronize do
+                Lib::Shell.run("mkdir -p #{targetdir}") unless exists
+                Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+              end
+            end
           end
         end
 
@@ -154,17 +163,14 @@ module Distem
       # 
       def self.cache_archive(archivefile)
         filehash = file_hash(archivefile)
+        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
-        newcache = true
-        if @@archivecache.include?(filehash)
-          newcache = false
-        else
+        newcache = false
+        unless @@archivecache.include?(filehash)
           @@archivecache << filehash unless @@archivecache.include?(filehash)
-          @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
           if @@archivecachelock[filehash].locked?
             @@archivecachelock[filehash].synchronize {}
-            newcache = false
           else
             @@archivecachelock[filehash].synchronize do
               @@cachesem.synchronize do
@@ -172,6 +178,7 @@ module Distem
                   Lib::Shell.run("rm -R #{cachedir}")
                 end
                 extract!(archivefile,cachedir)
+                newcache = true
               end
             end
           end
@@ -207,8 +214,9 @@ module Distem
       # String value describing the "unique" hash
       #
       def self.file_hash(filename)
+        @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
+
         unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
-          @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
           if @@hashcachelock[filename].locked?
             @@hashcachelock[filename].synchronize{}
           else
