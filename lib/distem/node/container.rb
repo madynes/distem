@@ -194,19 +194,20 @@ module Distem
         end
         
         # Load config in rc.local
-        File.open(File.join(etcpath,'rc.local'),'w') do |f|
+        filename = File.join(etcpath,'rc.local')
+        File.open(filename,'w') do |f|
           f.puts("#!/bin/sh -e\n")
           f.puts('. /etc/rc.local-`hostname`')
           f.puts("exit 0")
         end
+        File.chmod(0755,filename)
 
 
         # Node specific rc.local
-        File.open(File.join(etcpath,"rc.local-#{@vnode.name}"), "w") do |f|
+        filename = File.join(etcpath,"rc.local-#{@vnode.name}")
+        File.open(filename, "w") do |f|
           f.puts("#!/bin/sh -e\n")
-          f.puts("echo Connected to virtual node #{@vnode.name}")
           f.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if @vnode.gateway?
-          f.puts("echo 1 > /abc") if @vnode.gateway?
           @vnode.vifaces.each do |viface|
             f.puts("ip route flush dev #{viface.name}")
             if viface.vnetwork
@@ -221,6 +222,7 @@ module Distem
           end
           f.puts("exit 0")
         end
+        File.chmod(0755,filename)
 
         Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
 
