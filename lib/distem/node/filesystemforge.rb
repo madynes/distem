@@ -36,7 +36,6 @@ module Distem
         block.call(File.join(uniquefspath,'sys'))
         block.call(File.join(uniquefspath,'dev','pts'))
 
-        rootfspath = ''
         if @resource.shared
           sharedfspath = File.join(PATH_DEFAULT_ROOTFS_SHARED,
             Lib::FileManager.file_hash(rootfsfile))
@@ -45,20 +44,11 @@ module Distem
 
           @resource.sharedpath = sharedfspath
           @resource.path = uniquefspath
-          rootfspath = @resource.sharedpath
         else
           uniquefspath = Lib::FileManager.extract(rootfsfile,uniquefspath)
           raise InvalidResourceError 'rootfs_image' unless uniquefspath
           @resource.path = uniquefspath
-          rootfspath = @resource.path
         end
-
-        # Make hostname local
-        File.open(File.join(rootfspath,'etc','hosts'),'a') do |f|
-          f.puts("127.0.0.1\t#{vnode.name}")
-          f.puts("::1\t#{vnode.name}")
-        end
-
       end
 
       def apply() # :nodoc:
