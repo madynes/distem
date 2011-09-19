@@ -86,9 +86,9 @@ module Distem
       end
 
       # Create a new NIC network interface on the physical node (used to communicate with the VNodes, see Daemon::Admin)
-      def self.set_new_nic(address)
+      def self.set_new_nic(address,netmask)
         iface = self.get_default_iface()
-        Shell.run("ifconfig #{iface}:#{@@nic_count} #{address}")
+        Shell.run("ifconfig #{iface}:#{@@nic_count} #{address} netmask #{netmask}")
         @@nic_count += 1
       end
 

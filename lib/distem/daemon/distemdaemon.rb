@@ -753,7 +753,8 @@ module Distem
         if daemon?
           @daemon_resources.add_vnetwork(vnetwork)
           #Add a virtual interface connected on the network
-          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork))
+          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork),
+          vnetwork.address.netmask)
         end
         @node_config.vnetwork_add(vnetwork)
 
