@@ -10,20 +10,32 @@ module Distem
       PATH_DISTEMTMP='/tmp/distem/'
       # The cgroups directory to use
       PATH_CGROUP='/dev/cgroup'
-      # The maximum number of network interfaces (used with ifb)
-      @@MAX_IFACES=64
+      # The default maximum number of network interfaces (used with ifb)
+      MAX_IFACES=64
+
+      # The maximal number of virtual nodes that can be created on this machine
+      @@vnodes_max=MAX_IFACES
       
       # Initialize a physical node (set cgroups, bridge, ifb, fill the PNode cpu and memory informations, ...)
       # ==== Attributes
       # * +pnode+ The PNode object that will be filled with different informations
       #
-      def self.init_node(pnode,vnodes_max=@@MAX_IFACES)
+      def self.init_node(pnode,vnodes_max=MAX_IFACES)
         Lib::NetTools.set_bridge()
-        @@MAX_IFACES=vnodes_max
-        Lib::NetTools.set_ifb(@@MAX_IFACES)
+        @@vnodes_max=vnodes_max
+        Lib::NetTools.set_ifb(@@vnodes_max)
         set_cgroups()
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
+      end
+
+
+      # Get the maximal number of vnodes that can be create on this machine
+      # ==== Returns
+      # Fixnum
+      #
+      def self.vnodes_max()
+        @@vnodes_max
       end
 
       # Clean and unset all content set by the system (remove cgroups, bridge, ifb, temporary files, ...)
