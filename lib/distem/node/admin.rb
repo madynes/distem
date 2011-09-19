@@ -11,15 +11,16 @@ module Distem
       # The cgroups directory to use
       PATH_CGROUP='/dev/cgroup'
       # The maximum number of network interfaces (used with ifb)
-      MAX_IFACES=64
+      @@MAX_IFACES=64
       
       # Initialize a physical node (set cgroups, bridge, ifb, fill the PNode cpu and memory informations, ...)
       # ==== Attributes
       # * +pnode+ The PNode object that will be filled with different informations
       #
-      def self.init_node(pnode,vnodes_max=MAX_IFACES)
+      def self.init_node(pnode,vnodes_max=@@MAX_IFACES)
         Lib::NetTools.set_bridge()
-        Lib::NetTools.set_ifb(vnodes_max)
+        @@MAX_IFACES=vnodes_max
+        Lib::NetTools.set_ifb(@@MAX_IFACES)
         set_cgroups()
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
