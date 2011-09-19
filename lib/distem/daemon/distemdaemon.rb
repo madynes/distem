@@ -100,7 +100,7 @@ module Distem
                 Admin.pnode_run_server(pnode)
                 sleep(1)
                 cl = NetAPI::Client.new(target)
-                ret = cl.pnode_init()
+                ret = cl.pnode_init(nil,properties)
                 pnode.memory.capacity = ret['memory']['capacity'].split()[0].to_i
                 pnode.memory.swap = ret['memory']['swap'].split()[0].to_i
 
