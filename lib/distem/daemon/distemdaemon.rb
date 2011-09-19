@@ -302,6 +302,8 @@ module Distem
               vnode.status = Resource::Status::CONFIGURING
               cl = NetAPI::Client.new(pnode.address.to_s)
               ret = cl.vnode_create(vnode.name,properties)
+              vnode.filesystem.shared = ret['filesystem']['shared']
+              vnode.filesystem.sharedpath = ret['filesystem']['sharedpath']
               vnode.filesystem.path = ret['filesystem']['path']
               vnode.status = Resource::Status::READY
             end
