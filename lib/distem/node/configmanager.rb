@@ -117,7 +117,7 @@ module Distem
       # * +viface+ The VIface object
       #
       def viface_add(viface)
-        raise Lib::DistemError, 'Maximum ifaces numbre reached' if viface.id >= Admin.vnodes_max
+        raise Lib::DistemError, "Maximum ifaces number of #{Admin.vifaces_max} reached" if viface.id >= Admin.vifaces_max
         Lib::Shell.run("ip link set dev ifb#{viface.id} up")
       end
 
