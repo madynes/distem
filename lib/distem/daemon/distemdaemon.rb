@@ -574,7 +574,7 @@ module Distem
         vifacename = vifacename.gsub(' ','_')
         vnode = vnode_get(vnodename)
 
-        viface = Resource::VIface.new(vifacename,vnode)
+        viface = Resource::VIface.new(vifacename,vnode,target?(vnode))
         vnode.add_viface(viface)
 
         if daemon?

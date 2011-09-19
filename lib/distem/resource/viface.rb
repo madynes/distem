@@ -107,11 +107,17 @@ module Distem
       # ==== Attributes
       # * +name+ The name of the virtual network interface
       # * +vnode+ The VNode object describing the virtual node associated to this virtual network interface
+      # * +localid+ Give this virtuel network interface a unique id
       #
-      def initialize(name,vnode)
+      def initialize(name,vnode,localid=true)
         raise if name.empty? or not name.is_a?(String)
 
-        @id = @@ids
+        if localid
+          @id = @@ids
+          @@ids += 1
+        else
+          @id = -1
+        end
         @name = name
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
@@ -119,7 +125,6 @@ module Distem
         @vinput = nil
         @voutput = nil
         @vroutes = []
-        @@ids += 1
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address
