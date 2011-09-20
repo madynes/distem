@@ -10,6 +10,7 @@ module Distem
       MAX_SIMULTANEOUS_ACTIONS = 8
 
       @@lxclock = Mutex.new
+      @@filelock = Mutex.new
       @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
 
       # The virtual node this container is set for
@@ -183,7 +184,7 @@ module Distem
         etcpath = File.join(rootfspath,'etc')
 
         Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
-
+        
         # Make hostname local
         unless @vnode.filesystem.shared
           File.open(File.join(etcpath,'hosts'),'a') do |f|
@@ -192,23 +193,31 @@ module Distem
           end
         end
 
-        # Make address local
-        @vnode.vifaces.each do |viface|
-          if viface.vnetwork
-            File.open(File.join(etcpath,'hosts'),'a') do |f|
-              f.puts("#{viface.address.address.to_s}\t#{@vnode.name}")
+        block = Proc.new {
+          # Make address local
+          @vnode.vifaces.each do |viface|
+            if viface.vnetwork
+              File.open(File.join(etcpath,'hosts'),'a') do |f|
+                f.puts("#{viface.address.address.to_s}\t#{@vnode.name}")
+              end
             end
           end
+          
+          # Load config in rc.local
+          filename = File.join(etcpath,'rc.local')
+          File.open(filename,'w') do |f|
+            f.puts("#!/bin/sh -e\n")
+            f.puts('. /etc/rc.local-`hostname`')
+            f.puts("exit 0")
+          end
+          File.chmod(0755,filename)
+        }
+
+        if @vnode.filesystem.shared
+          @@filelock.synchronize { block.call }
+        else
+          block.call
         end
-        
-        # Load config in rc.local
-        filename = File.join(etcpath,'rc.local')
-        File.open(filename,'w') do |f|
-          f.puts("#!/bin/sh -e\n")
-          f.puts('. /etc/rc.local-`hostname`')
-          f.puts("exit 0")
-        end
-        File.chmod(0755,filename)
 
 
         # Node specific rc.local
