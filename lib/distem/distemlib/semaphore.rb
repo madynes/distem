@@ -1,3 +1,6 @@
+require 'distem'
+require 'thread'
+
 module Distem
   module Lib
 
