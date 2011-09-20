@@ -32,6 +32,8 @@ TMP_DIR="/tmp/distem"
 VAR_DISTEM_NODES="DISTEM_NODES"
 VAR_DISTEM_COORD="DISTEM_COORDINATOR"
 
+ULIMIT_OPEN_FILES=65535 # to be removed
+
 def g5k?
   `hostname --fqdn`.chomp =~ /grid5000.fr$/
 end
@@ -249,6 +251,7 @@ else
   end
 end
 msg("Copying ssh private key file to the coordinator machine (#{coordinator})",MSG_INFO)
+puts coordinator
 `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
@@ -275,7 +278,19 @@ Net::SSH::Multi.start do |session|
       end
     end
   end
-  
+
+  #setting up ulimit-open_files, to be removed
+  allnodes=[coordinator] + nodelist
+  rule="root hard nofile"
+  rulenodes = exec(session,"grep '#{rule}' /etc/security/limits.conf; true")
+  rulemissing=allnodes - rulenodes.keys
+  rulemissing.collect!{ |node| nodeobjlist[node] }
+  rulemissing.each { |node| exec(session,"echo '#{rule} #{ULIMIT_OPEN_FILES}'>> /etc/security/limits.conf",node) } 
+  rule="root soft nofile"
+  rulenodes = exec(session,"grep '#{rule}' /etc/security/limits.conf; true")
+  rulemissing=allnodes - rulenodes.keys
+  rulemissing.collect!{ |node| nodeobjlist[node] }
+  rulemissing.each { |node| exec(session,"echo '#{rule} #{ULIMIT_OPEN_FILES}'>> /etc/security/limits.conf",node) } 
   
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",nil,false,false).keys
 	needsources = (nodelist + [coordinator]) - havesources
@@ -327,8 +342,8 @@ Net::SSH::Multi.start do |session|
     exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
     exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
-    exec(session,"rm -Rf #{gitdir}",:coord)
-    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
+    #exec(session,"rm -Rf #{gitdir}",:coord)
+    #exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version] ? "#{PKG_NAME}=#{options[:version]}" : PKG_NAME)
