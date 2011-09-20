@@ -27,6 +27,7 @@ module Distem
         set_cgroups()
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
+        Lib::FileSystemTools.set_limits()
       end
 
 
