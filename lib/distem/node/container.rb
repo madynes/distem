@@ -6,11 +6,11 @@ module Distem
 
     # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
     class Container
-      # The maximum simultaneous lxc actions (start,stop)
-      MAX_SIMULTANEOUS_LXC_ACTIONS = 8
+      # The maximum simultaneous actions (start,stop)
+      MAX_SIMULTANEOUS_ACTIONS = 8
 
       @@lxclock = Mutex.new
-      @@lxcsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_LXC_ACTIONS)
+      @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
 
       # The virtual node this container is set for
       attr_reader :vnode
@@ -93,14 +93,14 @@ module Distem
           update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
-            @@lxcsem.synchronize {
+            @@contsem.synchronize do
               Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
-            }
-            @@lxclock.synchronize {
-              Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
-            }
-            @cpuforge.apply
-            @networkforges.each_value { |netforge| netforge.apply }
+              @@lxclock.synchronize {
+                Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
+              }
+              @cpuforge.apply
+              @networkforges.each_value { |netforge| netforge.apply }
+            end
           else
             raise Lib::ResourceNotFoundError, @vnode.name
           end
@@ -120,14 +120,14 @@ module Distem
           update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
-            @@lxcsem.synchronize {
+            @@contsem.synchronize do
               Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
-            }
-            @@lxclock.synchronize {
-              Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
-            }
-            @cpuforge.undo
-            @networkforges.each_value { |netforge| netforge.undo }
+              @@lxclock.synchronize {
+                Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
+              }
+              @cpuforge.undo
+              @networkforges.each_value { |netforge| netforge.undo }
+            end
           end
           #@vnode.status = Resource::Status::READY
         #end
