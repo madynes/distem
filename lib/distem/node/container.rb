@@ -89,8 +89,8 @@ module Distem
           update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
+            Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
             @@lxclock.synchronize {
-              Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
               @cpuforge.apply
               @networkforges.each_value { |netforge| netforge.apply }
@@ -114,8 +114,8 @@ module Distem
           update()
           lxcls = Lib::Shell.run("lxc-ls")
           if (lxcls.split().include?(@vnode.name))
+            Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
             @@lxclock.synchronize {
-              Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
               Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
               @cpuforge.undo
               @networkforges.each_value { |netforge| netforge.undo }
