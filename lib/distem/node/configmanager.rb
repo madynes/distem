@@ -18,7 +18,7 @@ module Distem
         @vplatform = Distem::Resource::VPlatform.new
         @containers = {}
         @cpu_algorithm = Algorithm::CPU::HOGS
-        Container.stop_all()
+        Container.clean()
       end
 
       # Set up the algorithm to be used to limit the physical node CPU performances

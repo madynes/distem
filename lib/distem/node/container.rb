@@ -2,67 +2,72 @@ require 'distem'
 require 'thread'
 
 module Distem
-  module Node
+module Node
 
-    # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
-    class Container
-      # The maximum simultaneous actions (start,stop)
-      MAX_SIMULTANEOUS_ACTIONS = 8
+  # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
+  class Container
+    # The maximum simultaneous actions (start,stop)
+    MAX_SIMULTANEOUS_ACTIONS = 32
 
-      @@lxclock = Mutex.new
-      @@filelock = Mutex.new
-      @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
+    # Clean only one time
+    @@cleanlock = Mutex.new
+    # Was the system cleaned
+    @@cleaned = false
+    # Only write on common files once at the same time
+    @@filelock = Mutex.new
+    # Max number of simultaneous action
+    @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
 
-      # The virtual node this container is set for
-      attr_reader :vnode
-      # The object used to set up physical CPU limitations
-      attr_reader  :cpuforge
-      # The object used to set up physical filesystem
-      attr_reader  :fsforge
-      # The object used to set up network limitations
-      attr_reader  :networkforges
+    # The virtual node this container is set for
+    attr_reader :vnode
+    # The object used to set up physical CPU limitations
+    attr_reader  :cpuforge
+    # The object used to set up physical filesystem
+    attr_reader  :fsforge
+    # The object used to set up network limitations
+    attr_reader  :networkforges
 
-      # Create a new Container and associate it to a virtual node
-      # ==== Attributes
-      # * +vnode+ The VNode object
-      #
-      def initialize(vnode,cpu_algorithm=nil)
-        raise unless vnode.is_a?(Resource::VNode)
+    # Create a new Container and associate it to a virtual node
+    # ==== Attributes
+    # * +vnode+ The VNode object
+    #
+    def initialize(vnode,cpu_algorithm=nil)
+      raise unless vnode.is_a?(Resource::VNode)
 
-        @vnode = vnode
-        @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
-        @fsforge = FileSystemForge.new(@vnode)
-        raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
-          unless File.exists?(@vnode.filesystem.path)
-        raise Lib::InvalidParameterError, @vnode.filesystem.path \
-          unless File.directory?(@vnode.filesystem.path)
-        @networkforges = {}
-        @vnode.vifaces.each do |viface|
-          @networkforges[viface] = NetworkForge.new(viface)
-        end
-        @curname = ""
-        @configfile = ""
-        @id = 0
-
-        setup()
+      @vnode = vnode
+      @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
+      @fsforge = FileSystemForge.new(@vnode)
+      raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
+        unless File.exists?(@vnode.filesystem.path)
+      raise Lib::InvalidParameterError, @vnode.filesystem.path \
+        unless File.directory?(@vnode.filesystem.path)
+      @networkforges = {}
+      @vnode.vifaces.each do |viface|
+        @networkforges[viface] = NetworkForge.new(viface)
       end
+      @curname = ""
+      @configfile = ""
+      @id = 0
 
-      # Setup the virtual node container (copy ssh keys, ...)
-      #
-      def setup()
-        rootfspath = nil
-        if @vnode.filesystem.shared
-          rootfspath = @vnode.filesystem.sharedpath
-        else
-          rootfspath = @vnode.filesystem.path
-        end
-        rootfspath = File.join(rootfspath,'root','.ssh')
+      setup()
+    end
 
-        unless File.exists?(rootfspath)
-          Lib::Shell.run("mkdir -p #{rootfspath}")
-          Lib::Shell.run("cp -f #{File.join(ENV['HOME'],'.ssh')}/* #{rootfspath}/")
-        end
+    # Setup the virtual node container (copy ssh keys, ...)
+    #
+    def setup()
+      rootfspath = nil
+      if @vnode.filesystem.shared
+        rootfspath = @vnode.filesystem.sharedpath
+      else
+        rootfspath = @vnode.filesystem.path
       end
+      rootfspath = File.join(rootfspath,'root','.ssh')
+
+      unless File.exists?(rootfspath)
+        Lib::Shell.run("mkdir -p #{rootfspath}")
+        Lib::Shell.run("cp -f #{File.join(ENV['HOME'],'.ssh')}/* #{rootfspath}/")
+      end
+    end
 
       # Create new resource limitation objects if the virtual node resource has changed
       def update()
@@ -77,82 +82,56 @@ module Distem
         end
       end
       
-      # Stop all previously created containers (previous distem run, lxc, ...)
-      def self.stop_all
-        list = Lib::Shell::run("lxc-ls").split
-        list.each do |name|
-          Lib::Shell::run("lxc-stop -n #{name}")
+      # Clean every previously created containers (previous distem run, lxc, ...)
+      def self.clean
+        unless @@cleaned
+          if (@@cleanlock.locked?)
+            @@cleanlock.synchronize{}
+          else
+            @@cleanlock.synchronize {
+              LXCWrapper::Command.stopall()
+              LXCWrapper::Command.destroyall()
+            }
+          end
+          @@cleaned = true
         end
       end
 
       # Start all the resources associated to a virtual node (Run the virtual node)
       def start
-        #stop()
-        #unless @vnode.status == Resource::Status::RUNNING
-          #configure()
-          #@vnode.status = Resource::Status::CONFIGURING
-          update()
-          lxcls = Lib::Shell.run("lxc-ls")
-          if (lxcls.split().include?(@vnode.name))
-            @@contsem.synchronize do
-              Lib::Shell::run("lxc-start -d -n #{@vnode.name}",true)
-              @@lxclock.synchronize {
-                Lib::Shell::run("lxc-wait -n #{@vnode.name} -s RUNNING",true)
-              }
-              @cpuforge.apply
-              @networkforges.each_value { |netforge| netforge.apply }
-            end
-          else
-            raise Lib::ResourceNotFoundError, @vnode.name
-          end
+        update()
 
+        @@contsem.synchronize do
+          LXCWrapper::Command.start(@vnode.name)
+          @cpuforge.apply
+          @networkforges.each_value { |netforge| netforge.apply }
           @vnode.vifaces.each do |viface|
             Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
           end
-
-          #@vnode.status = Resource::Status::RUNNING
-        #end
+        end
       end
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
-        #unless @vnode.status == Resource::Status::READY
-          #@vnode.status = Resource::Status::CONFIGURING
-          update()
-          lxcls = Lib::Shell.run("lxc-ls")
-          if (lxcls.split().include?(@vnode.name))
-            @@contsem.synchronize do
-              Lib::Shell::run("lxc-stop -n #{@vnode.name}",true)
-              @@lxclock.synchronize {
-                Lib::Shell::run("lxc-wait -n #{@vnode.name} -s STOPPED",true)
-              }
-              @cpuforge.undo
-              @networkforges.each_value { |netforge| netforge.undo }
-            end
-          end
-          #@vnode.status = Resource::Status::READY
-        #end
+        update()
+        @@contsem.synchronize do
+          LXCWrapper::Command.stop(@vnode.name)
+          @cpuforge.undo
+          @networkforges.each_value { |netforge| netforge.undo }
+        end
       end
 
       # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
-        stop()
-        #check if the lxc container name is already taken
-        #@vnode.status = Resource::Status::CONFIGURING
-        lxcls = Lib::Shell.run("lxc-ls")
-        if (lxcls.split().include?(@vnode.name))
-            Lib::Shell.run("lxc-destroy -n #{@vnode.name}")
-        end
-        #@vnode.status = Resource::Status::READY
+        LXCWrapper::Command.destroy(@vnode.name,true)
       end
 
       # Remove and shutdown the virtual node, remove it's filesystem, ...
       def destroy
-        @vnode.status = Resource::Status::CONFIGURING
         stop()
         remove()
+        # >>>TODO: remove created files in shared filesystem
         Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
-        @vnode.status = Resource::Status::READY
       end
 
       # Update and reconfigure a virtual node (if the was some changes in the virtual resources description)
@@ -164,9 +143,6 @@ module Distem
 
       # Congigure a virtual node (set LXC config files, ...) on a physical machine
       def configure
-        remove()
-
-        #@vnode.status = Resource::Status::CONFIGURING
         rootfspath = nil
         if @vnode.filesystem.shared
           rootfspath = @vnode.filesystem.sharedpath
@@ -206,7 +182,7 @@ module Distem
           # Load config in rc.local
           filename = File.join(etcpath,'rc.local')
           cmd = '. /etc/rc.local-`hostname`'
-          ret = Shell.run("grep '#{cmd}' #{filename}; true",true)
+          ret = Lib::Shell.run("grep '#{cmd}' #{filename}; true",true)
           if ret.empty?
             File.open(filename,'w') do |f|
               f.puts("#!/bin/sh -e\n")
@@ -245,10 +221,9 @@ module Distem
         end
         File.chmod(0755,filename)
 
-        Lib::Shell.run("lxc-create -f #{configfile} -n #{@vnode.name}")
+        LXCWrapper::Command.create(@vnode.name,configfile)
 
         @id += 1
-        #@vnode.status = Resource::Status::READY
       end
     end
 
