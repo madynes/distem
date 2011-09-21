@@ -205,12 +205,16 @@ module Distem
           
           # Load config in rc.local
           filename = File.join(etcpath,'rc.local')
-          File.open(filename,'w') do |f|
-            f.puts("#!/bin/sh -e\n")
-            f.puts('. /etc/rc.local-`hostname`')
-            f.puts("exit 0")
+          cmd = '. /etc/rc.local-`hostname`'
+          ret = Shell.run("grep '#{cmd}' #{filename}; true",true)
+          if ret.empty?
+            File.open(filename,'w') do |f|
+              f.puts("#!/bin/sh -e\n")
+              f.puts(cmd)
+              f.puts("exit 0")
+            end
+            File.chmod(0755,filename)
           end
-          File.chmod(0755,filename)
         }
 
         if @vnode.filesystem.shared
