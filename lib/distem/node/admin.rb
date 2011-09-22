@@ -12,6 +12,8 @@ module Distem
       PATH_CGROUP='/dev/cgroup'
       # The default maximum number of network interfaces (used with ifb)
       MAX_IFACES=64
+      # The default maximum number of PTY creatable on the physical machine
+      MAX_PTY=8192
 
       # The maximal number of virtual network interfaces that can be created on this machine
       @@vifaces_max=MAX_IFACES
@@ -25,6 +27,7 @@ module Distem
         @@vifaces_max=vifaces_max.to_i
         Lib::NetTools.set_ifb(@@vifaces_max)
         set_cgroups()
+        set_pty()
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
         Lib::FileSystemTools.set_limits()
@@ -69,6 +72,10 @@ module Distem
       def self.set_iface(iface)
         Lib::Shell.run("ethtool -K #{iface} gso off")
         Lib::Shell.run("ethtool -K #{iface} tso off")
+      end
+
+      def self.set_pty(num=MAX_PTY)
+        Lib::Shell.run("sysctl kernel.pty.max=#{num}")
       end
     end
 
