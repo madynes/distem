@@ -12,8 +12,6 @@ module LXCWrapper # :nodoc: all
       "lxc.cgroup.devices.allow = c 1:5 rwm  # /dev/zero\n" \
       "lxc.cgroup.devices.allow = c 5:1 rwm  # /dev/console\n" \
       "lxc.cgroup.devices.allow = c 5:0 rwm  # /dev/tty\n" \
-      "lxc.cgroup.devices.allow = c 4:0 rwm  # /dev/tty0\n" \
-      "lxc.cgroup.devices.allow = c 4:1 rwm  # /dev/tty1\n" \
       "lxc.cgroup.devices.allow = c 1:8 rwm  # /dev/random\n" \
       "lxc.cgroup.devices.allow = c 1:9 rwm  # /dev/urandom\n" \
       "lxc.cgroup.devices.allow = c 136:* rwm  # /dev/pts/*\n" \
