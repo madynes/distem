@@ -5,20 +5,20 @@ module LXCWrapper # :nodoc: all
   class ConfigFile
     PATH_LOG_DIR=File.join(Distem::Lib::FileManager::PATH_DISTEM_LOGS,'lxc')
     DEFAULT_DEV_RULES=""\
-      "lxc.tty = 4" \
-      "lxc.pts = 1024" \
-      "lxc.cgroup.devices.deny = a" \
-      "lxc.cgroup.devices.allow = c 1:3 rwm  # /dev/null" \
-      "lxc.cgroup.devices.allow = c 1:5 rwm  # /dev/zero" \
-      "lxc.cgroup.devices.allow = c 5:1 rwm  # /dev/console" \
-      "lxc.cgroup.devices.allow = c 5:0 rwm  # /dev/tty" \
-      "lxc.cgroup.devices.allow = c 4:0 rwm  # /dev/tty0" \
-      "lxc.cgroup.devices.allow = c 4:1 rwm  # /dev/tty1" \
-      "lxc.cgroup.devices.allow = c 1:8 rwm  # /dev/random" \
-      "lxc.cgroup.devices.allow = c 1:9 rwm  # /dev/urandom" \
-      "lxc.cgroup.devices.allow = c 136:* rwm  # /dev/pts/*" \
-      "lxc.cgroup.devices.allow = c 5:2 rwm  #  /dev/pts/ptmx" \
-      "lxc.cgroup.devices.allow = c 254:0 rwm  # rtc"  
+      "lxc.tty = 4\n" \
+      "lxc.pts = 1024\n" \
+      "lxc.cgroup.devices.deny = a\n" \
+      "lxc.cgroup.devices.allow = c 1:3 rwm  # /dev/null\n" \
+      "lxc.cgroup.devices.allow = c 1:5 rwm  # /dev/zero\n" \
+      "lxc.cgroup.devices.allow = c 5:1 rwm  # /dev/console\n" \
+      "lxc.cgroup.devices.allow = c 5:0 rwm  # /dev/tty\n" \
+      "lxc.cgroup.devices.allow = c 4:0 rwm  # /dev/tty0\n" \
+      "lxc.cgroup.devices.allow = c 4:1 rwm  # /dev/tty1\n" \
+      "lxc.cgroup.devices.allow = c 1:8 rwm  # /dev/random\n" \
+      "lxc.cgroup.devices.allow = c 1:9 rwm  # /dev/urandom\n" \
+      "lxc.cgroup.devices.allow = c 136:* rwm  # /dev/pts/*\n" \
+      "lxc.cgroup.devices.allow = c 5:2 rwm  #  /dev/pts/ptmx\n" \
+      "lxc.cgroup.devices.allow = c 254:0 rwm  # rtc\n"  
 
     def self.generate(vnode,filepath)
       # Write lxc config file
