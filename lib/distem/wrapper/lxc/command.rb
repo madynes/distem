@@ -10,7 +10,7 @@ module LXCWrapper # :nodoc: all
     @@lslock = Mutex.new
     @@lscache = {}
     @@waitlock = Mutex.new
-    @@starsem = Distem::Lib::Semaphore.new(MAX_SIMULTANEOUS_START)
+    @@startsem = Distem::Lib::Semaphore.new(MAX_SIMULTANEOUS_START)
 
     def self.create(contname, configfile, wait=true)
       destroy(contname,wait) if ls().include?(contname)
