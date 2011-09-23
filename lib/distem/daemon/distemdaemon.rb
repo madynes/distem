@@ -435,7 +435,7 @@ module Distem
             else
               vnode.status = Resource::Status::CONFIGURING
               cl = NetAPI::Client.new(vnode.host.address)
-              cl.vnode_start(vnode.name)
+              cl.vnode_start(vnode.name,properties)
               vnode.status = Resource::Status::RUNNING
             end
           }
@@ -477,7 +477,7 @@ module Distem
             else
               vnode.status = Resource::Status::CONFIGURING
               cl = NetAPI::Client.new(vnode.host.address)
-              cl.vnode_stop(vnode.name)
+              cl.vnode_stop(vnode.name,properties)
               vnode.status = Resource::Status::READY
             end
           }
