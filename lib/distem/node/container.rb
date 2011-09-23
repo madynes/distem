@@ -8,6 +8,7 @@ module Node
   class Container
     # The maximum simultaneous actions (start,stop)
     MAX_SIMULTANEOUS_ACTIONS = 32
+    MAX_SIMULTANEOUS_CONFIG = 32
 
     # Clean only one time
     @@cleanlock = Mutex.new
@@ -17,6 +18,8 @@ module Node
     @@filelock = Mutex.new
     # Max number of simultaneous action
     @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
+    # Max number of simultaneous config action
+    @@confsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_CONFIG)
 
     # The virtual node this container is set for
     attr_reader :vnode
@@ -143,87 +146,89 @@ module Node
 
       # Congigure a virtual node (set LXC config files, ...) on a physical machine
       def configure
-        rootfspath = nil
-        if @vnode.filesystem.shared
-          rootfspath = @vnode.filesystem.sharedpath
-        else
-          rootfspath = @vnode.filesystem.path
-        end
-
-        @curname = "#{@vnode.name}-#{@id}"
-        
-        # Generate lxc configfile
-        configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
-        LXCWrapper::ConfigFile.generate(@vnode,configfile)
-
-
-        etcpath = File.join(rootfspath,'etc')
-
-        Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
-        
-        # Make hostname local
-        unless @vnode.filesystem.shared
-          File.open(File.join(etcpath,'hosts'),'a') do |f|
-            f.puts("127.0.0.1\t#{@vnode.name}")
-            f.puts("::1\t#{@vnode.name}")
+        @@confsem.synchronize do
+          rootfspath = nil
+          if @vnode.filesystem.shared
+            rootfspath = @vnode.filesystem.sharedpath
+          else
+            rootfspath = @vnode.filesystem.path
           end
-        end
 
-        block = Proc.new {
-          # Make address local
-          @vnode.vifaces.each do |viface|
-            if viface.vnetwork
-              File.open(File.join(etcpath,'hosts'),'a') do |f|
-                f.puts("#{viface.address.address.to_s}\t#{@vnode.name}")
-              end
-            end
-          end
+          @curname = "#{@vnode.name}-#{@id}"
           
-          # Load config in rc.local
-          filename = File.join(etcpath,'rc.local')
-          cmd = '. /etc/rc.local-`hostname`'
-          ret = Lib::Shell.run("grep '#{cmd}' #{filename}; true",true)
-          if ret.empty?
-            File.open(filename,'w') do |f|
-              f.puts("#!/bin/sh -e\n")
-              f.puts(cmd)
-              f.puts("exit 0")
+          # Generate lxc configfile
+          configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
+          LXCWrapper::ConfigFile.generate(@vnode,configfile)
+
+
+          etcpath = File.join(rootfspath,'etc')
+
+          Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
+          
+          # Make hostname local
+          unless @vnode.filesystem.shared
+            File.open(File.join(etcpath,'hosts'),'a') do |f|
+              f.puts("127.0.0.1\t#{@vnode.name}")
+              f.puts("::1\t#{@vnode.name}")
             end
-            File.chmod(0755,filename)
           end
-        }
 
-        if @vnode.filesystem.shared
-          @@filelock.synchronize { block.call }
-        else
-          block.call
-        end
-
-
-        # Node specific rc.local
-        filename = File.join(etcpath,"rc.local-#{@vnode.name}")
-        File.open(filename, "w") do |f|
-          f.puts("#!/bin/sh -e\n")
-          f.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if @vnode.gateway?
-          @vnode.vifaces.each do |viface|
-            f.puts("ip route flush dev #{viface.name}")
-            if viface.vnetwork
-              f.puts("ifconfig #{viface.name} #{viface.address.address.to_s} netmask #{viface.address.netmask.to_s}")
-              f.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
-              #compute all routes
-              viface.vnetwork.vroutes.each_value do |vroute|
-                f.puts("ip route add #{vroute.dstnet.address.to_string} via #{vroute.gw.address.to_s} dev #{viface.name}") unless vroute.gw.address.to_s == viface.address.to_s
+          block = Proc.new {
+            # Make address local
+            @vnode.vifaces.each do |viface|
+              if viface.vnetwork
+                File.open(File.join(etcpath,'hosts'),'a') do |f|
+                  f.puts("#{viface.address.address.to_s}\t#{@vnode.name}")
+                end
               end
             end
-            f.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
+            
+            # Load config in rc.local
+            filename = File.join(etcpath,'rc.local')
+            cmd = '. /etc/rc.local-`hostname`'
+            ret = Lib::Shell.run("grep '#{cmd}' #{filename}; true",true)
+            if ret.empty?
+              File.open(filename,'w') do |f|
+                f.puts("#!/bin/sh -e\n")
+                f.puts(cmd)
+                f.puts("exit 0")
+              end
+              File.chmod(0755,filename)
+            end
+          }
+
+          if @vnode.filesystem.shared
+            @@filelock.synchronize { block.call }
+          else
+            block.call
           end
-          f.puts("exit 0")
+
+
+          # Node specific rc.local
+          filename = File.join(etcpath,"rc.local-#{@vnode.name}")
+          File.open(filename, "w") do |f|
+            f.puts("#!/bin/sh -e\n")
+            f.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if @vnode.gateway?
+            @vnode.vifaces.each do |viface|
+              f.puts("ip route flush dev #{viface.name}")
+              if viface.vnetwork
+                f.puts("ifconfig #{viface.name} #{viface.address.address.to_s} netmask #{viface.address.netmask.to_s}")
+                f.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
+                #compute all routes
+                viface.vnetwork.vroutes.each_value do |vroute|
+                  f.puts("ip route add #{vroute.dstnet.address.to_string} via #{vroute.gw.address.to_s} dev #{viface.name}") unless vroute.gw.address.to_s == viface.address.to_s
+                end
+              end
+              f.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
+            end
+            f.puts("exit 0")
+          end
+          File.chmod(0755,filename)
+
+          LXCWrapper::Command.create(@vnode.name,configfile)
+
+          @id += 1
         end
-        File.chmod(0755,filename)
-
-        LXCWrapper::Command.create(@vnode.name,configfile)
-
-        @id += 1
       end
     end
 
