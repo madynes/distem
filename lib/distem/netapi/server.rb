@@ -4,6 +4,13 @@ require 'socket'
 require 'ipaddress'
 require 'json'
 require 'cgi'
+require 'webrick'
+
+module WEBrick # :nodoc:
+  module Config
+    General[:MaxClients] = 2048
+  end
+end
 
 module Distem
   module NetAPI
