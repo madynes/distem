@@ -9,11 +9,15 @@ module Distem
   module NetAPI
 
     class Client
+      # The maximum number of simultaneous requests
+      MAX_SIMULTANEOUS_REQ = 64
       # The HTTP OK status value
       HTTP_STATUS_OK = 200
 
       # The default timeout
       TIMEOUT=900
+
+      @@semreq = Lib::Semaphore.new(MAX_SIMULTANEOUS_REQ)
 
       # Create a new Client and connect it to a specified REST(distem) server
       # ==== Attributes
@@ -37,6 +41,7 @@ module Distem
       # ==== Returns
       # The physical node which have been initialized (Hash)
       def pnode_init(target = nil, properties = {})
+        @@semreq.acquire
         begin
           properties = properties.to_json if properties.is_a?(Hash)
 
@@ -53,6 +58,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -69,6 +76,7 @@ module Distem
       # ==== Returns
       # The physical node which have been initialized (Hash)
       def pnode_quit(target)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/pnodes/#{target}"
@@ -83,6 +91,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -92,6 +102,7 @@ module Distem
       # ==== Returns
       # The physical node informations (Hash)
       def pnode_info(pnodename)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/pnodes/#{pnodename}"
@@ -104,12 +115,15 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
       # Quit distem on every physical machines
       #
       def pnodes_quit()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/pnodes"
@@ -124,6 +138,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -131,6 +147,7 @@ module Distem
       # ==== Returns
       # The virtual nodes informations (Array of Hashes, see pnode_info)
       def pnodes_info()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/pnodes"
@@ -143,6 +160,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -156,6 +175,7 @@ module Distem
       # ==== Returns
       # The virtual node which have been created (Hash)
       def vnode_create(name, properties)
+        @@semreq.acquire
         begin
           properties = properties.to_json if properties.is_a?(Hash)
 
@@ -172,6 +192,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -187,6 +209,7 @@ module Distem
       # ==== Returns
       # The virtual node which have been removed (Hash)
       def vnode_remove(name)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(name)}"
@@ -201,6 +224,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -210,6 +235,7 @@ module Distem
       # ==== Returns
       # The virtual node informations (Hash)
       def vnode_info(vnodename)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnodename)}"
@@ -222,6 +248,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -231,6 +259,7 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_start(vnode, properties = {})
+        @@semreq.acquire
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
@@ -246,6 +275,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -261,6 +292,7 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_stop(vnode, properties = {})
+        @@semreq.acquire
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
@@ -276,6 +308,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -292,6 +326,7 @@ module Distem
       # ==== Returns
       # The virtual interface which have been created (Hash)
       def viface_create(vnode, name)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/vifaces"
@@ -306,6 +341,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -317,6 +354,7 @@ module Distem
       # ==== Returns
       # The virtual interface which have been created (Hash)
       def vcpu_create(vnode, corenb=1, frequency=nil)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/vcpu"
@@ -331,6 +369,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -341,6 +381,7 @@ module Distem
       # ==== Returns
       # The virtual node which have been removed (Hash)
       def viface_remove(vnodename,vifacename)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
@@ -355,6 +396,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -365,6 +408,7 @@ module Distem
       # ==== Returns
       # The virtual network interface informations (Hash)
       def viface_info(vnodename, vifacename)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
@@ -378,6 +422,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -387,6 +433,7 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_gateway(vnode)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/mode"
@@ -401,6 +448,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -410,6 +459,7 @@ module Distem
       # ==== Returns
       # The virtual node filesystem informations (Hash)
       def vnode_filesystem_info(vnode)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/filesystem"
@@ -424,6 +474,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -434,6 +486,7 @@ module Distem
       # ==== Returns
       # The path where the compressed image was retrieved
       def vnode_filesystem_get(vnode,target='.')
+        @@semreq.acquire
         begin
           raise Lib::ResourceNotFoundError, File.dirname(target) \
             unless File.exists?(File.dirname(target))
@@ -457,6 +510,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -464,6 +519,7 @@ module Distem
       # ==== Returns
       # Virtual nodes that have been removed (Array of Hash)
       def vnodes_remove()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes"
@@ -478,6 +534,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -486,6 +544,7 @@ module Distem
       # ==== Returns
       # The virtual nodes informations (Array of Hashes, see vnode_info)
       def vnodes_info()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes"
@@ -498,6 +557,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -508,6 +569,7 @@ module Distem
       # ==== Returns
       # The virtual network which have been created (Hash)
       def vnetwork_create(name, address)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks"
@@ -522,6 +584,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -531,6 +595,7 @@ module Distem
       # ==== Returns
       # The virtual network which have been removed (Hash)
       def vnetwork_remove(name)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks/#{URI.escape(name)}"
@@ -545,6 +610,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -554,6 +621,7 @@ module Distem
       # ==== Returns
       # The virtual network informations (Hash)
       def vnetwork_info(vnetworkname)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks/#{URI.escape(vnetworkname)}"
@@ -566,6 +634,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -574,6 +644,7 @@ module Distem
       # ==== Returns
       # Virtual networks that have been removed (Hash)
       def vnetworks_remove()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks"
@@ -588,6 +659,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -595,6 +668,7 @@ module Distem
       # ==== Returns
       # The virtual networks informations (Array of Hash, see vnetwork_info)
       def vnetworks_info()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks"
@@ -607,6 +681,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -622,6 +698,7 @@ module Distem
       # ==== Returns
       # The virtual interface (Hash)
       def viface_attach(vnode, viface, properties)
+        @@semreq.acquire
         begin
           properties = properties.to_json if properties.is_a?(Hash)
           ret = {}
@@ -637,6 +714,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -647,6 +726,7 @@ module Distem
       # ==== Returns
       # The virtual interface (Hash)
       def viface_detach(vnode, viface)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
@@ -661,6 +741,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -673,6 +755,7 @@ module Distem
       # The virtual route which have been created (Hash)
 
       def vroute_create(srcnet,destnet,gateway,vnode="")
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks/#{URI.escape(srcnet)}/vroutes"
@@ -688,6 +771,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -695,6 +780,7 @@ module Distem
       # ==== Returns
       # All the virtual routes which have been created (Array of Hashes)
       def vroute_complete()
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnetworks/vroutes/complete"
@@ -707,6 +793,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -717,6 +805,7 @@ module Distem
       # ==== Returns
       # A Hash with the command which have been performed and the resold of it
       def vnode_execute(vnode, command)
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/commands"
@@ -731,6 +820,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -742,6 +833,7 @@ module Distem
       # The description of the vplatform
 
       def vplatform_create(data,format = 'JSON')
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vplatform"
@@ -756,6 +848,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
@@ -765,6 +859,7 @@ module Distem
       # ==== Returns
       # The description in the wished format
       def vplatform_info(format = 'JSON')
+        @@semreq.acquire
         begin
           ret = {}
           req = "/vplatform/#{format}"
@@ -779,6 +874,8 @@ module Distem
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
         end
       end
 
