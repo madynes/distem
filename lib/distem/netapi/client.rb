@@ -24,11 +24,12 @@ module Distem
       # * +serveraddr+ The REST server address (String)
       # * +port+ The port the REST server is listening on
       #
-      def initialize(serveraddr="localhost",port=4567)
+      def initialize(serveraddr="localhost",port=4567, semsize = nil)
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
         @resource = RestClient::Resource.new(@serverurl, :timeout => TIMEOUT, :open_timeout => (TIMEOUT/2))
+        @@semreq = Lib::Semaphore.new(semsize) if semsize and @@semreq.size != semsize
         @resource
       end
 

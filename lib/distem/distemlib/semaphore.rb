@@ -6,13 +6,16 @@ module Distem
 
     #Code snippet from : https://gist.github.com/305986
     class Semaphore
+      # The size of the semaphore
+      attr_reader :size
       # Create a new Semaphore object
       # ==== Attributes
-      # * +val+ The size of the semaphore
+      # * +size+ The size of the semaphore
       #
-      def initialize(val)
-        raise InvalidParameterError unless val >= 0
-        @val = val
+      def initialize(size)
+        raise InvalidParameterError unless size >= 0
+        @size = size
+        @val = @size
         @lock = Mutex.new
         @positive = ConditionVariable.new
       end
