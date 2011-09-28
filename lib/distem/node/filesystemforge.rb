@@ -27,14 +27,17 @@ module Distem
         rootfsfile = Lib::FileManager.download(@resource.image)
         uniquefspath = File.join(PATH_DEFAULT_ROOTFS_UNIQUE,@resource.vnode.name)
 
-        block = Proc.new { |filepath|
+        block = Proc.new { |filepath,mode|
           Lib::Shell.run("rm -Rf #{filepath}") if File.exists?(filepath)
-          Lib::Shell.run("mkdir -p #{filepath}")
+          Lib::Shell.run("mkdir #{(mode ? "-m #{mode}" : '')} -p #{filepath}")
         }
 
-        block.call(File.join(uniquefspath,'proc'))
-        block.call(File.join(uniquefspath,'sys'))
-        block.call(File.join(uniquefspath,'dev','pts'))
+        block.call(File.join(uniquefspath,'proc'),755)
+        block.call(File.join(uniquefspath,'sys'),755)
+        block.call(File.join(uniquefspath,'dev','pts'),744)
+        # Not necessary at the moment
+        #block.call(File.join(uniquefspath,'dev','shm'),1777)
+        #block.call(File.join(uniquefspath,'home','my'),755)
 
         if @resource.shared
           sharedfspath = File.join(PATH_DEFAULT_ROOTFS_SHARED,

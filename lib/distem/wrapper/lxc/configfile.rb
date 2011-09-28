@@ -34,10 +34,15 @@ module LXCWrapper # :nodoc: all
         
         f.puts "lxc.mount.entry=proc #{vnode.filesystem.path}/proc " \
           "proc nodev,noexec,nosuid 0 0"
-        f.puts "lxc.mount.entry=devpts #{vnode.filesystem.path}/dev/pts " \
-          "devpts defaults 0 0"
         f.puts "lxc.mount.entry=sysfs #{vnode.filesystem.path}/sys " \
           "sysfs defaults  0 0"
+        f.puts "lxc.mount.entry=devpts #{vnode.filesystem.path}/dev/pts " \
+          "devpts defaults 0 0"
+        # Not necessary at the moment
+        # f.puts "lxc.mount.entry=devshm #{vnode.filesystem.path}/dev/shm " \
+        #  "tmpfs defaults 0 0"
+        # f.puts "lxc.mount.entry=uniq #{vnode.filesystem.path}/home/my " \
+        #  "none defaults 0 0"
         f.puts "lxc.console = #{File.join(PATH_LOG_DIR,vnode.name)}"
 
         vnode.vifaces.each do |viface|
