@@ -79,6 +79,13 @@ module Distem
       def self.set_ifb(nb=64)
         Shell.run("modprobe ifb numifbs=#{nb}")
       end
+      
+      # Set up the ARP cache 
+      def self.set_arp_cache()
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1 = 1024")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2 = 4096")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3 = 16384")
+      end
 
       # Clean the IFB module
       def self.unset_ifb()
@@ -90,6 +97,17 @@ module Distem
         iface = self.get_default_iface()
         Shell.run("ifconfig #{iface}:#{@@nic_count} #{address} netmask #{netmask}")
         @@nic_count += 1
+      end
+
+
+      # Set up a physical machine network properties
+      # ==== Attributes
+      # * +max_vifaces+ the maximum number of virtual network interfaces that'll be set on this physical machine
+      #
+      def self.set_resource(max_vifaces)
+        set_arp_cache()
+        set_bridge()
+        set_ifb(max_vifaces)
       end
 
       # Gets the physical name of a virtual network interface

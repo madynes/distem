@@ -59,11 +59,7 @@ module Distem
 
         nodemodeblock = Proc.new {
           pnode = @node_config.pnode
-          if properties['max_vifaces']
-            Node::Admin.init_node(pnode,properties['max_vifaces'].to_i)
-          else
-            Node::Admin.init_node(pnode)
-          end
+          Node::Admin.init_node(pnode,properties)
 
           if properties['cpu_algorithm']
             algo = nil
@@ -173,8 +169,8 @@ module Distem
         end
 
         if target?(target)
-          #vnodes_remove()
-          #vnetworks_remove()
+          vnodes_remove()
+          vnetworks_remove()
           Node::Admin.quit_node()
           Thread.new do
             sleep(2)

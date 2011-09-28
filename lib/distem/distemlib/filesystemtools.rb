@@ -5,7 +5,10 @@ module Distem
 
     # Class that allow to perform physical operations on a physical filesystem resource
     class FileSystemTools
-      def self.set_limits()
+      # Set up a physical machine filesystem properties
+      # ==== Attributes
+      #
+      def self.set_resource()
         Shell.run("sysctl fs.inotify.max_user_instances=1024")
       end
     end

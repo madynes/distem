@@ -10,27 +10,27 @@ module Distem
       PATH_DISTEMTMP='/tmp/distem/'
       # The cgroups directory to use
       PATH_CGROUP='/dev/cgroup'
-      # The default maximum number of network interfaces (used with ifb)
-      MAX_IFACES=64
+      # The default maximum number of virual network interfaces (used with ifb)
+      MAX_VIFACES=64
       # The default maximum number of PTY creatable on the physical machine
       MAX_PTY=8192
 
       # The maximal number of virtual network interfaces that can be created on this machine
-      @@vifaces_max=MAX_IFACES
+      @@vifaces_max=MAX_VIFACES
       
       # Initialize a physical node (set cgroups, bridge, ifb, fill the PNode cpu and memory informations, ...)
       # ==== Attributes
       # * +pnode+ The PNode object that will be filled with different informations
+      # * +properties+ An hash containing specific initialization parameters (max_vifaces,)
       #
-      def self.init_node(pnode,vifaces_max=MAX_IFACES)
-        Lib::NetTools.set_bridge()
-        @@vifaces_max=vifaces_max.to_i
-        Lib::NetTools.set_ifb(@@vifaces_max)
+      def self.init_node(pnode,properties)
+        @@vifaces_max = properties['max_vifaces'].to_i if properties['max_vifaces']
         set_cgroups()
         set_pty()
+        Lib::NetTools.set_resource(@@vifaces_max)
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
-        Lib::FileSystemTools.set_limits()
+        Lib::FileSystemTools.set_resource()
       end
 
 
@@ -68,14 +68,8 @@ module Distem
         end
       end
 
-      # Set up a network interface to work with the different tools (i.e. tcp-tso&gso set to off in order to work with TC TBF)
-      def self.set_iface(iface)
-        Lib::Shell.run("ethtool -K #{iface} gso off")
-        Lib::Shell.run("ethtool -K #{iface} tso off")
-      end
-
       def self.set_pty(num=MAX_PTY)
-        Lib::Shell.run("sysctl kernel.pty.max=#{num}")
+        Lib::Shell.run("sysctl -w kernel.pty.max=#{num}")
       end
     end
 
