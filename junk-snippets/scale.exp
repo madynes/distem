@@ -1,0 +1,122 @@
+#!/usr/bin/ruby
+
+require 'distem'
+require 'pp'
+
+IMAGE='file:///home/lsarzyniec/rootfs.tar.gz'
+MAX_VNODES=1000
+WAIT_PERIOD=100
+WAIT_TIME=4
+
+pnodes=ENV['DISTEM_NODES'].split("\n")
+pnodes.delete(ENV['DISTEM_COORDINATOR'])
+
+#pnodes=[
+# ...
+#]
+
+nodes = []
+
+start = Time.now
+
+Distem.client do |cl|
+  pp cl.vnetwork_create("network",'10.144.0.0/16')
+  
+  puts 'Starting PNodes ...'
+  pnodes.each do |pnode|
+    cl.pnode_init(pnode,{'max_vifaces' => MAX_VNODES.to_s})
+    puts "\t#{pnode} started"
+  end
+  puts 'done'
+  puts "Time: #{Time.now - start}"
+  
+  str = ""
+  tot=0
+  puts 'Creating the VNodes ...'
+  n = 0
+  pnodes.each do |pnode|
+    MAX_VNODES.times do |i|
+      node = "node-#{n}-#{i}"
+      cl.vnode_create!(node, { 'image' => IMAGE, 'target' => pnode, 'fs_shared' => true})
+      cl.viface_create(node, 'if0')
+      cl.viface_attach(node, 'if0', {'vnetwork' => 'network'})
+      nodes << node
+      tot += 1
+      print "\010" * str.size
+      str = "\tNodes OK: #{tot.to_s}"
+      print str
+      STDOUT.flush
+      sleep(WAIT_TIME) if (tot % WAIT_PERIOD) == 0
+    end
+    n += 1
+  end
+  puts "\ndone"
+  puts "Time: #{Time.now - start}"
+
+  puts 'Waiting for the VNodes to be installed ...'
+  prevrdy = false
+  tot = 0
+  nodes.each do |node|
+    newnode = true
+    begin
+      if prevrdy == false
+        if newnode
+          puts "\n\tWaiting for #{node}"
+          newnode = false
+        end
+        sleep(0.5) 
+      end
+      ret = cl.vnode_info(node)
+      prevrdy = (ret['status'] == Distem::Resource::Status::READY)
+    end until prevrdy
+    tot += 1
+    print "\010" * str.size
+    str = "\tNodes OK: #{tot.to_s}"
+    print str
+    STDOUT.flush
+  end
+  puts "\ndone"
+  puts "Time: #{Time.now - start}"
+
+
+
+  tot = 0
+  puts 'Starting the VNodes ...'
+  nodes.each do |node|
+    cl.vnode_start!(node)
+    tot += 1
+    print "\010" * str.size
+    str = "\tNodes OK: #{tot.to_s}"
+    print str
+    STDOUT.flush
+    sleep(WAIT_TIME) if (tot % WAIT_PERIOD) == 0
+  end
+  puts "\ndone"
+  puts "Time: #{Time.now - start}"
+
+  puts 'Waiting for the VNodes to be started ...'
+  prevrdy = false
+  tot = 0
+  str = ""
+  nodes.each do |node|
+    newnode = true
+    begin
+      if prevrdy == false
+        if newnode
+          puts "\n\tWaiting for #{node}"
+          newnode = false
+        end
+        sleep(0.5) 
+      end
+      ret = cl.vnode_info(node)
+      prevrdy = (ret['status'] == Distem::Resource::Status::RUNNING)
+    end until prevrdy
+    tot += 1
+    print "\010" * str.size
+    str = "\tNodes OK: #{tot.to_s}"
+    print str
+    STDOUT.flush
+  end
+  puts "\ndone"
+  puts "\nDone installing and starting #{nodes.size} nodes on #{pnodes.size} machines in #{Time.now - start}"
+end
