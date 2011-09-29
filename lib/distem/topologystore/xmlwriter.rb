@@ -110,6 +110,7 @@ module Distem
       def visit_filesystem(filesystem)
         ret = REXML::Element.new("filesystem")
         ret.add_attribute('image',filesystem.image)
+        ret.add_attribute('shared',filesystem.shared.to_s)
         return ret
       end
 

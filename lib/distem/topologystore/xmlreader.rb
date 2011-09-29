@@ -143,6 +143,7 @@ module Distem
       def parse_filesystem(xmldoc,tmp={})
         ret = tmp
         ret['image'] = xmldoc.attribute('image').to_s
+        ret['shared'] = xmldoc.attribute('shared').to_s
         return ret
       end
 

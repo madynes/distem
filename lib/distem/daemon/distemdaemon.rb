@@ -1197,6 +1197,7 @@ module Distem
           props['async'] = true
           props['target'] = vnode['host'] if vnode['host']
           props['image'] = vnode['filesystem']['image']
+          props['fs_shared'] = vnode['filesystem']['shared']
           vnode_create(vnode['name'], props)
           if vnode['vcpu'] and vnode['vcpu']['vcores']
             sleep(0.5)
