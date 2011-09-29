@@ -22,6 +22,7 @@
 
 <!ELEMENT filesystem EMPTY>
 <!ATTLIST filesystem image CDATA #REQUIRED>
+<!ATTLIST filesystem shared (true,false) "false">
 
 <!ELEMENT vcpu vcores+>
 <!ATTLIST vcpu pcpu IDREF #REQUIRED>
