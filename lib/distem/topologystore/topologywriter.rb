@@ -67,6 +67,15 @@ module Distem
       def visit_nilclass(obj) # :nodoc:
         return nil
       end
+      #
+      # Visit a String object
+      # ==== Attributes
+      # * +str+ The String object
+      # ==== Returns
+      # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
+      def visit_string(str)
+        return str
+      end
 
       
       # Visit an Hash object, call the "visit" method for each *values* in the Hash.
