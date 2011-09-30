@@ -1200,12 +1200,12 @@ module Distem
           props['fs_shared'] = vnode['filesystem']['shared']
           vnode_create(vnode['name'], props)
           if vnode['vcpu'] and vnode['vcpu']['vcores']
-            sleep(0.5)
+            sleep(0.1)
             vcpu_create(vnode['name'],vnode['vcpu']['vcores'].size,vnode['vcpu']['vcores'][0]['frequency'])
           end
 
           next if !vnode['vifaces'] or vnode['vifaces'].empty?
-          sleep(0.5)
+          sleep(0.1)
 
           vnode['vifaces'].each do |viface|
             viface_create(vnode['name'],viface['name'])
@@ -1239,6 +1239,8 @@ module Distem
             end
             viface_attach(vnode['name'],viface['name'],props)
           end
+          vnode_set_mode(vnode['name'], Resource::VNode::MODE_GATEWAY) \
+            if vnode['gateway']
           props = {}
         end
 
