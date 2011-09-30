@@ -718,7 +718,7 @@ module Distem
       # ==== Exceptions
       #
       def vnode_execute(vnodename,command)
-        ret = {}
+        ret = ""
         if daemon?
           # >>> TODO: check if vnode exists
           vnode = vnode_get(vnodename)
@@ -727,8 +727,7 @@ module Distem
 
           raise unless vnode
 
-          ret['command'] = command
-          ret['result'] = Daemon::Admin.vnode_run(vnode,command)
+          ret = Daemon::Admin.vnode_run(vnode,command)
         end
 
         return ret
