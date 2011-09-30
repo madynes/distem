@@ -9,7 +9,7 @@ module Distem
       # ==== Attributes
       #
       def self.set_resource()
-        Shell.run("sysctl fs.inotify.max_user_instances=1024")
+        Shell.run("sysctl -w fs.inotify.max_user_instances=1024")
       end
     end
 
