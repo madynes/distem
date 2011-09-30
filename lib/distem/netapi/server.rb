@@ -51,6 +51,29 @@ module Distem
           "ServerResourceError #{request.request_method} #{request.url}"
       end
 
+      # Try to catch and wrapp every kind of exception
+      def check
+        begin
+          yield
+        rescue JSON::ParserError, Lib::ParameterError => pe
+          @status = HTTP_STATUS_BAD_REQUEST
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
+        rescue Lib::ResourceError => re
+          @status = HTTP_STATUS_NOT_FOUND
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+        rescue Lib::NotImplementedError => ni
+          @status = HTTP_STATUS_NOT_IMPLEMENTED
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
+        rescue Lib::ShellError => se
+          @status = HTTP_STATUS_INTERN_SERV_ERROR
+          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
+        rescue Lib::ClientError => ce
+          @status = ce.num
+          @headers[HTTP_HEADER_ERR] = ce.desc
+          @body = ce.body
+        end
+      end
+
       ##
       # :method: post(/pnodes)
       #
@@ -80,22 +103,10 @@ module Distem
       
       #
       post '/pnodes/?' do
-        begin 
+        check do  
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
-          ret = @daemon.pnode_init(params['target'],props)
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+          @body = @daemon.pnode_init(params['target'],props)
         end
 
         return result!
@@ -127,20 +138,8 @@ module Distem
       
       #
       delete '/pnodes/:pnode/?' do
-        begin 
-          ret = @daemon.pnode_quit(params['pnode'])
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do 
+          @body = @daemon.pnode_quit(params['pnode'])
         end
 
         return result!
@@ -172,26 +171,8 @@ module Distem
       
       #
       get '/pnodes/:pnode/?' do
-        begin
-          ret = @daemon.pnode_get(params['pnode'])
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.pnode_get(params['pnode'])
         end
 
         return result!
@@ -223,20 +204,8 @@ module Distem
       
       #
       delete '/pnodes/?' do
-        begin 
-          ret = @daemon.pnodes_quit()
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do 
+          @body = @daemon.pnodes_quit()
         end
 
         return result!
@@ -263,26 +232,8 @@ module Distem
       
       #
       get '/pnodes/?' do
-        begin
-          ret = @daemon.pnodes_get()
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.pnodes_get()
         end
 
         return result!
@@ -311,26 +262,8 @@ module Distem
       
       #
       delete '/vnodes/:vnode/?' do
-        begin
-          ret = @daemon.vnode_remove(URI.unescape(params['vnode']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnode_remove(URI.unescape(params['vnode']))
         end
 
         return result!
@@ -365,28 +298,10 @@ module Distem
       
       #
       post '/vnodes/?' do
-        begin
+        check do
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
-          ret = @daemon.vnode_create(params['name'],props)
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+          @body = @daemon.vnode_create(params['name'],props)
         end
 
         return result!
@@ -418,26 +333,8 @@ module Distem
       
       #
       get '/vnodes/:vnode/?' do
-        begin
-          ret = @daemon.vnode_get(URI.unescape(params['vnode']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnode_get(URI.unescape(params['vnode']))
         end
 
         return result!
@@ -466,26 +363,8 @@ module Distem
       
       #
       delete '/vnodes/?' do
-        begin
-          ret = @daemon.vnodes_remove()
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnodes_remove()
         end
 
         return result!
@@ -513,26 +392,8 @@ module Distem
       
       #
       get '/vnodes/?' do
-        begin
-          ret = @daemon.vnodes_get()
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnodes_get()
         end
 
         return result!
@@ -566,29 +427,11 @@ module Distem
       
       #
       put '/vnodes/:vnode/?' do
-        begin
+        check do
           props = {}
           props = JSON.parse(params['properties']) if params['properties']
-          ret = @daemon.vnode_set_status(URI.unescape(params['vnode']),
+          @body = @daemon.vnode_set_status(URI.unescape(params['vnode']),
             params['status'],props)
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -621,27 +464,9 @@ module Distem
       
       #
       put '/vnodes/:vnode/mode/?' do
-        begin
-          ret = @daemon.vnode_set_mode(URI.unescape(params['vnode']),
+        check do
+          @body = @daemon.vnode_set_mode(URI.unescape(params['vnode']),
             params['mode'])
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -673,26 +498,8 @@ module Distem
       
       #
       get '/vnodes/:vnode/filesystem/?' do
-        begin
-          ret = @daemon.vnode_filesystem_get(URI.unescape(params['vnode']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnode_filesystem_get(URI.unescape(params['vnode']))
         end
 
         return result!
@@ -725,25 +532,9 @@ module Distem
       
       #
       get '/vnodes/:vnode/filesystem/image/?' do
-        begin
-          ret = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
+        check do
+          @body = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
           send_file(ret, :filename => "#{params['vnode']}-fsimage.tar.gz")
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
         end
       end
       
@@ -774,27 +565,9 @@ module Distem
       
       #
       post '/vnodes/:vnode/commands/?' do
-        begin
-          ret = @daemon.vnode_execute(URI.unescape(params['vnode']),
+        check do
+          @body = @daemon.vnode_execute(URI.unescape(params['vnode']),
             params['command'])
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -827,26 +600,8 @@ module Distem
       
       #
       post '/vnodes/:vnode/vifaces/?' do
-        begin
-          ret = @daemon.viface_create(URI.unescape(params['vnode']),params['name'])
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.viface_create(URI.unescape(params['vnode']),params['name'])
         end
 
         return result!
@@ -878,27 +633,9 @@ module Distem
       
       #
       delete '/vnodes/:vnode/vifaces/:viface/?' do
-        begin
-          ret = @daemon.viface_remove(URI.unescape(params['vnode']),
+        check do
+          @body = @daemon.viface_remove(URI.unescape(params['vnode']),
             URI.unescape(params['viface']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -930,27 +667,9 @@ module Distem
       
       #
       get '/vnodes/:vnode/vifaces/:viface/?' do
-        begin
-          ret = @daemon.viface_get(URI.unescape(params['vnode']),
+        check do
+          @body = @daemon.viface_get(URI.unescape(params['vnode']),
             URI.unescape(params['viface']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -985,24 +704,9 @@ module Distem
       
       #
       post '/vnodes/:vnode/vcpu/?' do
-        begin
-          ret = @daemon.vcpu_create(URI.unescape(params['vnode']),
+        check do
+          @body = @daemon.vcpu_create(URI.unescape(params['vnode']),
             params['corenb'],params['frequency'])
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -1037,23 +741,8 @@ module Distem
       
       #
       post '/vnetworks/?' do
-        begin
-          ret = @daemon.vnetwork_create(params['name'],params['address'])
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnetwork_create(params['name'],params['address'])
         end
 
         return result!
@@ -1085,23 +774,8 @@ module Distem
       
       #
       delete '/vnetworks/:vnetwork/?' do
-        begin
-          ret = @daemon.vnetwork_remove(URI.unescape(params['vnetwork']))
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnetwork_remove(URI.unescape(params['vnetwork']))
         end
 
         return result!
@@ -1133,26 +807,8 @@ module Distem
       
       #
       get '/vnetworks/:vnetwork/?' do
-        begin
-          ret = @daemon.vnetwork_get(URI.unescape(params['vnetwork']))
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnetwork_get(URI.unescape(params['vnetwork']))
         end
 
         return result!
@@ -1184,23 +840,8 @@ module Distem
       
       #
       delete '/vnetworks/?' do
-        begin
-          ret = @daemon.vnetworks_remove()
-        rescue Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnetworks_remove()
         end
 
         return result!
@@ -1228,26 +869,8 @@ module Distem
       
       #
       get '/vnetworks/?' do
-        begin
-          ret = @daemon.vnetworks_get()
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vnetworks_get()
         end
 
         return result!
@@ -1283,7 +906,7 @@ module Distem
       
       #
       put '/vnodes/:vnode/vifaces/:viface/?' do 
-        begin
+        check do
           vnodename = URI.unescape(params['vnode'])
           vifacename = URI.unescape(params['viface'])
           props = JSON.parse(params['properties']) if params['properties']
@@ -1291,29 +914,14 @@ module Distem
             if (!props['address'] or props['address'].empty?) \
              and (!props['vnetwork'] or  props['vnetwork'].empty?) \
              and (props['vtraffic'] and !props['vtraffic'].empty?)
-              ret = @daemon.viface_configure_vtraffic(vnodename,
+              @body = @daemon.viface_configure_vtraffic(vnodename,
                 vifacename,props['vtraffic'])
             else
-              ret = @daemon.viface_attach(vnodename,vifacename,props)
+              @body = @daemon.viface_attach(vnodename,vifacename,props)
             end
           else
-            ret = @daemon.viface_detach(vnodename,vifacename)
+            @body = @daemon.viface_detach(vnodename,vifacename)
           end
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -1351,27 +959,12 @@ module Distem
       
       #
       post '/vnetworks/:vnetwork/vroutes/?' do
-        begin
-          ret = @daemon.vroute_create(
+        check do
+          @body = @daemon.vroute_create(
             URI.unescape(params['vnetwork']),
             params['destnetwork'],
             params['gatewaynode'], params['vnode'] 
           )
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -1405,23 +998,8 @@ module Distem
       
       #
       post '/vnetworks/vroutes/complete/?' do
-        begin
-          ret = @daemon.vroute_complete()
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vroute_complete()
         end
 
         return result!
@@ -1454,28 +1032,10 @@ module Distem
       #
       ['/vplatform/?:format?/?', '/:format?/?'].each do |path|
       get path do
-        begin
-          ret = @daemon.vplatform_get(params['format'])
+        check do
+          @body = @daemon.vplatform_get(params['format'])
           # >>> TODO: put the right format
           #send_file(ret, :filename => "vplatform")
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
         end
 
         return result!
@@ -1511,26 +1071,8 @@ module Distem
       #
       ['/vplatform/?', '/'].each do |path|
       post path do
-        begin
-          ret = @daemon.vplatform_create(params['format'],params['data'])
-        rescue JSON::ParserError, Lib::ParameterError => pe
-          @status = HTTP_STATUS_BAD_REQUEST
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
-        rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
-        rescue Lib::NotImplementedError => ni
-          @status = HTTP_STATUS_NOT_IMPLEMENTED
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
-        rescue Lib::ShellError => se
-          @status = HTTP_STATUS_INTERN_SERV_ERROR
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(se)
-        rescue Lib::ClientError => ce
-          @status = ce.num
-          @headers[HTTP_HEADER_ERR] = ce.desc
-          @body = ce.body
-        else
-          @body = ret
+        check do
+          @body = @daemon.vplatform_create(params['format'],params['data'])
         end
 
         return result!
