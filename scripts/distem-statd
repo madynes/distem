@@ -1,0 +1,21 @@
+#!/usr/bin/ruby
+
+require 'socket'
+require 'yaml'
+
+
+PORT=12345
+STATFILE='distem-stats.yml'
+BUFFERSIZE=512
+
+server = TCPServer.open(PORT)
+loop {
+  Thread.start(server.accept) do |client|
+    stats = client.recv(BUFFERSIZE)
+    puts "Recv from: #{client.addr[2]}"
+    client.close
+    File.open(STATFILE,'a') do |f|
+      f.puts([YAML.load(stats)].to_yaml.split("\n")[1..-1])
+    end
+  end
+}
