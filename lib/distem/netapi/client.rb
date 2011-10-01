@@ -42,25 +42,15 @@ module Distem
       # ==== Returns
       # The physical node which have been initialized (Hash)
       def pnode_init(target = nil, properties = {})
-        @@semreq.acquire
-        begin
+        check_net("/pnodes") do |req|
           properties = properties.to_json if properties.is_a?(Hash)
-
           ret = {}
-          req = "/pnodes"
           @resource[req].post(
             { :target => target, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -77,23 +67,12 @@ module Distem
       # ==== Returns
       # The physical node which have been initialized (Hash)
       def pnode_quit(target)
-        @@semreq.acquire
-        begin
+        check_net("/pnodes/#{target}") do |req|
           ret = {}
-          req = "/pnodes/#{target}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
-          }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
         end
       end
 
@@ -103,44 +82,26 @@ module Distem
       # ==== Returns
       # The physical node informations (Hash)
       def pnode_info(pnodename)
-        @@semreq.acquire
-        begin
+        check_net("/pnodes/#{pnodename}") do |req|
           ret = {}
-          req = "/pnodes/#{pnodename}"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
       # Quit distem on every physical machines
       #
       def pnodes_quit()
-        @@semreq.acquire
-        begin
+        check_net("/pnodes") do |req|
           ret = {}
-          req = "/pnodes"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -148,21 +109,12 @@ module Distem
       # ==== Returns
       # The virtual nodes informations (Array of Hashes, see pnode_info)
       def pnodes_info()
-        @@semreq.acquire
-        begin
+        check_net("/pnodes") do |req|
           ret = {}
-          req = "/pnodes"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -176,25 +128,15 @@ module Distem
       # ==== Returns
       # The virtual node which have been created (Hash)
       def vnode_create(name, properties)
-        @@semreq.acquire
-        begin
-          properties = properties.to_json if properties.is_a?(Hash)
-
+        check_net('/vnodes') do |req|
           ret = {}
-          req = '/vnodes'
+          properties = properties.to_json if properties.is_a?(Hash)
           @resource[req].post(
             { :name => name , :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -210,23 +152,14 @@ module Distem
       # ==== Returns
       # The virtual node which have been removed (Hash)
       def vnode_remove(name)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(name)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(name)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -236,21 +169,12 @@ module Distem
       # ==== Returns
       # The virtual node informations (Hash)
       def vnode_info(vnodename)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnodename)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnodename)}"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -260,24 +184,15 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_start(vnode, properties = {})
-        @@semreq.acquire
-        begin
-          properties = properties.to_json if properties.is_a?(Hash)
+        check_net("/vnodes/#{URI.escape(vnode)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}"
+          properties = properties.to_json if properties.is_a?(Hash)
           @resource[req].put(
             { :status => Resource::Status::RUNNING, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -293,24 +208,15 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_stop(vnode, properties = {})
-        @@semreq.acquire
-        begin
-          properties = properties.to_json if properties.is_a?(Hash)
+        check_net("/vnodes/#{URI.escape(vnode)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}"
+          properties = properties.to_json if properties.is_a?(Hash)
           @resource[req].put(
             { :status => Resource::Status::READY, :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -327,23 +233,14 @@ module Distem
       # ==== Returns
       # The virtual interface which have been created (Hash)
       def viface_create(vnode, name)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/vifaces") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/vifaces"
           @resource[req].post(
             { :name => name }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -355,23 +252,14 @@ module Distem
       # ==== Returns
       # The virtual interface which have been created (Hash)
       def vcpu_create(vnode, corenb=1, frequency=nil)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/vcpu") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/vcpu"
           @resource[req].post(
             { :corenb => corenb, :frequency => frequency }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -382,23 +270,14 @@ module Distem
       # ==== Returns
       # The virtual node which have been removed (Hash)
       def viface_remove(vnodename,vifacename)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -409,22 +288,13 @@ module Distem
       # ==== Returns
       # The virtual network interface informations (Hash)
       def viface_info(vnodename, vifacename)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnodename)}/vifaces/#{URI.escape(vifacename)}"
           @resource[req].get(
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -434,23 +304,14 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_gateway(vnode)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/mode") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/mode"
           @resource[req].put(
             { :mode => Resource::VNode::MODE_GATEWAY }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -460,23 +321,14 @@ module Distem
       # ==== Returns
       # The virtual node filesystem informations (Hash)
       def vnode_filesystem_info(vnode)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/filesystem") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/filesystem"
           @resource[req].get(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -487,8 +339,7 @@ module Distem
       # ==== Returns
       # The path where the compressed image was retrieved
       def vnode_filesystem_get(vnode,target='.')
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/filesystem/image") do |req|
           raise Lib::ResourceNotFoundError, File.dirname(target) \
             unless File.exists?(File.dirname(target))
           if File.directory?(target)
@@ -496,7 +347,6 @@ module Distem
           end
 
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/filesystem/image"
           @resource[req].get(
             {}
           ) { |response, request, result|
@@ -505,14 +355,7 @@ module Distem
             f.syswrite(ret)
             f.close()
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -520,23 +363,14 @@ module Distem
       # ==== Returns
       # Virtual nodes that have been removed (Array of Hash)
       def vnodes_remove()
-        @@semreq.acquire
-        begin
+        check_net("/vnodes") do |req|
           ret = {}
-          req = "/vnodes"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -545,21 +379,12 @@ module Distem
       # ==== Returns
       # The virtual nodes informations (Array of Hashes, see vnode_info)
       def vnodes_info()
-        @@semreq.acquire
-        begin
+        check_net("/vnodes") do |req|
           ret = {}
-          req = "/vnodes"
           @resource[req].get({}) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -570,23 +395,14 @@ module Distem
       # ==== Returns
       # The virtual network which have been created (Hash)
       def vnetwork_create(name, address)
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks") do |req|
           ret = {}
-          req = "/vnetworks"
           @resource[req].post(
             { :name => name, :address => address }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -596,23 +412,14 @@ module Distem
       # ==== Returns
       # The virtual network which have been removed (Hash)
       def vnetwork_remove(name)
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks/#{URI.escape(name)}") do |req|
           ret = {}
-          req = "/vnetworks/#{URI.escape(name)}"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -622,21 +429,12 @@ module Distem
       # ==== Returns
       # The virtual network informations (Hash)
       def vnetwork_info(vnetworkname)
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks/#{URI.escape(vnetworkname)}") do |req|
           ret = {}
-          req = "/vnetworks/#{URI.escape(vnetworkname)}"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -645,23 +443,14 @@ module Distem
       # ==== Returns
       # Virtual networks that have been removed (Hash)
       def vnetworks_remove()
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks") do |req|
           ret = {}
-          req = "/vnetworks"
           @resource[req].delete(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -669,21 +458,12 @@ module Distem
       # ==== Returns
       # The virtual networks informations (Array of Hash, see vnetwork_info)
       def vnetworks_info()
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks") do |req|
           ret = {}
-          req = "/vnetworks"
           @resource[req].get { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -699,24 +479,15 @@ module Distem
       # ==== Returns
       # The virtual interface (Hash)
       def viface_attach(vnode, viface, properties)
-        @@semreq.acquire
-        begin
+        check_net({}) do |req|
           properties = properties.to_json if properties.is_a?(Hash)
-          ret = {}
           req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
           @resource[req].put(
             { :properties => properties }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -727,23 +498,14 @@ module Distem
       # ==== Returns
       # The virtual interface (Hash)
       def viface_detach(vnode, viface)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
           @resource[req].put(
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -756,24 +518,15 @@ module Distem
       # The virtual route which have been created (Hash)
 
       def vroute_create(srcnet,destnet,gateway,vnode="")
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks/#{URI.escape(srcnet)}/vroutes") do |req|
           ret = {}
-          req = "/vnetworks/#{URI.escape(srcnet)}/vroutes"
           @resource[req].post(
             { :destnetwork => destnet,
               :gatewaynode => gateway, :vnode => vnode }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -781,21 +534,12 @@ module Distem
       # ==== Returns
       # All the virtual routes which have been created (Array of Hashes)
       def vroute_complete()
-        @@semreq.acquire
-        begin
+        check_net("/vnetworks/vroutes/complete") do |req|
           ret = {}
-          req = "/vnetworks/vroutes/complete"
           @resource[req].post({}) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -806,23 +550,14 @@ module Distem
       # ==== Returns
       # A Hash with the command which have been performed and the resold of it
       def vnode_execute(vnode, command)
-        @@semreq.acquire
-        begin
+        check_net("/vnodes/#{URI.escape(vnode)}/commands") do |req|
           ret = {}
-          req = "/vnodes/#{URI.escape(vnode)}/commands"
           @resource[req].post(
             { :command => command }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -834,23 +569,14 @@ module Distem
       # The description of the vplatform
 
       def vplatform_create(data,format = 'JSON')
-        @@semreq.acquire
-        begin
+        check_net("/vplatform") do |req|
           ret = {}
-          req = "/vplatform"
           @resource[req].post(
             { 'format' => format, 'data' => data }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ret
         end
       end
 
@@ -860,23 +586,12 @@ module Distem
       # ==== Returns
       # The description in the wished format
       def vplatform_info(format = 'JSON')
-        @@semreq.acquire
-        begin
+        check_net("/vplatform/#{format}") do |req|
           ret = {}
-          req = "/vplatform/#{format}"
           @resource[req].get(
             {}
-          ) { |response, request, result|
-            ret = check_error(result,response)
-          }
-          return ret
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{req}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
+          ) { |response, request, result| ret = check_error(result,response) }
+          ret
         end
       end
 
@@ -906,6 +621,27 @@ module Distem
             )
         end
         return response
+      end
+
+      # Check if there was an error related to the network connection
+      # ==== Attributes
+      # * +route+ the route path to access (REST)
+      # ==== Returns
+      # ==== Exceptions
+      # * +InvalidParameterError+ if given path is not available on the server
+      # * +UnavailableResourceError+ if for one reason or another the host is unreachable
+      def check_net(route, strict = true)
+        @@semreq.acquire
+        begin
+          yield(route)
+        rescue RestClient::RequestFailed
+          raise Lib::InvalidParameterError, "#{@serverurl}#{route}"
+        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+          raise Lib::UnavailableResourceError, @serverurl
+        ensure
+          @@semreq.release
+        end
       end
     end
 
