@@ -1132,7 +1132,11 @@ module Distem
             @daemon_resources.vnetworks.each_value do |destnet|
               next if srcnet == destnet
               gw = srcnet.perform_vroute(destnet)
-              ret << vroute_create(srcnet.name,destnet.name,gw.name) if gw
+              if gw
+                vnode_set_mode(gw.name,Resource::VNode::MODE_GATEWAY) \
+                  unless gw.gateway
+                ret << vroute_create(srcnet.name,destnet.name,gw.name)
+              end
             end
           end
         end
