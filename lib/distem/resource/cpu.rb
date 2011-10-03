@@ -48,7 +48,7 @@ module Distem
         @cores = {}
         @cores_alloc = {}
         @critical_cache_links = []
-        @cache_links_size = nil
+        @cache_links_size = 1
       end
 
       # Add a new Core to the CPU
