@@ -5,7 +5,8 @@ module Distem
 
     # Class that allow to set up a physical node resources (init cgroups, tc, ...)
     class Admin
-
+      # The directory used to store distem logs
+      PATH_DISTEM_LOGS='/var/log/distem/'
       # The directory used to store temporary files
       PATH_DISTEMTMP='/tmp/distem/'
       # The cgroups directory to use

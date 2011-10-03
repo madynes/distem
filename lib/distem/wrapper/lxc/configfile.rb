@@ -3,7 +3,7 @@ require 'distem'
 module LXCWrapper # :nodoc: all
 
   class ConfigFile
-    PATH_LOG_DIR=File.join(Distem::Lib::FileManager::PATH_DISTEM_LOGS,'lxc')
+    PATH_LOG_DIR=File.join(Distem::Node::Admin::PATH_DISTEM_LOGS,'lxc')
     DEFAULT_DEV_RULES=""\
       "lxc.tty = 4\n" \
       "lxc.pts = 1024\n" \

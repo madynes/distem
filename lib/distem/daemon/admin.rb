@@ -7,7 +7,7 @@ module Distem
     # Class that allow to manage daemon administration methods such as initializing another physical node
     class Admin
       # The file used to store the stdout and stderr logs for the launched daemons
-      PATH_DISTEMD_LOG=File.join(Lib::FileManager::PATH_DISTEM_LOGS,"distemd.log")
+      PATH_DISTEMD_LOG=File.join(Node::Admin::PATH_DISTEM_LOGS,"distemd.log")
       # Paths to the SSH key files
       PATH_SSH_KEYS=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
 
@@ -21,7 +21,7 @@ module Distem
         if pnode.status == Resource::Status::INIT
           begin
             Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEYS, :password => pnode.ssh_password) do |ssh|
-              ssh.exec!("mkdir -p #{Lib::FileManager::PATH_DISTEM_LOGS}")
+              ssh.exec!("mkdir -p #{Node::Admin::PATH_DISTEM_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
 
               str = ssh.exec!("lsof -Pnl -i4")

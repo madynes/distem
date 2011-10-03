@@ -1,3 +1,4 @@
+require 'distem'
 require 'open3'
 
 module Distem
@@ -6,7 +7,7 @@ module Distem
     class Shell
 
       # The file to save log of the executed commands
-      PATH_DISTEMD_LOG_CMD=File.join(FileManager::PATH_DISTEM_LOGS,"distemd.cmd")
+      PATH_DISTEMD_LOG_CMD=File.join(Distem::Node::Admin::PATH_DISTEM_LOGS,"distemd.cmd")
       # Execute the specified command on the physical node (log the resuls in PATH_DISTEMD_LOG_CMD)
       # ==== Attributes
       # * +cmd+ The command (String)
@@ -27,8 +28,8 @@ module Distem
           Open3.popen3(cmd) do |stdin, stdout, stderr|
             ret = stdout.read
             err = stderr.read
-            Dir::mkdir(FileManager::PATH_DISTEM_LOGS) \
-              unless File.exists?(FileManager::PATH_DISTEM_LOGS)
+            Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) \
+              unless File.exists?(Distem::Node::Admin::PATH_DISTEM_LOGS)
             log = "#{cmdlog}\n#{ret}"
             log += "\nError: #{err}" unless err.empty? 
             error = !$?.success? or !err.empty?
