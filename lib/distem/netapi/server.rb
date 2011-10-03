@@ -53,14 +53,22 @@ module Distem
 
       # Try to catch and wrapp every kind of exception
       def check
+        # >>> FIXME: remove retries hack
+        retries = 4
         begin
           yield
         rescue JSON::ParserError, Lib::ParameterError => pe
           @status = HTTP_STATUS_BAD_REQUEST
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(pe)
         rescue Lib::ResourceError => re
-          @status = HTTP_STATUS_NOT_FOUND
-          @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+          if retries >= 0
+            sleep(0.5)
+            retries -= 1
+            retry
+          else
+            @status = HTTP_STATUS_NOT_FOUND
+            @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
+          end
         rescue Lib::NotImplementedError => ni
           @status = HTTP_STATUS_NOT_IMPLEMENTED
           @headers[HTTP_HEADER_ERR] = get_http_err_desc(ni)
