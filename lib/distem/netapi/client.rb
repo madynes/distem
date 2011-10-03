@@ -73,6 +73,7 @@ module Distem
             {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
+          }
         end
       end
 
