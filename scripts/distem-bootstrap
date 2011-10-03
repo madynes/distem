@@ -473,19 +473,19 @@ Net::SSH::Multi.start do |session|
   if ARGV[0]
     begin
       File.open(ARGV[0], 'r') do |f|
-        filename = "/root/#{File.basename(ARGV[0])}"
+        filename = exec(session,'tempfile',:coord)[coordinator][0]
         msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
         exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
         exec(session,"chmod +x #{filename}",:coord)
-        msg("Executing script file '#{File.basename(filename)}' on #{coordinator}",
+        msg("Executing script file '#{filename}' on #{coordinator}",
           MSG_INFO)
 
         exec(session,
           "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}';" \
           "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
-          "#{filename}",
-          :coord,true,options[:debug_distem],options[:debug_distem])
-        end
+          "#{filename}",:coord,true,true,true)
+        exec(session,"rm #{filename}",:coord)
+			end
       msg("Script execution done")
     rescue Errno::ENOENT
       msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
