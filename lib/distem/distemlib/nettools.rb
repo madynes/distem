@@ -145,10 +145,12 @@ module Distem
 
         #Checking if the address is the loopback
         begin
-          ret = (Resolv.getname(target) == Lib::NetTools::LOCALHOST)
+          ret = (Resolv.getname(target) == LOCALHOST)
         rescue Resolv::ResolvError
           ret = false
         end
+
+        ret = (target == LOCALHOST) unless ret
 
         #Checking if the address is the one of the default interface
         ret = (Lib::NetTools.get_default_addr == target) unless ret

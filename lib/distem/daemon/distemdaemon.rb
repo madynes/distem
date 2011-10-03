@@ -94,7 +94,6 @@ module Distem
             unless target?(target)
             #else
                 Admin.pnode_run_server(pnode)
-                sleep(1)
                 cl = NetAPI::Client.new(target)
                 ret = cl.pnode_init(nil,properties)
                 pnode.memory.capacity = ret['memory']['capacity'].split()[0].to_i
@@ -208,16 +207,21 @@ module Distem
       #
       def pnode_get(hostname, raising = true) 
         ret = nil
-        begin
-          address = Resolv.getaddress(hostname)
-        rescue Resolv::ResolvError
-          raise Lib::InvalidParameterError, hostname
-        end
 
-        if daemon?
-          pnode = @daemon_resources.get_pnode_by_address(address)
+        if hostname and Lib::NetTools.localaddr?(hostname)
+          pnode = @node_config.pnode
         else
-          pnode = @node_config.vplatform.get_pnode_by_address(address)
+          begin
+            address = Resolv.getaddress(hostname)
+          rescue Resolv::ResolvError
+            raise Lib::InvalidParameterError, hostname
+          end
+
+          if daemon?
+            pnode = @daemon_resources.get_pnode_by_address(address)
+          else
+            pnode = @node_config.vplatform.get_pnode_by_address(address)
+          end
         end
 
         raise Lib::ResourceNotFoundError, hostname if raising and !pnode

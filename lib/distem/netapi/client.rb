@@ -82,7 +82,7 @@ module Distem
       # * +pnodename+ The address/name of the physical node
       # ==== Returns
       # The physical node informations (Hash)
-      def pnode_info(pnodename)
+      def pnode_info(pnodename='localhost')
         check_net("/pnodes/#{pnodename}") do |req|
           ret = {}
           @resource[req].get { |response, request, result|
@@ -480,9 +480,10 @@ module Distem
       # ==== Returns
       # The virtual interface (Hash)
       def viface_attach(vnode, viface, properties)
-        check_net({}) do |req|
+        check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}") do |req|
           properties = properties.to_json if properties.is_a?(Hash)
-          req = "/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}"
+          ret = {}
+          
           @resource[req].put(
             { :properties => properties }
           ) { |response, request, result|
@@ -631,7 +632,7 @@ module Distem
       # ==== Exceptions
       # * +InvalidParameterError+ if given path is not available on the server
       # * +UnavailableResourceError+ if for one reason or another the host is unreachable
-      def check_net(route, strict = true)
+      def check_net(route)
         @@semreq.acquire
         begin
           yield(route)

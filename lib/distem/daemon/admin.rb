@@ -26,7 +26,17 @@ module Distem
 
               str = ssh.exec!("lsof -Pnl -i4")
               unless /^distemd .*/.match(str)
-              ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
+                ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
+
+                retries = 20
+                cl = NetAPI::Client.new(pnode.address)
+                begin
+                  cl.pnode_info()
+                rescue Lib::UnavailableResourceError
+                  sleep(0.2)
+                  retries -= 1
+                  retry if retries >= 0
+                end
               end
             end
           rescue Net::SSH::AuthenticationFailed, Errno::ENETUNREACH
