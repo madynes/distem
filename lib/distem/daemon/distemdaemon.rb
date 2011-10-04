@@ -150,8 +150,8 @@ module Distem
       # ==== Exceptions
       #
       def pnode_quit(target)
-        pnode = pnode_get(target)
-        if daemon?
+        pnode = pnode_get(target,false)
+        if daemon? and pnode
           @daemon_resources.vnodes.each_value do |vnode|
             if vnode.host == pnode
               vnode_remove(vnode.name)
@@ -168,8 +168,10 @@ module Distem
         end
 
         if target?(target)
-          vnodes_remove()
-          vnetworks_remove()
+          if pnode
+            vnodes_remove()
+            vnetworks_remove()
+          end
           Node::Admin.quit_node()
           Thread.new do
             sleep(2)
@@ -211,6 +213,7 @@ module Distem
         if hostname and Lib::NetTools.localaddr?(hostname)
           pnode = @node_config.pnode
         else
+          hostname = '' unless hostname
           begin
             address = Resolv.getaddress(hostname)
           rescue Resolv::ResolvError
