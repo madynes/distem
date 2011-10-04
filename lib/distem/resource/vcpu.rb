@@ -11,9 +11,9 @@ module Distem
         # The (unique) id of this virtual resource
         attr_reader :id
         # The physical Core associated to this virtual resource
-        attr_reader :pcore
+        attr_accessor :pcore
         # The frequency to be set to this physical resource (KHz)
-        attr_reader :frequency
+        attr_accessor :frequency
 
         # Create a new VCore
         # ==== Attributes

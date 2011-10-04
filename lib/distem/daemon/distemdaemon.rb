@@ -663,7 +663,13 @@ module Distem
         if daemon?
           unless target?(vnode)
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vcpu_create(vnode.name,corenb,frequency.to_s)
+            ret = cl.vcpu_create(vnode.name,corenb,frequency.to_s)
+            i = 0
+            vnode.vcpu.vcores.values.each do |vcore|
+              vcore.pcore = ret['vcores'][i]['pcore']
+              vcore.frequency = ret['vcores'][i]['frequency'].split()[0].to_i * 1000
+              i += 1
+            end
           end
         end
 

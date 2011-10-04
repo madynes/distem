@@ -108,9 +108,18 @@ module Distem
 
       # See the visit_vplatform documentation
       def visit_vcore(vcore)
+        pcorenum = nil
+        if vcore.pcore
+          if vcore.pcore.is_a?(Resource::CPU::Core)
+            pcorenum = vcore.pcore.physicalid.to_s
+          else
+            pcorenum = vcore.pcore.to_s
+          end
+        end
+        
         return {
           'id' => vcore.id.to_s,
-          'pcore' => (vcore.pcore ? vcore.pcore.physicalid.to_s : nil),
+          'pcore' => pcorenum,
           'frequency' => (vcore.frequency / 1000).to_s + ' MHz',
         }
       end
