@@ -134,9 +134,8 @@ module Distem
       # * +vnode+ The VNode object
       # * +linkedcores+ Specify if the physical cores to attach to should be cache linked or not
       #
-      def vcpu_attach(vnode,linkedcores=true)
-        #linkedcores = @containers[vnode.name].cpuforge.algorithm.is_a?(Algorithm::CPU::Gov)
-        vnode.attach_vcpu(linkedcores)
+      def vcpu_attach(vnode)
+        vnode.attach_vcpu(@cpu_algorith.is_a?(Algorithm::CPU::Gov))
       end
 
       # Add a virtual network
