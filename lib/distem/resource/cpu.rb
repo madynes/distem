@@ -114,7 +114,7 @@ module Distem
           tmpcores.delete(core)
           core.cache_links = tmpcores
         end
-        @cache_links_size = cores.size unless @cache_links_size
+        @cache_links_size = cores.size unless @cache_links_size == 1
         @critical_cache_links << cores
       end
 
