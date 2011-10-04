@@ -611,7 +611,8 @@ module Distem
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
-        viface.detach()
+        #viface.detach()
+        viface_detach(vnode.name,viface.name)
         vnode.remove_viface(viface)
 
         if daemon?
@@ -621,10 +622,10 @@ module Distem
           end
         end
 
-        if target?(vnode)
-          @node_config.viface_remove(viface)
+        #if target?(vnode)
+          #@node_config.viface_remove(viface)
           #@node_config.vnode_configure(vnode.name)
-        end
+        #end
 
         return viface
       end
@@ -979,7 +980,7 @@ module Distem
         end
 
         if target?(vnode)
-          @node_config.vnode_reconfigure(vnode)
+          @node_config.vnode_update(vnode)
           #@node_config.vnode_configure(vnode.name)
         end
 

@@ -67,9 +67,9 @@ module Distem
       #
       def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        @vplatform.remove_vnode(vnode)
         @containers[vnode.name].destroy if @containers[vnode.name]
         @containers.delete(vnode.name)
+        @vplatform.remove_vnode(vnode)
       end
 
       #def vnode_configure(vnodename)
@@ -103,6 +103,16 @@ module Distem
 
         @containers[vnode.name].reconfigure()
       end
+      
+      # Update a virtual node (apply/undo changes to the abstract virtual resources to the physical node settings)
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      #
+      def vnode_update(vnode)
+        raise Lib::ResourceNotFoundError, vnode unless vnode
+
+        @containers[vnode.name].update()
+      end
 
       # Stop a virtual node (it have to be started and in the status RUNNING)
       # ==== Attributes
@@ -125,9 +135,9 @@ module Distem
       # ==== Attributes
       # * +viface+ The VIface object
       #
-      def viface_remove(viface)
-        viface.detach()
-      end
+      #def viface_remove(viface)
+      #  viface.detach()
+      #end
 
       # Attach the virtual CPU of a virtual node to a physical CPU (VCore/Core associations, ...)
       # ==== Attributes

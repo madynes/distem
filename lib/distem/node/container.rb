@@ -115,11 +115,11 @@ module Node
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
-        update()
+        #update()
         @@contsem.synchronize do
-          LXCWrapper::Command.stop(@vnode.name)
           @cpuforge.undo
           @networkforges.each_value { |netforge| netforge.undo }
+          LXCWrapper::Command.stop(@vnode.name)
         end
       end
 
