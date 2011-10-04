@@ -48,7 +48,7 @@ module Distem
         @cores = {}
         @cores_alloc = {}
         @critical_cache_links = []
-        @cache_links_size = 1
+        @cache_links_size = nil
       end
 
       # Add a new Core to the CPU
@@ -114,7 +114,7 @@ module Distem
           tmpcores.delete(core)
           core.cache_links = tmpcores
         end
-        @cache_links_size = cores.size unless @cache_links_size == 1
+        @cache_links_size = cores.size unless @cache_links_size
         @critical_cache_links << cores
       end
 
@@ -132,8 +132,9 @@ module Distem
         raise Lib::UnavailableResourceError, "Core x#{corenb}" \
           if freecores.empty? or freecores.size < corenb
         if cache_linked
-          corelknb = (corenb.to_f / @cache_links_size).ceil
-          realcorenb = corelknb*@cache_links_size
+          clsize = (@cache_links_size ? @cache_links_size : 1)
+          corelknb = (corenb.to_f / clsize).ceil
+          realcorenb = corelknb*clsize
           raise Lib::UnavailableResourceError, "CoreLinked x#{realcorenb}" \
             if freecores.empty? or freecores.size < realcorenb
         
