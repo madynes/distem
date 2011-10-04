@@ -23,8 +23,8 @@ module LXCWrapper # :nodoc: all
     def self.destroy(contname,wait=true)
       contsync(contname) {
         Distem::Lib::Shell.run("lxc-destroy -n #{contname}",true) if ls().include?(contname)
+        wait_disapear(contname) if wait
       }
-      wait_disapear(contname) if wait
     end
 
     def self.destroyall(wait=false)
@@ -48,7 +48,7 @@ module LXCWrapper # :nodoc: all
     end
 
     def self.stop(contname,wait=true,strict=true)
-      wait_exist(contname) if strict
+      #wait_exist(contname) if strict
       unless status(contname) == Status::STOPPED
         contsync(contname) {
           Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
