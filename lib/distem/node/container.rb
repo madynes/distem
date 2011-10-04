@@ -92,8 +92,7 @@ module Node
             @@cleanlock.synchronize{}
           else
             @@cleanlock.synchronize {
-              LXCWrapper::Command.stopall()
-              LXCWrapper::Command.destroyall()
+              LXCWrapper::Command.clean()
             }
           end
           @@cleaned = true

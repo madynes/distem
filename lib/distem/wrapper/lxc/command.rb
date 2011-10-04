@@ -29,7 +29,10 @@ module LXCWrapper # :nodoc: all
 
     def self.destroyall(wait=false)
       ls().each do |cont|
-        destroy(cont,wait)
+        begin
+          destroy(cont,wait)
+        rescue Distem::Lib::ShellError
+        end
       end
     end
 
@@ -56,7 +59,10 @@ module LXCWrapper # :nodoc: all
 
     def self.stopall(wait=false)
       ls().each do |cont|
-        stop(cont,wait,false)
+        begin
+          stop(cont,wait,false)
+        rescue Distem::Lib::ShellError
+        end
       end
     end
 
@@ -83,14 +89,14 @@ module LXCWrapper # :nodoc: all
             @@lslock.synchronize{}
           else
             @@lslock.synchronize {
-              @@lscache[:value] = Distem::Lib::Shell.run("lxc-ls",true).split
+              @@lscache[:value] = Distem::Lib::Shell.run('lxc-ls',true).split
               @@lscache[:time] = Time.now
             }
           end
         end
         ret = @@lscache[:value]
       else
-        ret = Distem::Lib::Shell.run("lxc-ls",true).split
+        ret = Distem::Lib::Shell.run('lxc-ls',true).split
       end
       return ret
     end
@@ -113,6 +119,12 @@ module LXCWrapper # :nodoc: all
         sleep(LS_CACHE_TIME) if cycle > 0
         cycle += 1
       end while list.include?(contname)
+    end
+
+    def self.clean(wait=false)
+      stopall(wait)
+      destroyall(wait)
+      Distem::Lib::Shell.run('killall -9 lxc-wait &>/dev/null; true')
     end
 
     protected
