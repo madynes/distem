@@ -5,12 +5,10 @@ module Distem
     module Network
 
       # An algorithm that's using TC Token Bucket Filter (see http://en.wikipedia.org/wiki/Token_bucket) to limit network traffic
-      class TBF < Algorithm
+      class TBF < TCAlgorithm
         # Create a new TBF object
         def initialize()
           super()
-          @limited_output = false
-          @limited_input = false
         end
 
         # Apply limitations on a specific virtual network interface
@@ -86,15 +84,17 @@ module Distem
         #
         def undo(viface)
           super(viface)
+          iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
+
           if @limited_input
-            iface = "ifb#{viface.id}"
-            inputroot = TCWrapper::QdiscRoot.new(iface)
+            inputroot = TCWrapper::QdiscRoot.new("ifb#{viface.id}")
+            Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
+            inputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
             @limited_input = false
           end
 
           if @limited_output
-            iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
             outputroot = TCWrapper::QdiscRoot.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
             @limited_output = false
