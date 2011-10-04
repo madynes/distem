@@ -3,7 +3,7 @@
 # distem-bootstrap is a script to configure a set of nodes as distem nodes
 # after they have been successfully deployed. Example usage:
 #   oarsub -t deploy -l nodes=10,walltime=1 \
-#      'katapult -e squeeze-x64-min -c --sleep -- distem-bootstrap'
+#      'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'
 #   see distem-bootstrap --help for more info.
 #
 ####
