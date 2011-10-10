@@ -716,7 +716,11 @@ module Distem
         archivepath = nil
 
         if target?(vnode)
-          archivepath = Lib::FileManager::compress(vnode.filesystem.path)
+          if vnode.filesystem.shared
+            archivepath = Lib::FileManager::compress(vnode.filesystem.sharedpath)
+          else
+            archivepath = Lib::FileManager::compress(vnode.filesystem.path)
+          end
         else
           raise Lib::ResourceError, "Contact the right PNode" \
         end
