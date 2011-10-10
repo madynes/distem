@@ -205,7 +205,7 @@ optparse = OptionParser.new(USAGE) do |opts|
   	options[:debug] = true
 	end
 	
-	opts.on( '-k', '--ssh-key', 'Specify the path of the ssh private key to use' ) do |k|
+	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Specify the path of the ssh private key to use' ) do |k|
   	options[:ssh_key] = k
 	end
 	
@@ -422,7 +422,7 @@ Net::SSH::Multi.start do |session|
   
   session.loop
 	
-	if options[:init_pnodes]
+	if options[:init_pnodes] or ARGV[0]
 	  launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false)
 	  unless launched.empty?
 	    tokill = launched.keys
@@ -457,13 +457,16 @@ Net::SSH::Multi.start do |session|
     end
     session.loop
     
-    msg("Initializing node #{coordinator}",MSG_INFO)
-    exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true)
-    nodelist.each do |node|
-      msg("Initializing node #{node}",MSG_INFO)
-      exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,
-        options[:debug_distem],options[:debug_distem])
-    end
+		if options[:init_pnodes]
+      msg("Initializing node #{coordinator}",MSG_INFO)
+      exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true)
+      nodelist.each do |node|
+        msg("Initializing node #{node}",MSG_INFO)
+        exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,
+          options[:debug_distem],options[:debug_distem])
+      end
+		end
+
   end
 
   str = "Install done"
