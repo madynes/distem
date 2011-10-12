@@ -25,6 +25,7 @@ module Distem
       HTTP_STATUS_NOT_IMPLEMENTED = 501
 
       set :environment, :development
+      set :show_exceptions, false
       set :run, true
       set :verbose, true
 
