@@ -944,8 +944,16 @@ module Distem
               )
             end
           end
-
-          viface.attach(vnetwork,address) unless daemon?
+          
+          unless daemon?
+            if properties['address']
+              vnetwork.add_vnode(vnode,viface,address)
+            else
+              vnetwork.add_vnode(vnode,viface)
+            end
+          end
+          
+          #viface.attach(vnetwork,address) unless daemon?
           #@node_config.vnode_configure(vnode.name)
         end
 
