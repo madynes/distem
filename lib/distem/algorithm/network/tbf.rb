@@ -21,7 +21,7 @@ module Distem
             apply_vtraffic(viface.voutput)
             @limited_output = true
           end
-          if viface.voutput
+          if viface.vinput
             apply_vtraffic(viface.vinput)
             @limited_input = true
           end
