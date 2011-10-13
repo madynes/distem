@@ -576,7 +576,8 @@ module Distem
       post '/vnodes/:vnode/commands/?' do
         check do
           @body = @daemon.vnode_execute(URI.unescape(params['vnode']),
-            params['command'])
+                                         params['command']).split("\n")
+
         end
 
         return result!

@@ -119,7 +119,7 @@ if (options['f_exec'])
   errorcheck(ERR_DAEMON,options['daemon_addr'])
 
   cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  puts cl.vnode_execute(ARGV[0],options['exec_cmd'])
+  puts cl.vnode_execute(ARGV[0],options['exec_cmd']).join("\n")
 end
 
 if options['f_file_send'] or options['f_file_get']
