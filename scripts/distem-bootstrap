@@ -268,7 +268,13 @@ end
 if nodelist.include?(coordinator)
 	nodelist.delete(coordinator)
 else
-	msg("Coordinator not present in <nodes_file>",MSG_WARNING)
+	tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
+  if tmp.empty?
+	  msg("Coordinator not present in <nodes_file>",MSG_WARNING)
+	else
+	  msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
+	  coordinator = tmp[0]
+	end
 end
 
 if g5k? and `g5k-subnets`.strip.empty?
@@ -291,7 +297,6 @@ else
 end
 msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
   MSG_INFO)
-puts coordinator
 `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
@@ -348,13 +353,6 @@ Net::SSH::Multi.start do |session|
   exec(session,'apt-get update -q')
   
   if options[:git]
-=begin
-    keycheck = exec(session,"grep StrictHostKeyChecking /root/.ssh/config",:coord)
-    if keycheck.empty?
-      msg("Disabling SSH StrictHostKeyChecking config on #{coordinator}",MSG_INFO)
-      exec(session,"echo 'Host *\nStrictHostKeyChecking no' >> /root/.ssh/config",:coord)
-    end
-=end
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord,true)
     exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",
@@ -396,8 +394,8 @@ Net::SSH::Multi.start do |session|
       "-i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
     exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
-    #exec(session,"rm -Rf #{gitdir}",:coord)
-    #exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
+    exec(session,"rm -Rf #{gitdir}",:coord)
+    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version]?"#{PKG_NAME}=#{options[:version]}":PKG_NAME)
@@ -457,7 +455,7 @@ Net::SSH::Multi.start do |session|
     end
     session.loop
     
-		if options[:init_pnodes]
+    if options[:init_pnodes]
       msg("Initializing node #{coordinator}",MSG_INFO)
       exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true)
       nodelist.each do |node|
@@ -465,13 +463,11 @@ Net::SSH::Multi.start do |session|
         exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,
           options[:debug_distem],options[:debug_distem])
       end
-		end
+    end
 
   end
 
-  str = "Install done"
-  str += ", coordinator: #{coordinator}" if options[:init_pnodes]
-  msg(str)
+	msg('Install done',MSG_INFO)
 
   if ARGV[0]
     begin
@@ -489,11 +485,13 @@ Net::SSH::Multi.start do |session|
           "#{filename}",:coord,true,true,true)
         exec(session,"rm #{filename}",:coord)
 			end
-      msg("Script execution done")
+			msg('Script execution done',MSG_INFO)
     rescue Errno::ENOENT
       msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
     end
   end
+	
+	msg("Coordinator: #{coordinator}") if options[:init_pnodes] or ARGV[0]
 
   # Send stats record to stats server
   if g5k? and options[:stats]
