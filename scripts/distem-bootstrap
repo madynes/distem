@@ -229,7 +229,12 @@ optparse = OptionParser.new(USAGE) do |opts|
     options[:stats] = false
 	end
 end
-optparse.parse!
+
+begin
+	optparse.parse!
+rescue OptionParser::InvalidOption => e
+  msg(e.to_s,MSG_ERROR,true)
+end
 
 nodelist = []
 
