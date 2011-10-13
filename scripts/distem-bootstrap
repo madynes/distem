@@ -329,6 +329,13 @@ Net::SSH::Multi.start do |session|
     end
   end
 
+  # Check nfs paths
+  tmp = exec(session,"ls -a #{File.join('/','home',ENV['USER'])}",nil,false,false)
+  nopath = allnodes - tmp.keys
+  nopath.each do |node|
+    msg("NFS do not seems to be mounted on #{node} (check that you have deployed with NFS env)",MSG_WARNING)
+  end
+
   #setting up ulimit-open_files, to be removed
   rule="root hard nofile"
   rulenodes = exec(session,"grep '#{rule}' /etc/security/limits.conf; true")
