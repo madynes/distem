@@ -279,6 +279,7 @@ else
 	else
 	  msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
 	  coordinator = tmp[0]
+	end
 end
 
 if g5k? and `g5k-subnets`.strip.empty?
@@ -461,7 +462,7 @@ Net::SSH::Multi.start do |session|
     
     if options[:init_pnodes]
       msg("Initializing node #{coordinator}",MSG_INFO)
-      exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true
+      exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true,
         options[:debug_distem],options[:debug_distem])
       nodelist.each do |node|
         msg("Initializing node #{node}",MSG_INFO)
