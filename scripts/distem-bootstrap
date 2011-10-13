@@ -268,13 +268,7 @@ end
 if nodelist.include?(coordinator)
 	nodelist.delete(coordinator)
 else
-	tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
-  if tmp.empty?
-	  msg("Coordinator not present in <nodes_file>",MSG_WARNING)
-	else
-	  msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
-	  coordinator = tmp[0]
-	end
+	msg("Coordinator not present in <nodes_file>",MSG_WARNING)
 end
 
 if g5k? and `g5k-subnets`.strip.empty?
