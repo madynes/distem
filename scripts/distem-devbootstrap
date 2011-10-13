@@ -1,0 +1,592 @@
+#!/usr/bin/ruby
+#
+# distem-bootstrap is a script to configure a set of nodes as distem nodes
+# after they have been successfully deployed. Example usage:
+#   oarsub -t deploy -l nodes=10,walltime=1 \
+#      'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'
+#   see distem-bootstrap --help for more info.
+#
+####
+# distem-bootstrap is Copyright (C) 2011 Luc Sarzyniec <luc.sarzyniec@inria.fr>
+# Secondary contact: Lucas Nussbaum <lucas.nussbaum@loria.fr>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+######
+require 'rubygems'
+require 'net/ssh/multi'
+require 'socket'
+require 'etc'
+require 'yaml'
+require 'pp'
+
+
+def g5k?
+  `hostname --fqdn`.chomp =~ /grid5000.fr$/
+end
+
+=begin
+DEFAULT_CFG = {
+  'lib'
+  File.join('lib','ext') => File.join('usr','lib','ruby','vendor_ruby','1.8','x86_64-linux','distem'),
+  'bin' => '',
+}
+=end
+DISTEM_UPDATE_PATH_CHECK = {
+  'lib' => File.join('distem','distem.rb'),
+  'ext' => 'cpuhogs.so',
+  'bin' => 'distemd'
+}
+PKG_NAME          = 'distem'
+HTTP_PROXY        = 'http://proxy:3128/'
+SSH_KEYS          = ["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
+PATH_DISTEMD_LOGS = '/var/log/distem'
+TMP_DIR           = '/tmp/distem'
+VAR_DISTEM_NODES  = 'DISTEM_NODES'
+VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
+STATS_PORT        = 12345
+USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
+if g5k?
+  GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
+  STATS_SERV      = "carol.nancy.grid5000.fr"
+else
+  GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
+  STATS_SERV      = ""
+end
+
+ULIMIT_OPEN_FILES = 65535 # to be removed
+
+
+pkg_utils=[
+  'htop'
+]
+
+pkg_tmp_dependencies=[
+  'lsof' # needed until hack to wait for distemd startup is removed
+]
+
+pkg_build=[
+  'git',
+  'rake'
+]
+
+pkg_build_gem=[
+  #'rake-compiler'
+]
+
+options = {}
+@options = options
+
+MSG_ERROR=0
+MSG_WARNING=1
+MSG_INFO=2
+
+def msg(str, type=nil, quit=false)
+  case type
+  when MSG_ERROR
+    puts("### Error: #{str} ###")
+  when MSG_WARNING
+    puts("### Warning: #{str} ###")
+  when MSG_INFO
+    puts("[#{(Time.now - $startt).to_i}] #{str}")
+  else
+    puts str
+  end
+  exit 1 if quit
+end
+
+def open_channel(session, group = nil)
+  if group.is_a?(Symbol)
+    session.with(group).open_channel do |channel|
+      yield(channel)
+    end
+  elsif group.is_a?(Array)
+    session.on(*group).open_channel do |channel|
+      yield(channel)
+    end
+  elsif group.is_a?(Net::SSH::Multi::Server)
+    session.on(group).open_channel do |channel|
+      yield(channel)
+    end
+  else
+    session.open_channel do |channel|
+      yield(channel)
+    end
+  end
+end
+
+def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
+  outs = {}
+  errs = {}
+  
+  channel = open_channel(session,group) do |chtmp|
+    chtmp.exec(cmd) do |ch, success|
+      unless success
+        msg("unable to execute '#{cmd}' on #{ch.connection.host}",MSG_ERROR)
+      end
+      msg("Executing '#{cmd}' on #{ch.connection.host}]",MSG_INFO) \
+        if @options[:debug]
+    end
+  end
+  
+  channel.on_data do |chtmp,data|
+    outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
+    outs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host}] #{data.strip}") \
+      if @options[:debug] or showout
+  end
+  
+  channel.on_extended_data do |chtmp,type,data|
+    errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
+    errs[chtmp.connection.host] << data.strip
+  end
+  
+  channel.on_request("exit-status") do |chtmp, data|
+    status = data.read_long
+    if status != 0 and showerr
+      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
+        "with return status #{status.to_s}",MSG_ERROR)
+      msg("---stdout dump---")
+      outs[chtmp.connection.host].each { |out| msg(out) } \
+        if outs[chtmp.connection.host]
+      msg("---stderr dump---")
+      errs[chtmp.connection.host].each { |err| msg(err) } \
+        if errs[chtmp.connection.host]
+      msg("---\n")
+      exit 1 if critical
+    end
+  end
+  
+  channel.wait
+  
+  return outs
+end
+
+def killall(session, objlist)
+  launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$' | grep LISTEN",nil,false,false)
+  unless launched.empty?
+    tokill = launched.keys
+    tokill.collect!{ |node| objlist[node] }
+    tokill.each { |node|
+      msg("Killing previous run of distem on #{node}",MSG_INFO)
+		}
+    exec(session,"killall distemd",tokill,false,false)
+    time_start = Time.now
+    until !launched or launched.empty?
+      exec(session,"killall -9 distemd",tokill,false,false) \
+        if (Time.now - time_start) > 2
+      launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$' | grep LISTEN",
+        tokill,false,false)
+      if launched and !launched.empty?
+        tokill = launched.keys
+        tokill.collect!{ |node| objlist[node] }
+      end
+    end
+    session.loop
+  end
+end
+
+def statusall(session,allnodes)
+  launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$' | grep LISTEN",nil,false,false)
+  ret = {}
+  allnodes.each { |node| ret[node] = launched.include?(node) }
+  return ret
+end
+
+def updateall(updatepaths,session,allnodes,objlist)
+  # Check if debian package is installed
+  tmp = exec(session,'dpkg -s distem')
+  msg('dpkg error',MSG_ERROR,true) if tmp.keys.size != allnodes.size
+  tmp.each do |node,output|
+    output.each do |line|
+      if line =~ /^Status: .* ([^ ]+)$/
+        unless Regexp.last_match(1) == 'installed'
+          msg("debian package 'distem' is not installed on #{node}",MSG_ERROR,true)
+        end
+      end
+    end
+  end
+  
+  updatepaths.each do |key,localpath|
+    msg("Updating '#{key}' files",MSG_INFO)
+    tmppath = exec(session,"dpkg -L distem | grep '#{DISTEM_UPDATE_PATH_CHECK[key]}$'")
+    msg("file '#{DISTEM_UPDATE_PATH_CHECK[key]}' not found in distem package",MSG_ERROR,true) \
+      unless tmp.size == allnodes.size
+    tmppath.each do |node,remotepaths|
+      remotepaths.each do |remotepath|
+        remotepath=remotepath.split(DISTEM_UPDATE_PATH_CHECK[key])[0]
+        # Check nfs paths
+        tmpcheck = exec(session,"ls -a #{localpath}",nil,false,false)
+        nopath = allnodes - tmpcheck.keys
+        nopath.each do |node|
+          msg("file '#{localpath}' not found on #{node}",MSG_ERROR,true)
+        end
+        
+        localentries = Dir.entries(localpath)
+        localentries.delete('.')
+        localentries.delete('..')
+        localentries.each do |localentry|
+          unless updatepaths.values.include?(File.join(localpath,localentry))
+            exec(session,"rm -Rf #{File.join(remotepath,localentry)}",nil,true)
+            exec(session,"ln -s #{File.join(localpath,localentry)} #{remotepath}",nil,true)
+          end
+        end
+      end
+    end
+  end
+end
+
+$startt = Time::now
+
+options[:coordinator] = nil
+options[:node_list]   = nil
+options[:init_pnodes] = false
+options[:kill_pnodes] = false
+options[:status_pnodes] = false
+options[:update_file] = nil
+options[:debpackages] = []
+options[:gempackages] = []
+options[:ssh_key]     = nil
+options[:debug]       = false
+options[:logs_daemon] = []
+options[:logs_commands] = []
+options[:list] = false
+
+
+args = ARGV.dup
+
+optparse = OptionParser.new(USAGE) do |opts|
+	opts.on( '-h', '--help', 'Display this screen' ) do
+  		puts opts
+  		exit
+	end
+	
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
+  	options[:coordinator] = c || nil
+	end
+
+	opts.on( '-i', '--init-pnodes', 'Initialize pnodes' ) do |c|
+    options[:init_pnodes] = true
+	end
+	
+	opts.on( '-k', '--kill-pnodes', 'Kill pnodes' ) do |c|
+    options[:kill_pnodes] = true
+	end
+	
+	opts.on( '-s', '--status-pnodes', 'Get the status of pnodes' ) do |c|
+    options[:status_pnodes] = true
+	end
+	
+	opts.on( '-l', '--list', 'Get the list of the nodes and their number' ) do |c|
+    options[:list] = true
+	end
+	
+	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get the logs of distem daemon (#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}) on <node_number> [see --list]" ) do |d|
+    options[:logs_daemon] = d
+	end
+	
+	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get the logs of distem commands (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
+    options[:logs_commands] = c
+	end
+	
+	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
+  	options[:node_list] = n
+	end
+	
+	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
+  	options[:debug] = true
+	end
+	
+	opts.on( 'z', '--ssh-key [<ssh_key_file>]', 'Specify the path of the ssh private key to use' ) do |k|
+  	options[:ssh_key] = k
+	end
+	
+	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
+  	options[:update_file] = u
+	end
+	
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
+  	options[:debpackages] = p
+	end
+	
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
+  	options[:gempackages] = p
+	end
+	
+	opts.on( '-b', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+  	options[:debug_distem] = true
+	end
+end
+begin
+  optparse.parse!
+rescue OptionParser::InvalidOption => e
+  msg(e.to_s,MSG_ERROR,true)
+end
+
+nodelist = []
+
+if options[:node_list]
+	nodelist_file = options[:node_list]
+elsif (ENV['GOOD_NODES'])
+	nodelist_file = ENV['GOOD_NODES']
+elsif (ENV['OAR_NODEFILE'])
+	nodelist_file = ENV['OAR_NODEFILE']
+else
+  msg("nodelist parameter not set",MSG_ERROR,true)
+end
+
+begin
+	File.open(nodelist_file, 'r') do |f|
+	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
+	end
+rescue Errno::ENOENT
+	puts "File '#{nodelist_file}' not found"
+	exit 1
+end
+
+
+if nodelist.empty?
+  msg("nodelist is empty",MSG_ERROR,true)
+end
+nodelist.sort!
+allnodes = nodelist.dup
+
+coordinator = options[:coordinator] || nodelist[0]
+
+if nodelist.include?(coordinator)
+	nodelist.delete(coordinator)
+else
+  tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
+  if tmp.empty?
+	  msg("Coordinator not present in <nodes_file>",MSG_WARNING)
+	else
+	  msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
+	  coordinator = tmp[0]
+	end
+end
+
+if options[:list]
+  i = 1
+  allnodes.each do |node|
+    puts "(#{i}) #{node}#{(node =~ /^#{coordinator}/ ? ' [coordinator]' : '')}"
+    i += 1
+  end
+end
+
+if options[:ssh_key]
+  if File.exists?(options[:ssh_key])
+    sshkeyfile = options[:ssh_key]
+  else
+    msg("ssh key '#{options[:ssh_key]}' not found",MSG_ERR,true)
+  end
+else
+  sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
+  if sshkeyfiles.empty?
+    msg("no ssh private key file found (specify one with -k)",MSG_ERROR,true)
+  else
+    sshkeyfile = sshkeyfiles[0]
+  end
+end
+
+update_paths = {}
+if options[:update_file]
+  if File.exist?(options[:update_file])
+    begin
+      update_paths = YAML.load_file(options[:update_file])
+    rescue ArgumentError
+      msg("Invalid YAML file '#{options[:update_file]}'",MSG_ERROR,true)
+    end
+    msg("Invalid YAML file '#{options[:update_file]}'",MSG_ERROR,true) \
+      unless update_paths
+    nb = 0
+    update_paths.each do |key,path|
+      begin
+        update_paths[key] = File.expand_path(path)
+        msg("#{options[:update_file]}: file not found '#{path}'",MSG_ERROR,true) \
+          unless File.exist?(update_paths[key])
+        if DISTEM_UPDATE_PATH_CHECK[key]
+           nb +=1
+        else
+          update_paths.delete(key)
+          msg("#{options[:update_file]}: invalid key '#{key}'",MSG_WARNING)
+        end
+      rescue ArgumentError
+        msg("#{options[:update_file]}: file not found '#{path}'",MSG_ERROR,true)
+      end
+    end
+    msg("#{options[:update_file]}: missing key(s) [needed: {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}]",MSG_WARNING) \
+      if nb != DISTEM_UPDATE_PATH_CHECK.keys.size
+  else
+    msg("update file '#{options[:update_file]}' not found",MSG_ERR,true)
+  end
+end
+
+
+if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empty? or !options[:gempackages].empty? or options[:status_pnodes] or options[:update_file] or ARGV[0]  
+  msg("Establishing SSH connections to all nodes", MSG_INFO)
+
+  Net::SSH::Multi.start do |session|
+    nodeobjlist = {}
+    begin
+  	  session.group :coord do 
+          nodeobjlist[coordinator] = session.use("root@#{coordinator}")
+      end
+      #test the connection
+      exec(session,"hostname",:coord)
+    rescue SocketError
+      msg("can't connect to #{coordinator}",MSG_ERROR,true)
+    end
+    
+  	session.group :nodes do
+      nodelist.each do |node|
+        begin
+          nodeobjlist[node] = session.use("root@#{node}")
+          #test the connection
+          exec(session,"hostname",nodeobjlist[node])
+        rescue SocketError
+          msg("can't connect to #{node}",MSG_ERROR,true)
+        end
+      end
+    end
+    
+    # Check nfs paths
+    tmp = exec(session,"ls -a #{File.join('/','home',ENV['USER'])}",nil,false,false)
+    nopath = allnodes - tmp.keys
+    nopath.each do |node|
+      msg("NFS do not seems to be mounted on #{node} (check that you have deployed with NFS env)",MSG_WARNING)
+    end
+  
+  	msg("Installing debian misc packages",MSG_INFO)
+    exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") \
+      unless pkg_tmp_dependencies.empty?
+    exec(session,"apt-get install -q -y --force-yes #{pkg_utils * ' '}") \
+      unless pkg_utils.empty?
+    options[:debpackages].each do |debpkg|
+      msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
+      exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+    end
+    options[:gempackages].each do |gempkg|
+      msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
+      exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
+        :coord,true)
+    end
+    
+    session.loop
+    
+    if options[:status_pnodes]
+      msg("Checking nodes statuses",MSG_INFO)
+      msg("")
+      statuses = statusall(session,allnodes)
+      i = 1
+      statuses.each do |node,status|
+        msg("(#{i}) #{node} #{(status ? 'RUNNING' : 'STOPPED')}")
+        i += 1
+      end
+    end
+    
+    if options[:update_file] and !update_paths.empty?
+      updateall(update_paths,session,allnodes,nodeobjlist)
+    end
+    
+    if options[:kill_pnodes]
+      killall(session,nodeobjlist)
+    end
+  
+  	if options[:init_pnodes] or ARGV[0]
+      killall(session,nodeobjlist)
+      
+      
+      msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
+        MSG_INFO)
+      `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
+      
+  	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
+  	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
+  	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
+        :coord,true)
+  	  
+      launched = []
+      until launched and !launched.empty?
+        launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",:coord,false,
+          false)[coordinator]
+        sleep(0.1)
+      end
+      session.loop
+      
+      if options[:init_pnodes]
+        msg("Initializing nodes",MSG_INFO)
+        #ths = []
+        #th = Thread.new {
+          exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
+          msg("Node #{coordinator} initialized",MSG_INFO)
+        #}
+        #th.abort_on_exception = true
+        #ths << th
+        nodelist.each do |node|
+          #th = Thread.new {
+            exec(session,"distem -d #{coordinator} -i #{node}",:coord,true,
+              options[:debug_distem],options[:debug_distem])
+            msg("Node #{node} initialized",MSG_INFO)
+          #}
+          #th.abort_on_exception = true
+          #ths << th
+        end
+        #ths.each { |th| th.join }
+      end
+    end
+  
+    if ARGV[0]
+      begin
+        File.open(ARGV[0], 'r') do |f|
+          filename = exec(session,'tempfile',:coord)[coordinator][0]
+          msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
+          exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
+          exec(session,"chmod +x #{filename}",:coord)
+          msg("Executing script file '#{filename}' on #{coordinator}",
+            MSG_INFO)
+  
+          exec(session,
+            "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}';" \
+            "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
+            "#{filename}",:coord,true,true,true)
+          exec(session,"rm #{filename}",:coord)
+  			end
+        msg('Script execution done',MSG_INFO)
+      rescue Errno::ENOENT
+        msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
+      end
+    end
+    
+    msg("Coordinator: #{coordinator}") if options[:init_pnodes] or ARGV[0]
+  end
+end
+
+unless options[:logs_daemon].empty?
+  msg('Daemon logs',MSG_INFO)
+  options[:logs_daemon].each do |nodenum|
+    msg("Node ##{nodenum} not found",MSG_ERROR,true) if nodenum.to_i > allnodes.size
+    node=allnodes[nodenum.to_i-1]
+    msg("Logs of #{node}",MSG_INFO)
+    puts `ssh root@#{node} "cat #{File.join(PATH_DISTEMD_LOGS,'distemd.log')}"`
+  end
+end
+
+unless options[:logs_commands].empty?
+  msg('Commands logs',MSG_INFO)
+  options[:logs_commands].each do |nodenum|
+    msg("Node ##{nodenum} not found",MSG_ERROR,true) if nodenum.to_i > allnodes.size
+    node=allnodes[nodenum.to_i-1]
+    msg("Logs of #{node}",MSG_INFO)
+    puts `ssh root@#{node} "cat #{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}"`
+  end
+end

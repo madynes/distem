@@ -1,0 +1,4 @@
+---
+lib: ~user/distem_path/lib
+ext: ~user/distem_path/lib/ext
+bin: ~user/distem_path/bin
