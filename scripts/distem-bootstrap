@@ -495,10 +495,13 @@ Net::SSH::Multi.start do |session|
         msg("Executing script file '#{filename}' on #{coordinator}",
           MSG_INFO)
 
+        ARGV_dup = ARGV.dup
+        ARGV_dup.shift
+        script_args = (ARGV_dup.length > 0 ? ARGV_dup.join(" ") : "")
         exec(session,
           "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}';" \
           "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
-          "#{filename}",:coord,true,true,true)
+          "#{filename} #{script_args}",:coord,true,true,true)
         exec(session,"rm #{filename}",:coord)
 			end
 			msg('Script execution done',MSG_INFO)
