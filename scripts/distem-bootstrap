@@ -300,9 +300,11 @@ else
     sshkeyfile = sshkeyfiles[0]
   end
 end
-msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
-  MSG_INFO)
-`scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
+allnodes.each { |node|
+  msg("Copying ssh private key file to the #{node} machine",
+      MSG_INFO)
+  `scp #{sshkeyfile} root@#{node}:/root/.ssh/`
+}
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
 Net::SSH::Multi.start do |session|
