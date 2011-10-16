@@ -3,6 +3,8 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 
+DISTEM_VERSION='0.5'
+
 begin
   require 'rake/extensiontask'
 
@@ -48,13 +50,25 @@ Rake::TestTask.new("test_units") { |t|
 }
 
 desc "Generate source tgz package"
-Rake::PackageTask::new("distem","0.5") do |p|
+Rake::PackageTask::new("distem",DISTEM_VERSION) do |p|
   p.need_tar_gz = true
   p.package_files.include('lib/**/*')
   p.package_files.include('ext/**/*')
   p.package_files.include('bin/**/*')
   p.package_files.include('test/**/*')
   p.package_files.include('Rakefile', 'COPYING','README','TODO')
+end
+
+desc "Generate the YARD documentation"
+task :yard do
+  system("yard doc --title \"YARD documentation for distem #{DISTEM_VERSION}\" --list-undoc")
+  if File::directory?('../distem-private/www/doc/')
+    puts "\n\nCopying to ../distem-private/www/doc/..."
+    system("rsync -a doc/ ../distem-private/www/doc/")
+    puts "Remember to use git add -f (.html ignored by default)"
+  end
+  # cleanup
+  system("rm -rf .yardoc")
 end
 
 desc "Generate the REST API Documentation"
