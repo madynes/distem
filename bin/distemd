@@ -1,5 +1,7 @@
 #!/usr/bin/ruby -w
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+# hack to allow running this script without installing the debian package
+$:.unshift File.join(File.dirname(__FILE__), '..', 'debian/distem/usr/lib/ruby/vendor_ruby/1.8/x86_64-linux')
 
 require 'distem'
 require 'optparse'
