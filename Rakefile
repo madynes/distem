@@ -59,16 +59,32 @@ Rake::PackageTask::new("distem",DISTEM_VERSION) do |p|
   p.package_files.include('Rakefile', 'COPYING','README','TODO')
 end
 
+begin
+  require 'yard/sinatra'
+  require 'nokogiri'
 desc "Generate the YARD documentation"
 task :yard do
-  system("yard doc --title \"YARD documentation for distem #{DISTEM_VERSION}\" --list-undoc")
+  system("yard -e 'yard-sinatra' doc --title \"YARD documentation for distem #{DISTEM_VERSION}\" --list-undoc")
   if File::directory?('../distem-private/www/doc/')
+    # edit *.html and remove footer to avoid the date that will change on each
+    # generation of the docs.
+    Dir['doc/**/*.html'].each do |f|
+      doc = Nokogiri::HTML::Document::parse(IO::read(f))
+      footer = doc.at_css("div#footer")
+      footer.remove unless footer.nil?
+      File::open(f, 'w') do |fd|
+        fd.puts doc
+      end
+    end
     puts "\n\nCopying to ../distem-private/www/doc/..."
     system("rsync -a doc/ ../distem-private/www/doc/")
     puts "Remember to use git add -f (.html ignored by default)"
   end
   # cleanup
   system("rm -rf .yardoc")
+end
+rescue LoadError
+  puts "yard-sinatra or nokogiri not found. Cannot generate documentation."
 end
 
 desc "Generate the REST API Documentation"
