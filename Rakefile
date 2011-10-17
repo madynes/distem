@@ -119,3 +119,12 @@ task :sbuild do
     sh "sbuild -c distem64 #{pkg}"
   end
 end
+
+desc "Generate the manpages using help2man"
+task :man do
+  Dir['bin/*'].each do |f|
+    FileUtils.mkdir_p('man')
+    system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
+    system("man -Hcat man/#{File.basename(f)}.1 > man/#{File.basename(f)}.html")
+  end
+end
