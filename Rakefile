@@ -124,6 +124,7 @@ desc "Generate the manpages using help2man"
 task :man do
   Dir['bin/*'].each do |f|
     FileUtils.mkdir_p('man')
+    ENV['RUBYLIB'] = File.join(File.dirname(__FILE__), 'debian/distem/usr/lib/ruby/vendor_ruby/1.8/x86_64-linux')
     system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
     system("man -Hcat man/#{File.basename(f)}.1 > man/#{File.basename(f)}.html")
   end
