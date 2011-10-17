@@ -45,7 +45,7 @@ options['daemon_port'] = 4567
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
-    pp opts
+    puts opts
     exit
   end
   opts.on( '-p', '--port NUMBER', \
