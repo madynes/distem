@@ -185,7 +185,7 @@ if options['f_vnode_attach']
   end
 
   params = {}
-  params['limitation'] = plimit if plimit
+  params['vtraffic'] = plimit if plimit
   if options['vnetwork_name']
     params['vnetwork'] = options['vnetwork_name']
   elsif options['viface_address']
