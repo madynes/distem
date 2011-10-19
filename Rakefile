@@ -119,3 +119,19 @@ task :sbuild do
     sh "sbuild -c distem64 #{pkg}"
   end
 end
+
+desc "Generate the manpages using help2man"
+task :man do
+  Dir['bin/*'].each do |f|
+    FileUtils.mkdir_p('man')
+    system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
+    system("man -Hcat man/#{File.basename(f)}.1 > man/#{File.basename(f)}.html")
+  end
+  if File::directory?('../distem-private/www/man/')
+    # edit *.html and remove footer to avoid the date that will change on each
+    # generation of the docs.
+    puts "\n\nCopying to ../distem-private/www/man/..."
+    system("rsync -a man/*.html ../distem-private/www/man/")
+    puts "Remember to use git add -f (.html ignored by default)"
+  end
+end
