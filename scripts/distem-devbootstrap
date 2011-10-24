@@ -28,20 +28,12 @@ require 'net/ssh/multi'
 require 'socket'
 require 'etc'
 require 'yaml'
-require 'pp'
 
 
 def g5k?
   `hostname --fqdn`.chomp =~ /grid5000.fr$/
 end
 
-=begin
-DEFAULT_CFG = {
-  'lib'
-  File.join('lib','ext') => File.join('usr','lib','ruby','vendor_ruby','1.8','x86_64-linux','distem'),
-  'bin' => '',
-}
-=end
 DISTEM_UPDATE_PATH_CHECK = {
   'lib' => File.join('distem','distem.rb'),
   'ext' => 'cpuhogs.so',
@@ -49,40 +41,17 @@ DISTEM_UPDATE_PATH_CHECK = {
 }
 PKG_NAME          = 'distem'
 HTTP_PROXY        = 'http://proxy:3128/'
-SSH_KEYS          = ["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
 PATH_DISTEMD_LOGS = '/var/log/distem'
 TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
-STATS_PORT        = 12345
 USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
-if g5k?
-  GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
-  STATS_SERV      = "carol.nancy.grid5000.fr"
-else
-  GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
-  STATS_SERV      = ""
-end
 
-ULIMIT_OPEN_FILES = 65535 # to be removed
-
-
-pkg_utils=[
-  'htop'
-]
 
 pkg_tmp_dependencies=[
   'lsof' # needed until hack to wait for distemd startup is removed
 ]
 
-pkg_build=[
-  'git',
-  'rake'
-]
-
-pkg_build_gem=[
-  #'rake-compiler'
-]
 
 options = {}
 @options = options
@@ -256,7 +225,6 @@ options[:status_pnodes] = false
 options[:update_file] = nil
 options[:debpackages] = []
 options[:gempackages] = []
-options[:ssh_key]     = nil
 options[:debug]       = false
 options[:logs_daemon] = []
 options[:logs_commands] = []
@@ -305,10 +273,6 @@ optparse = OptionParser.new(USAGE) do |opts|
 	
 	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
   	options[:debug] = true
-	end
-	
-	opts.on( 'z', '--ssh-key [<ssh_key_file>]', 'Specify the path of the ssh private key to use' ) do |k|
-  	options[:ssh_key] = k
 	end
 	
 	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
@@ -383,21 +347,6 @@ if options[:list]
   end
 end
 
-if options[:ssh_key]
-  if File.exists?(options[:ssh_key])
-    sshkeyfile = options[:ssh_key]
-  else
-    msg("ssh key '#{options[:ssh_key]}' not found",MSG_ERR,true)
-  end
-else
-  sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
-  if sshkeyfiles.empty?
-    msg("no ssh private key file found (specify one with -k)",MSG_ERROR,true)
-  else
-    sshkeyfile = sshkeyfiles[0]
-  end
-end
-
 update_paths = {}
 if options[:update_file]
   if File.exist?(options[:update_file])
@@ -469,8 +418,6 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
   	msg("Installing debian misc packages",MSG_INFO)
     exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") \
       unless pkg_tmp_dependencies.empty?
-    exec(session,"apt-get install -q -y --force-yes #{pkg_utils * ' '}") \
-      unless pkg_utils.empty?
     options[:debpackages].each do |debpkg|
       msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
       exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
@@ -504,11 +451,6 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
   
   	if options[:init_pnodes] or ARGV[0]
       killall(session,nodeobjlist)
-      
-      
-      msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
-        MSG_INFO)
-      `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
       
   	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
   	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
