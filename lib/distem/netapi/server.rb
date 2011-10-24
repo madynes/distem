@@ -543,7 +543,7 @@ module Distem
       get '/vnodes/:vnode/filesystem/image/?' do
         check do
           @body = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
-          send_file(ret, :filename => "#{params['vnode']}-fsimage.tar.gz")
+          send_file(@body, :filename => "#{params['vnode']}-fsimage.tar.gz")
         end
       end
       
