@@ -488,7 +488,7 @@ Net::SSH::Multi.start do |session|
       File.open(ARGV[0], 'r') do |f|
         filename = exec(session,'tempfile',:coord)[coordinator][0]
         msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
-        exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
+        `scp #{ARGV[0]} root@#{coordinator}:#{filename}`      
         exec(session,"chmod +x #{filename}",:coord)
         msg("Executing script file '#{filename}' on #{coordinator}",
           MSG_INFO)
