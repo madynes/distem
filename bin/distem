@@ -38,6 +38,7 @@ options['f_pnode_init'] = false
 options['f_pnodes_quit'] = false
 options['f_vnode_create'] = false
 options['f_viface_create'] = false
+options['f_vcpu_create'] = false
 options['f_vnetwork_create'] = false
 options['f_vplatform_save'] = false
 options['f_vplatform_load'] = false
@@ -48,6 +49,8 @@ options['pnode_addr'] = false
 options['vnode_name'] = false
 options['vnode_image'] = false
 options['viface_name'] = false
+options['vcpu_val'] = false
+options['vcpu_core_nb'] = false
 options['vnetwork_name'] = false
 options['vnetwork_address'] = false
 options['vplatform_format'] = false
@@ -100,6 +103,13 @@ optparse = OptionParser.new(USAGE) do |opts|
     do |i|
     options['f_viface_create'] = true
     options['viface_name'] = i
+  end
+  opts.on( '-g', '--create-vcpu CORE_NB,VAL', Array,\
+    'Create a virtual cpu with <CORE_NB> cores at <VAL> speed on the Virtual Node' ) \
+    do |array|
+    options['f_vcpu_create'] = true
+    options['vcpu_core_nb'] = array[0].to_i
+    options['vcpu_val'] = array[1].to_f
   end
   opts.on( '-C', '--create-vnetwork NAME,ADDRESS', Array,\
     'Create the VNetwork NAME with the ADDRESS (ip/mask or ip/prefix)' ) \
@@ -170,6 +180,14 @@ if (options['f_viface_create'])
   cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
   pp cl.viface_create(options['vnode_name'], options['viface_name'])
 end
+
+if (options['f_vcpu_create'])
+  errorcheck(ERR_VNODE,options['vnode_name'])
+
+  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
+  pp cl.vcpu_create(options['vnode_name'], options['vcpu_core_nb'], options['vcpu_val'])
+end
+
 
 if (options['f_vplatform_save'])
   cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
