@@ -1,0 +1,10 @@
+Change-Id: Icfa34a5b5fe85b4ef4680f93143775a0f4e3c7d3
+Code-Review+2: Luc Sarzyniec <luc.sarzyniec@gmail.com>
+Verified+1: Luc Sarzyniec <luc.sarzyniec@gmail.com>
+Code-Review+1: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Verified+1: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-by: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-at: Mon, 24 Oct 2011 09:27:24 +0200
+Reviewed-on: http://localhost:8081/84
+Project: distem
+Branch: refs/heads/master
