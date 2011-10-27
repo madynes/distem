@@ -143,16 +143,18 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
-    if status != 0 and showerr
+    if status != 0
       msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
-        "with return status #{status.to_s}",MSG_ERROR)
-      msg("---stdout dump---")
-      outs[chtmp.connection.host].each { |out| msg(out) } \
-        if outs[chtmp.connection.host]
-      msg("---stderr dump---")
-      errs[chtmp.connection.host].each { |err| msg(err) } \
-        if errs[chtmp.connection.host]
-      msg("---\n")
+          "with return status #{status.to_s}",MSG_ERROR)
+      if showerr
+        msg("---stdout dump---")
+        outs[chtmp.connection.host].each { |out| msg(out) } if \
+          outs[chtmp.connection.host]
+        msg("---stderr dump---")
+        errs[chtmp.connection.host].each { |err| msg(err) } if \
+          errs[chtmp.connection.host]
+        msg("---\n")
+      end
       exit 1 if critical
     end
   end
