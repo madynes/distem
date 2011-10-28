@@ -31,7 +31,7 @@ require 'yaml'
 
 
 def g5k?
-  `hostname --fqdn`.chomp =~ /grid5000.fr$/
+  `hostname --fqdn`.chomp =~ /grid5000\.fr$/
 end
 
 PKG_NAME          = 'distem'
@@ -43,7 +43,12 @@ TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
 STATS_PORT        = 12345
-USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
+USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\n"\
+	"When executing a script (on the coordinator node) the nodes list is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}.\n"\
+	"Examples:\n"\
+  "\tkatapult3 -e squeeze-x64-base -c --sleep -- distem-bootstrap\n"\
+	"\tdistem-bootstrap --no-init-pnodes --git --  script.rb\n"\
+	"\tdistem-bootstrap -p htop -r restfully -n nodelist.txt\n"
 if g5k?
   GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
   STATS_SERV      = "carol.nancy.grid5000.fr"
@@ -193,7 +198,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options[:init_pnodes] = false
 	end
 	
-	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
+	opts.on( '-f', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed (if not specified, try to guess it with OAR_NODEFILE or GOOD_NODES env variables)' ) do |n|
   	options[:node_list] = n
 	end
 	
