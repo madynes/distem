@@ -43,12 +43,6 @@ TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
 STATS_PORT        = 12345
-USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\n"\
-	"When executing a script (on the coordinator node) the nodes list is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}.\n"\
-	"Examples:\n"\
-  "\tkatapult3 -e squeeze-x64-base -c --sleep -- distem-bootstrap\n"\
-	"\tdistem-bootstrap --no-init-pnodes --git --  script.rb\n"\
-	"\tdistem-bootstrap -p htop -r restfully -n nodelist.txt\n"
 if g5k?
   GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
   GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
@@ -191,59 +185,80 @@ options[:stats]       = true
 
 args = ARGV.dup
 
-optparse = OptionParser.new(USAGE) do |opts|
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
+  opts.separator ""
+  opts.separator "Automated setup of a distem environment. See <http://distem.gforge.inria.fr/>"
+  opts.separator "When run without options, it will create a distem environment with the latest"
+  opts.separator "released version of distem, using the nodes from $OAR_NODEFILE or $GOOD_NODES."
+  opts.separator ""
+  opts.separator "Options:"
+
+	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+  	options[:node_list] = n
+	end
+
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
+  	options[:coordinator] = c || nil
+	end
+
+	opts.on( '-x', '--no-init-pnodes', 'Do not initialize all pnodes' ) do |c|
+    options[:init_pnodes] = false
+	end
+
+	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+  	options[:debug] = true
+	end
+
+	opts.on( '-D', '--distem-debug', 'Show distem output when executing distem commands (script, node init)' ) do
+  	options[:debug_distem] = true
+	end
+	
+	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Path of the ssh private key to use' ) do |k|
+  	options[:ssh_key] = k
+	end
+
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to install on coordinator' ) do |p|
+  	options[:debpackages] = p
+	end
+	
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
+  	options[:gempackages] = p
+	end
+
+	opts.on( '-v', '--version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
+  	options[:version] = v
+	end
+	
+	opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
+  	options[:git] = n || :git_last
+	end
+
+	opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
+    options[:gerrit] = n
+	end
+		
+	opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
+    options[:stats] = false
+	end
+
 	opts.on( '-h', '--help', 'Display this screen' ) do
   		puts opts
   		exit
 	end
-	
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
-  	options[:coordinator] = c || nil
-	end
 
-	opts.on( '-x', '--no-init-pnodes', 'Do not initialize pnodes' ) do |c|
-    options[:init_pnodes] = false
-	end
-	
-	opts.on( '-f', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed (if not specified, try to guess it with OAR_NODEFILE or GOOD_NODES env variables)' ) do |n|
-  	options[:node_list] = n
-	end
-	
-	opts.on( '-v', '--version <distem_version>', 'Specify the version of distem to be installed' ) do |v|
-  	options[:version] = v
-	end
-	
-	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
-  	options[:debug] = true
-	end
-	
-	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Specify the path of the ssh private key to use' ) do |k|
-  	options[:ssh_key] = k
-	end
-	
-	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build * ","} + gem: #{pkg_build_gem * ","})" ) do |n|
-  	options[:git] = n || :git_last
-	end
+  opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
+  opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
+  opts.separator ""
+  opts.separator "Examples:"
+  opts.separator "  # reserve and deploy nodes using katapult3, then install distem"
+  opts.separator "  oarsub -t deploy -l nodes=10,walltime=1 \\"
+  opts.separator "    'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'"
+  opts.separator "  # run script.rb against the latest git snapshot of distem"
+  opts.separator "  distem-bootstrap --no-init-pnodes --git -- script.rb"
+  opts.separator "  # setup distem, installing additional packages"
+  opts.separator "  distem-bootstrap -p htop -r restfully -f nodes"
 
-	opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and build a Debian package." ) do |n|
-    options[:gerrit] = n
-	end
-	
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
-  	options[:debpackages] = p
-	end
-	
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
-  	options[:gempackages] = p
-	end
-	
-	opts.on( '-s', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
-  	options[:debug_distem] = true
-	end
-	
-	opts.on( '', '--stealth-mode', 'Do not report usage stats (g5k only)' ) do |c|
-    options[:stats] = false
-	end
 end
 
 begin
