@@ -115,7 +115,7 @@ def open_channel(session, group = nil)
   end
 end
 
-def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
+def exec(session, cmd, group = nil, critical = true, showerr = true, showout = false)
   outs = {}
   errs = {}
   
@@ -139,14 +139,16 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host} E] #{data.strip}") \
+      if @options[:debug] or showout
   end
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
     if status != 0
-      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
+      if showerr or critical
+        msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
           "with return status #{status.to_s}",MSG_ERROR)
-      if showerr
         msg("---stdout dump---")
         outs[chtmp.connection.host].each { |out| msg(out) } if \
           outs[chtmp.connection.host]
@@ -350,7 +352,7 @@ Net::SSH::Multi.start do |session|
     ">> /etc/security/limits.conf",node) } 
   
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",
-    nil,false,false).keys
+    nil, false, false).keys
 	needsources = (nodelist + [coordinator]) - havesources
 	
 	unless needsources.empty?
@@ -365,29 +367,29 @@ Net::SSH::Multi.start do |session|
   
   if options[:git]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
-    exec(session,"apt-get build-dep -y --force-yes distem",:coord,true)
+    exec(session,"apt-get build-dep -y --force-yes distem",:coord)
     exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",
-      :coord,true) unless pkg_build.empty?
+      :coord) unless pkg_build.empty?
     unless pkg_build_gem.empty?
       msg("Installing gems build packages on #{coordinator}",MSG_INFO)
       exec(session,"export http_proxy=#{HTTP_PROXY};" \
-        "gem install #{pkg_build_gem * ' '}",:coord,true)
+        "gem install #{pkg_build_gem * ' '}",:coord)
     end
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
-    exec(session,"rm -Rf #{gitdir}",:coord)
+    exec(session,"rm -Rf #{gitdir}",:coord, false, false)
     msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
-    exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord,true)
+    exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord)
     unless options[:git] == :git_last
       msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
         MSG_INFO)
       exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
-        :coord,true)
+        :coord)
     end
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc"\
       " #{TMP_DIR}/*.tar.gz",:coord)
-    exec(session,"cd #{gitdir}; rake snapshot",:coord,true)
+    exec(session,"cd #{gitdir}; rake snapshot",:coord)
     
     debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",
       :coord)[coordinator][0]
@@ -395,15 +397,15 @@ Net::SSH::Multi.start do |session|
       MSG_INFO)
     #exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
     nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no " \
-      "#{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
+      "#{debarchivefile} root@#{node}:#{TMP_DIR}",:coord)}
     msg("Installing generated debian package #{File.basename(debarchivefile)}",
       MSG_INFO)
     depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",
       :coord)[coordinator][0]
     depends = depends.split("|").last.gsub!(' ','')
     exec(session,"dpkg --ignore-depends #{depends} " \
-      "-i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
-    exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
+      "-i #{TMP_DIR}/#{File.basename(debarchivefile)}")
+    exec(session,"echo yes | apt-get install -q -y --force-yes -f")
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
     exec(session,"rm -Rf #{gitdir}",:coord)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
@@ -411,7 +413,7 @@ Net::SSH::Multi.start do |session|
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version]?"#{PKG_NAME}=#{options[:version]}":PKG_NAME)
     exec(session,"echo yes | apt-get install -q -y --force-yes " \
-      "--allow-unauthenticated #{distempkg}",nil,true)
+      "--allow-unauthenticated #{distempkg}")
 	end
 	
 	msg("Installing debian misc packages",MSG_INFO)
@@ -421,12 +423,12 @@ Net::SSH::Multi.start do |session|
     unless pkg_utils.empty?
   options[:debpackages].each do |debpkg|
     msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
-    exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+    exec(session,"apt-get install -q -y --force-yes #{debpkg}")
   end
   options[:gempackages].each do |gempkg|
     msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
-      :coord,true)
+      :coord)
   end
   
   session.loop
@@ -456,7 +458,7 @@ Net::SSH::Multi.start do |session|
 	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
 	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
 	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
-      :coord,true)
+      :coord)
 	  
     launched = []
     until launched and !launched.empty?
