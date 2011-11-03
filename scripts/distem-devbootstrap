@@ -28,6 +28,7 @@ require 'net/ssh/multi'
 require 'socket'
 require 'etc'
 require 'yaml'
+require 'optparse'
 
 
 def g5k?
