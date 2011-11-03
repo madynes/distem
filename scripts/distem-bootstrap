@@ -46,9 +46,11 @@ STATS_PORT        = 12345
 USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\nWhen executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
 if g5k?
   GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
+  GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
   STATS_SERV      = "carol.nancy.grid5000.fr"
 else
   GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
+  GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
   STATS_SERV      = ""
 end
 
@@ -175,6 +177,7 @@ options[:node_list]   = nil
 options[:debpackages] = []
 options[:gempackages] = []
 options[:git]         = nil
+options[:gerrit]      = nil
 options[:ssh_key]     = nil
 options[:debug]       = false
 options[:version]     = nil
@@ -215,6 +218,10 @@ optparse = OptionParser.new(USAGE) do |opts|
 	
 	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build * ","} + gem: #{pkg_build_gem * ","})" ) do |n|
   	options[:git] = n || :git_last
+	end
+
+	opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and build a Debian package." ) do |n|
+    options[:gerrit] = n
 	end
 	
 	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
@@ -365,7 +372,7 @@ Net::SSH::Multi.start do |session|
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
   
-  if options[:git]
+  if options[:git] or options[:gerrit]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord)
     exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",
@@ -378,13 +385,20 @@ Net::SSH::Multi.start do |session|
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
     exec(session,"rm -Rf #{gitdir}",:coord, false, false)
-    msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
-    exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord)
-    unless options[:git] == :git_last
-      msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
-        MSG_INFO)
-      exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
-        :coord)
+    if options[:git]
+      msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
+      exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord)
+      unless options[:git] == :git_last
+        msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
+            MSG_INFO)
+            exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
+                 :coord)
+      end
+    else # gerrit
+      msg("Setting up git repository from gerrit ref:#{options[:gerrit]} on #{coordinator}",
+            MSG_INFO)
+      exec(session,"git clone #{GERRIT_REPOSITORY} #{gitdir}",:coord)
+      exec(session,"cd #{gitdir} && git fetch #{GERRIT_REPOSITORY} #{options[:gerrit]} && git checkout FETCH_HEAD", :coord)
     end
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc"\
