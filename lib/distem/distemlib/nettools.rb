@@ -49,6 +49,14 @@ module Distem
         return @@addr_default
       end
 
+      # Gets the IP address of the default gateway
+      # ==== Returns
+      # String object
+      def self.get_default_gateway
+        cmdret = Shell.run("/bin/ip route list")
+        return cmdret.lines.grep(/^default /).first.gsub(/.* via ([0-9.]+).*/, '\1').chomp
+      end
+
       # Set up the default bridge that will be used to attach new network interfaces
       def self.set_bridge
         iface = self.get_default_iface()
@@ -57,6 +65,7 @@ module Distem
         str = Shell.run("ifconfig")
 
         unless str.include?("#{NAME_BRIDGE}")
+          gw = self.get_default_gateway # needs to be done before we break eth0
           Shell.run("brctl addbr #{NAME_BRIDGE}")
           Shell.run("brctl setfd #{NAME_BRIDGE} 0")
           Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
@@ -66,7 +75,7 @@ module Distem
           unless iface.empty?
             Shell.run("ip route del default dev #{iface}")
           end
-          Shell.run("ip route add default dev #{NAME_BRIDGE}")
+          Shell.run("ip route add default dev #{NAME_BRIDGE} via #{gw}")
         end
       end
 
