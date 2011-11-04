@@ -174,7 +174,7 @@ end
 
 def updateall(updatepaths,session,allnodes,objlist)
   # Check if debian package is installed
-  tmp = exec(session,'dpkg -s distem')
+  tmp = exec(session,'dpkg -s distem', nil, false, false)
   msg('dpkg error',MSG_ERROR,true) if tmp.keys.size != allnodes.size
   tmp.each do |node,output|
     output.each do |line|
@@ -206,8 +206,8 @@ def updateall(updatepaths,session,allnodes,objlist)
         localentries.delete('..')
         localentries.each do |localentry|
           unless updatepaths.values.include?(File.join(localpath,localentry))
-            exec(session,"rm -Rf #{File.join(remotepath,localentry)}",nil,true)
-            exec(session,"ln -s #{File.join(localpath,localentry)} #{remotepath}",nil,true)
+            exec(session,"rm -Rf #{File.join(remotepath,localentry)}")
+            exec(session,"ln -s #{File.join(localpath,localentry)} #{remotepath}")
           end
         end
       end
@@ -425,12 +425,12 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       unless pkg_tmp_dependencies.empty?
     options[:debpackages].each do |debpkg|
       msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
-      exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+      exec(session,"apt-get install -q -y --force-yes #{debpkg}")
     end
     options[:gempackages].each do |gempkg|
       msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
       exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
-        :coord,true)
+        :coord)
     end
     
     session.loop
@@ -460,7 +460,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
   	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
   	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
   	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
-        :coord,true)
+        :coord)
   	  
       launched = []
       until launched and !launched.empty?
