@@ -28,6 +28,7 @@ require 'net/ssh/multi'
 require 'socket'
 require 'etc'
 require 'yaml'
+require 'optparse'
 
 
 def g5k?
@@ -43,17 +44,13 @@ TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
 STATS_PORT        = 12345
-USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\n"\
-	"When executing a script (on the coordinator node) the nodes list is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}.\n"\
-	"Examples:\n"\
-  "\tkatapult3 -e squeeze-x64-base -c --sleep -- distem-bootstrap\n"\
-	"\tdistem-bootstrap --no-init-pnodes --git --  script.rb\n"\
-	"\tdistem-bootstrap -p htop -r restfully -n nodelist.txt\n"
 if g5k?
   GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
+  GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
   STATS_SERV      = "carol.nancy.grid5000.fr"
 else
   GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
+  GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
   STATS_SERV      = ""
 end
 
@@ -120,7 +117,7 @@ def open_channel(session, group = nil)
   end
 end
 
-def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
+def exec(session, cmd, group = nil, critical = true, showerr = true, showout = false)
   outs = {}
   errs = {}
   
@@ -144,20 +141,24 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host} E] #{data.strip}") \
+      if @options[:debug] or showout
   end
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
-    if status != 0 and showerr
-      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
-        "with return status #{status.to_s}",MSG_ERROR)
-      msg("---stdout dump---")
-      outs[chtmp.connection.host].each { |out| msg(out) } \
-        if outs[chtmp.connection.host]
-      msg("---stderr dump---")
-      errs[chtmp.connection.host].each { |err| msg(err) } \
-        if errs[chtmp.connection.host]
-      msg("---\n")
+    if status != 0
+      if showerr or critical
+        msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
+          "with return status #{status.to_s}",MSG_ERROR)
+        msg("---stdout dump---")
+        outs[chtmp.connection.host].each { |out| msg(out) } if \
+          outs[chtmp.connection.host]
+        msg("---stderr dump---")
+        errs[chtmp.connection.host].each { |err| msg(err) } if \
+          errs[chtmp.connection.host]
+        msg("---\n")
+      end
       exit 1 if critical
     end
   end
@@ -176,6 +177,7 @@ options[:node_list]   = nil
 options[:debpackages] = []
 options[:gempackages] = []
 options[:git]         = nil
+options[:gerrit]      = nil
 options[:ssh_key]     = nil
 options[:debug]       = false
 options[:version]     = nil
@@ -184,55 +186,68 @@ options[:stats]       = true
 
 args = ARGV.dup
 
-optparse = OptionParser.new(USAGE) do |opts|
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
+  opts.separator ""
+  opts.separator "distem-bootstrap automatically sets up a distem environment."
+  opts.separator "When run without options, it will create a distem environment with the latest"
+  opts.separator "released version of distem, using the nodes from $OAR_NODEFILE or $GOOD_NODES."
+  opts.separator ""
+  opts.separator "Options:"
+
+	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+  	options[:node_list] = n
+	end
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
+  	options[:coordinator] = c || nil
+	end
+	opts.on( '-x', '--no-init-pnodes', 'Do not initialize all pnodes' ) do |c|
+    options[:init_pnodes] = false
+	end
+	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+  	options[:debug] = true
+	end
+	opts.on( '-D', '--distem-debug', 'Show distem output when executing distem commands (script, node init)' ) do
+  	options[:debug_distem] = true
+	end
+	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Path of the ssh private key to use' ) do |k|
+  	options[:ssh_key] = k
+	end
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to install on coordinator' ) do |p|
+  	options[:debpackages] = p
+	end
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
+  	options[:gempackages] = p
+	end
+	opts.on( '-v', '--version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
+  	options[:version] = v
+	end
+	opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
+  	options[:git] = n || :git_last
+	end
+	opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
+    options[:gerrit] = n
+	end
+	opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
+    options[:stats] = false
+	end
 	opts.on( '-h', '--help', 'Display this screen' ) do
   		puts opts
   		exit
 	end
-	
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
-  	options[:coordinator] = c || nil
-	end
+  opts.separator ""
+  opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
+  opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
+  opts.separator ""
+  opts.separator "Examples:"
+  opts.separator "# reserve and deploy nodes using katapult3, then install distem"
+  opts.separator "oarsub -t deploy -l nodes=10,walltime=1 \\"
+  opts.separator " 'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'"
+  opts.separator "# run script.rb against the latest git snapshot of distem"
+  opts.separator "distem-bootstrap --no-init-pnodes --git -- script.rb"
+  opts.separator "# setup distem, installing additional packages"
+  opts.separator "distem-bootstrap -p htop -r restfully -f nodes"
 
-	opts.on( '-x', '--no-init-pnodes', 'Do not initialize pnodes' ) do |c|
-    options[:init_pnodes] = false
-	end
-	
-	opts.on( '-f', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed (if not specified, try to guess it with OAR_NODEFILE or GOOD_NODES env variables)' ) do |n|
-  	options[:node_list] = n
-	end
-	
-	opts.on( '-v', '--version <distem_version>', 'Specify the version of distem to be installed' ) do |v|
-  	options[:version] = v
-	end
-	
-	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
-  	options[:debug] = true
-	end
-	
-	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Specify the path of the ssh private key to use' ) do |k|
-  	options[:ssh_key] = k
-	end
-	
-	opts.on( '-g', '--git [<git_hash|git_tag>]', "Specify a specific version to install from git repository (if not specified, taking the last revision). Some packages are installed on one of the nodes in order to build the debian package (See `apt-get build-dep distem` + deb: #{pkg_build * ","} + gem: #{pkg_build_gem * ","})" ) do |n|
-  	options[:git] = n || :git_last
-	end
-	
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
-  	options[:debpackages] = p
-	end
-	
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
-  	options[:gempackages] = p
-	end
-	
-	opts.on( '-s', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
-  	options[:debug_distem] = true
-	end
-	
-	opts.on( '', '--stealth-mode', 'Do not report usage stats (g5k only)' ) do |c|
-    options[:stats] = false
-	end
 end
 
 begin
@@ -254,19 +269,15 @@ else
 end
 
 begin
-	File.open(nodelist_file, 'r') do |f|
-	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
-	end
+  nodelist = IO::readlines(nodelist_file).map { |l| l.strip }.uniq
 rescue Errno::ENOENT
 	puts "File '#{nodelist_file}' not found"
 	exit 1
 end
 
-
 if nodelist.empty?
   msg("nodelist parameter empty",MSG_ERROR,true)
 end
-nodelist.sort!
 allnodes = nodelist.dup
 
 if options[:coordinator]
@@ -357,7 +368,7 @@ Net::SSH::Multi.start do |session|
     ">> /etc/security/limits.conf",node) } 
   
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",
-    nil,false,false).keys
+    nil, false, false).keys
 	needsources = (nodelist + [coordinator]) - havesources
 	
 	unless needsources.empty?
@@ -370,31 +381,38 @@ Net::SSH::Multi.start do |session|
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
   
-  if options[:git]
+  if options[:git] or options[:gerrit]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
-    exec(session,"apt-get build-dep -y --force-yes distem",:coord,true)
+    exec(session,"apt-get build-dep -y --force-yes distem",:coord)
     exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",
-      :coord,true) unless pkg_build.empty?
+      :coord) unless pkg_build.empty?
     unless pkg_build_gem.empty?
       msg("Installing gems build packages on #{coordinator}",MSG_INFO)
       exec(session,"export http_proxy=#{HTTP_PROXY};" \
-        "gem install #{pkg_build_gem * ' '}",:coord,true)
+        "gem install #{pkg_build_gem * ' '}",:coord)
     end
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
-    exec(session,"rm -Rf #{gitdir}",:coord)
-    msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
-    exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord,true)
-    unless options[:git] == :git_last
-      msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
-        MSG_INFO)
-      exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
-        :coord,true)
+    exec(session,"rm -Rf #{gitdir}",:coord, false, false)
+    if options[:git]
+      msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
+      exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord)
+      unless options[:git] == :git_last
+        msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
+            MSG_INFO)
+            exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
+                 :coord)
+      end
+    else # gerrit
+      msg("Setting up git repository from gerrit ref:#{options[:gerrit]} on #{coordinator}",
+            MSG_INFO)
+      exec(session,"git clone #{GERRIT_REPOSITORY} #{gitdir}",:coord)
+      exec(session,"cd #{gitdir} && git fetch #{GERRIT_REPOSITORY} #{options[:gerrit]} && git checkout FETCH_HEAD", :coord)
     end
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc"\
       " #{TMP_DIR}/*.tar.gz",:coord)
-    exec(session,"cd #{gitdir}; rake snapshot",:coord,true)
+    exec(session,"cd #{gitdir}; rake snapshot",:coord)
     
     debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",
       :coord)[coordinator][0]
@@ -402,15 +420,15 @@ Net::SSH::Multi.start do |session|
       MSG_INFO)
     #exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
     nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no " \
-      "#{debarchivefile} root@#{node}:#{TMP_DIR}",:coord,true)}
+      "#{debarchivefile} root@#{node}:#{TMP_DIR}",:coord)}
     msg("Installing generated debian package #{File.basename(debarchivefile)}",
       MSG_INFO)
     depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",
       :coord)[coordinator][0]
     depends = depends.split("|").last.gsub!(' ','')
     exec(session,"dpkg --ignore-depends #{depends} " \
-      "-i #{TMP_DIR}/#{File.basename(debarchivefile)}",nil,true)
-    exec(session,"echo yes | apt-get install -q -y --force-yes -f",nil,true)
+      "-i #{TMP_DIR}/#{File.basename(debarchivefile)}")
+    exec(session,"echo yes | apt-get install -q -y --force-yes -f")
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
     exec(session,"rm -Rf #{gitdir}",:coord)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
@@ -418,7 +436,7 @@ Net::SSH::Multi.start do |session|
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:version]?"#{PKG_NAME}=#{options[:version]}":PKG_NAME)
     exec(session,"echo yes | apt-get install -q -y --force-yes " \
-      "--allow-unauthenticated #{distempkg}",nil,true)
+      "--allow-unauthenticated #{distempkg}")
 	end
 	
 	msg("Installing debian misc packages",MSG_INFO)
@@ -428,12 +446,12 @@ Net::SSH::Multi.start do |session|
     unless pkg_utils.empty?
   options[:debpackages].each do |debpkg|
     msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
-    exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+    exec(session,"apt-get install -q -y --force-yes #{debpkg}")
   end
   options[:gempackages].each do |gempkg|
     msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
-      :coord,true)
+      :coord)
   end
   
   session.loop
@@ -463,7 +481,7 @@ Net::SSH::Multi.start do |session|
 	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
 	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
 	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
-      :coord,true)
+      :coord)
 	  
     launched = []
     until launched and !launched.empty?

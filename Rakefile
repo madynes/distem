@@ -122,8 +122,10 @@ end
 
 desc "Generate the manpages using help2man"
 task :man do
-  Dir['bin/*'].each do |f|
+  (Dir['bin/*'] + ['scripts/distem-bootstrap', 'scripts/distem-devbootstrap']).each do |f|
     FileUtils.mkdir_p('man')
+    # This hack is required so that the executables can find the extension and load them
+    ENV['RUBYLIB'] = File.join(File.dirname(__FILE__), 'debian', 'distem', Config::CONFIG['vendorarchdir'])
     system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
     system("man -Hcat man/#{File.basename(f)}.1 > man/#{File.basename(f)}.html")
   end
