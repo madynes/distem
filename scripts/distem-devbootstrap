@@ -315,14 +315,11 @@ else
 end
 
 begin
-	File.open(nodelist_file, 'r') do |f|
-	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
-	end
+  nodelist = IO::readlines(nodelist_file).map { |l| l.strip }.uniq
 rescue Errno::ENOENT
 	puts "File '#{nodelist_file}' not found"
 	exit 1
 end
-
 
 if nodelist.empty?
   msg("nodelist is empty",MSG_ERROR,true)
