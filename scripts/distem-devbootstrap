@@ -1,13 +1,10 @@
 #!/usr/bin/ruby
 #
-# distem-bootstrap is a script to configure a set of nodes as distem nodes
-# after they have been successfully deployed. Example usage:
-#   oarsub -t deploy -l nodes=10,walltime=1 \
-#      'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'
-#   see distem-bootstrap --help for more info.
+# distem-devbootstrap is a script to manipulate a distem development environment
+#   see distem-devbootstrap --help for more info.
 #
 ####
-# distem-bootstrap is Copyright (C) 2011 Luc Sarzyniec <luc.sarzyniec@inria.fr>
+# distem-devbootstrap is Copyright (C) 2011 Luc Sarzyniec <luc.sarzyniec@inria.fr>
 # Secondary contact: Lucas Nussbaum <lucas.nussbaum@loria.fr>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -46,10 +43,6 @@ PATH_DISTEMD_LOGS = '/var/log/distem'
 TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
-USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\n"\
-                    "When executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
-INSTRUCTIONS      = "Instructions: You should first launch 'distem-bootstrap' to get the distem debian package installed then you can use NFS symlink hack with --update, init or kill your distem instances with --init and --kill, take a look on the log files with -C and -D or just run a script by passing it as argument."
-
 
 pkg_tmp_dependencies=[
   'lsof' # needed until hack to wait for distemd startup is removed
@@ -236,7 +229,12 @@ options[:list] = false
 
 args = ARGV.dup
 
-optparse = OptionParser.new("#{USAGE}\n#{INSTRUCTIONS}\n") do |opts|
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
+  opts.separator ""
+  opts.separator "When executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
+  opts.separator "Instructions: You should first launch 'distem-bootstrap' to get the distem debian package installed then you can use NFS symlink hack with --update, init or kill your distem instances with --init and --kill, take a look on the log files with -C and -D or just run a script by passing it as argument."
+
 	opts.on( '-h', '--help', 'Display this screen' ) do
   		puts opts
   		exit
