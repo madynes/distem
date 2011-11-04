@@ -236,15 +236,20 @@ args = ARGV.dup
 optparse = OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
   opts.separator ""
-  opts.separator "When executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
-  opts.separator "Instructions: You should first launch 'distem-bootstrap' to get the distem debian package installed then you can use NFS symlink hack with --update, init or kill your distem instances with --init and --kill, take a look on the log files with -C and -D or just run a script by passing it as argument."
-
-	opts.on( '-h', '--help', 'Display this screen' ) do
-  		puts opts
-  		exit
-	end
+  opts.separator "distem-devbootstrap helps distem developers manage their development environment:"
+  opts.separator "use a distem copy stored on NFS, start and stop nodes, peek at the log files, etc."
+  opts.separator ""
+  opts.separator "Options:"
 	
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
+	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+  	options[:node_list] = n
+	end
+
+	opts.on( '-u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
+  	options[:update_file] = u
+	end
+
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
   	options[:coordinator] = c || nil
 	end
 
@@ -264,37 +269,44 @@ optparse = OptionParser.new do |opts|
     options[:list] = true
 	end
 	
-	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get the logs of distem daemon (#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}) on <node_number> [see --list]" ) do |d|
+	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get distemd logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}) on <node_number> [see --list]" ) do |d|
     options[:logs_daemon] = d
 	end
 	
-	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get the logs of distem commands (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
+	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get commands logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
     options[:logs_commands] = c
 	end
-	
-	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
-  	options[:node_list] = n
-	end
-	
-	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
-  	options[:debug] = true
-	end
-	
-	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
-  	options[:update_file] = u
-	end
-	
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
+
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to be installed' ) do |p|
   	options[:debpackages] = p
 	end
 	
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to be installed' ) do |p|
   	options[:gempackages] = p
 	end
+		
+	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+  	options[:debug] = true
+	end
 	
-	opts.on( '-b', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+	opts.on( '-D', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
   	options[:debug_distem] = true
 	end
+
+	opts.on( '-h', '--help', 'Display this screen' ) do
+  		puts opts
+  		exit
+	end
+
+  opts.separator ""
+  opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
+  opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
+  opts.separator ""
+  opts.separator "Examples:"
+  opts.separator "# reserve and deploy nodes, configure using distem-bootstrap and distem-devbootstrap"
+  opts.separator "oarsub -t deploy -l nodes=10,walltime=1 \\"
+  opts.separator " 'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap --git \\"
+  opts.separator "  --no-init-pnodes distem-devbootstrap --update .distem.yml'"
 end
 begin
   optparse.parse!
