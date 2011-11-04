@@ -90,7 +90,7 @@ def open_channel(session, group = nil)
   end
 end
 
-def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
+def exec(session, cmd, group = nil, critical = true, showerr = true, showout = false)
   outs = {}
   errs = {}
   
@@ -114,20 +114,24 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host} E] #{data.strip}") \
+      if @options[:debug] or showout
   end
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
-    if status != 0 and showerr
-      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
-        "with return status #{status.to_s}",MSG_ERROR)
-      msg("---stdout dump---")
-      outs[chtmp.connection.host].each { |out| msg(out) } \
-        if outs[chtmp.connection.host]
-      msg("---stderr dump---")
-      errs[chtmp.connection.host].each { |err| msg(err) } \
-        if errs[chtmp.connection.host]
-      msg("---\n")
+    if status != 0
+      if showerr or critical
+        msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
+          "with return status #{status.to_s}",MSG_ERROR)
+        msg("---stdout dump---")
+        outs[chtmp.connection.host].each { |out| msg(out) } if \
+          outs[chtmp.connection.host]
+        msg("---stderr dump---")
+        errs[chtmp.connection.host].each { |err| msg(err) } if \
+          errs[chtmp.connection.host]
+        msg("---\n")
+      end
       exit 1 if critical
     end
   end
