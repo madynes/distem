@@ -126,27 +126,25 @@ module Distem
         end
 
         basename = File.basename(archivefile)
-        extname = File.extname(archivefile)
+        extname = File.extname(basename)   # eg. .bz2
+        extname2 = File.extname(File.basename(basename, extname))  # eg. .tar
         Lib::Shell.run("ln -sf #{archivefile} #{File.join(target_dir,basename)}")
-        case extname
-          when ".tar"
-            Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xf #{basename}")
-          when ".gz", ".gzip"
-            if File.extname(File.basename(basename,extname)) == ".tar"
-              Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xzf #{basename}")
-            else
+
+        if extname2 == ".tar"  # it's a tar file
+          Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xf #{basename}")
+        else
+          case extname
+            when ".tar"
+              Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xf #{basename}")
+            when ".gz", ".gzip"
               Lib::Shell.run("cd #{target_dir}; #{BIN_GUNZIP} #{basename}")
-            end
-          when ".bz2", "bzip2"
-            if File.extname(File.basename(basename,extname)) == ".tar"
-              Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xjf #{basename}")
-            else
+            when ".bz2", "bzip2"
               Lib::Shell.run("cd #{target_dir}; #{BIN_BUNZIP2} #{basename}")
-            end
-          when ".zip"
-            Lib::Shell.run("cd #{target_dir}; #{BIN_UNZIP} #{basename}")
-          else
-            raise Lib::NotImplementedError, File.extname(archivefile)
+            when ".zip"
+              Lib::Shell.run("cd #{target_dir}; #{BIN_UNZIP} #{basename}")
+            else
+              raise Lib::NotImplementedError, File.extname(archivefile)
+          end
         end
 
         Lib::Shell.run("rm #{File.join(target_dir,basename)}")
