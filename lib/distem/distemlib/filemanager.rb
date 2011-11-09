@@ -23,9 +23,6 @@ module Distem
       PATH_DEFAULT_COMPRESS='/tmp/distem/files/'
 
       BIN_TAR='tar' # :nodoc:
-      BIN_GUNZIP='gunzip' # :nodoc:
-      BIN_BUNZIP2='bunzip2' # :nodoc:
-      BIN_UNZIP='unzip' # :nodoc:
 
       @@extractsem = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT) # :nodoc:
       @@cachesem = Semaphore.new(MAX_SIMULTANEOUS_CACHE) # :nodoc:
@@ -126,30 +123,10 @@ module Distem
         end
 
         basename = File.basename(archivefile)
-        extname = File.extname(archivefile)
-        Lib::Shell.run("ln -sf #{archivefile} #{File.join(target_dir,basename)}")
-        case extname
-          when ".tar"
-            Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xf #{basename}")
-          when ".gz", ".gzip"
-            if File.extname(File.basename(basename,extname)) == ".tar"
-              Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xzf #{basename}")
-            else
-              Lib::Shell.run("cd #{target_dir}; #{BIN_GUNZIP} #{basename}")
-            end
-          when ".bz2", "bzip2"
-            if File.extname(File.basename(basename,extname)) == ".tar"
-              Lib::Shell.run("cd #{target_dir}; #{BIN_TAR} xjf #{basename}")
-            else
-              Lib::Shell.run("cd #{target_dir}; #{BIN_BUNZIP2} #{basename}")
-            end
-          when ".zip"
-            Lib::Shell.run("cd #{target_dir}; #{BIN_UNZIP} #{basename}")
-          else
-            raise Lib::NotImplementedError, File.extname(archivefile)
-        end
-
-        Lib::Shell.run("rm #{File.join(target_dir,basename)}")
+        link = File.join(target_dir, basename)
+        Lib::Shell.run("ln -sf #{archivefile} #{link}")
+        Lib::Shell.run("#{BIN_TAR} -C #{target_dir} -xf #{basename}") 
+        Lib::Shell.run("rm #{link}")
       end
 
       # Cache an archive fine in the cache. Only one file can be cached at the same time (mutex).
