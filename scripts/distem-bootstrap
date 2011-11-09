@@ -62,7 +62,7 @@ pkg_utils=[
 ]
 
 pkg_tmp_dependencies=[
-	'cpufrequtils',
+  'cpufrequtils',
   'ethtool',
   'lsof' # needed until hack to wait for distemd startup is removed
 ]
@@ -120,7 +120,7 @@ end
 def exec(session, cmd, group = nil, critical = true, showerr = true, showout = false)
   outs = {}
   errs = {}
-  
+
   channel = open_channel(session,group) do |chtmp|
     chtmp.exec(cmd) do |ch, success|
       unless success
@@ -130,21 +130,21 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
         if @options[:debug]
     end
   end
-  
+
   channel.on_data do |chtmp,data|
     outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
     outs[chtmp.connection.host] << data.strip
     msg("[#{chtmp.connection.host}] #{data.strip}") \
       if @options[:debug] or showout
   end
-  
+
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
     msg("[#{chtmp.connection.host} E] #{data.strip}") \
       if @options[:debug] or showout
   end
-  
+
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
     if status != 0
@@ -162,9 +162,9 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
       exit 1 if critical
     end
   end
-  
+
   channel.wait
-  
+
   return outs
 end
 
@@ -195,46 +195,46 @@ optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Options:"
 
-	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
-  	options[:node_list] = n
-	end
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
-  	options[:coordinator] = c || nil
-	end
-	opts.on( '-x', '--no-init-pnodes', 'Do not initialize all pnodes' ) do |c|
+  opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+    options[:node_list] = n
+  end
+  opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
+    options[:coordinator] = c || nil
+  end
+  opts.on( '-x', '--no-init-pnodes', 'Do not initialize all pnodes' ) do |c|
     options[:init_pnodes] = false
-	end
-	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
-  	options[:debug] = true
-	end
-	opts.on( '-D', '--distem-debug', 'Show distem output when executing distem commands (script, node init)' ) do
-  	options[:debug_distem] = true
-	end
-	opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Path of the ssh private key to use' ) do |k|
-  	options[:ssh_key] = k
-	end
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to install on coordinator' ) do |p|
-  	options[:debpackages] = p
-	end
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
-  	options[:gempackages] = p
-	end
-	opts.on( '-v', '--version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
-  	options[:version] = v
-	end
-	opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
-  	options[:git] = n || :git_last
-	end
-	opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
+  end
+  opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+    options[:debug] = true
+  end
+  opts.on( '-D', '--distem-debug', 'Show distem output when executing distem commands (script, node init)' ) do
+    options[:debug_distem] = true
+  end
+  opts.on( '-k', '--ssh-key [<ssh_key_file>]', 'Path of the ssh private key to use' ) do |k|
+    options[:ssh_key] = k
+  end
+  opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to install on coordinator' ) do |p|
+    options[:debpackages] = p
+  end
+  opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
+    options[:gempackages] = p
+  end
+  opts.on( '-v', '--version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
+    options[:version] = v
+  end
+  opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
+    options[:git] = n || :git_last
+  end
+  opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
     options[:gerrit] = n
-	end
-	opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
+  end
+  opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
     options[:stats] = false
-	end
-	opts.on( '-h', '--help', 'Display this screen' ) do
-  		puts opts
-  		exit
-	end
+  end
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
   opts.separator ""
   opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
   opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
@@ -259,11 +259,11 @@ end
 nodelist = []
 
 if options[:node_list]
-	nodelist_file = options[:node_list]
+  nodelist_file = options[:node_list]
 elsif (ENV['GOOD_NODES'])
-	nodelist_file = ENV['GOOD_NODES']
+  nodelist_file = ENV['GOOD_NODES']
 elsif (ENV['OAR_NODEFILE'])
-	nodelist_file = ENV['OAR_NODEFILE']
+  nodelist_file = ENV['OAR_NODEFILE']
 else
   msg("nodelist parameter not set",MSG_ERROR,true)
 end
@@ -271,8 +271,8 @@ end
 begin
   nodelist = IO::readlines(nodelist_file).map { |l| l.strip }.uniq
 rescue Errno::ENOENT
-	puts "File '#{nodelist_file}' not found"
-	exit 1
+  puts "File '#{nodelist_file}' not found"
+  exit 1
 end
 
 if nodelist.empty?
@@ -281,17 +281,17 @@ end
 allnodes = nodelist.dup
 
 if options[:coordinator]
-	coordinator = options[:coordinator]
+  coordinator = options[:coordinator]
 else
-	coordinator = nodelist[0]
+  coordinator = nodelist[0]
 end
 
 if nodelist.include?(coordinator)
-	nodelist.delete(coordinator)
+  nodelist.delete(coordinator)
 else
   tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
- 	if tmp.empty?
-  	msg("Coordinator not present in <nodes_file>",MSG_WARNING)
+    if tmp.empty?
+    msg("Coordinator not present in <nodes_file>",MSG_WARNING)
   else
     msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
     coordinator = tmp[0]
@@ -316,6 +316,7 @@ else
     sshkeyfile = sshkeyfiles[0]
   end
 end
+
 msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
   MSG_INFO)
 `scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
@@ -324,16 +325,15 @@ msg("Establishing SSH connections to all nodes", MSG_INFO)
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
   begin
-	  session.group :coord do 
-        nodeobjlist[coordinator] = session.use("root@#{coordinator}")
+    session.group :coord do
+      nodeobjlist[coordinator] = session.use("root@#{coordinator}")
     end
     #test the connection
     exec(session,"hostname",:coord)
   rescue SocketError
     msg("can't connect to #{coordinator}",MSG_ERROR,true)
   end
-  
-	session.group :nodes do
+  session.group :nodes do
     nodelist.each do |node|
       begin
         nodeobjlist[node] = session.use("root@#{node}")
@@ -366,12 +366,12 @@ Net::SSH::Multi.start do |session|
   rulemissing.collect!{ |node| nodeobjlist[node] }
   rulemissing.each { |node| exec(session,"echo '#{rule} #{ULIMIT_OPEN_FILES}'" \
     ">> /etc/security/limits.conf",node) } 
-  
+
   havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",
     nil, false, false).keys
-	needsources = (nodelist + [coordinator]) - havesources
-	
-	unless needsources.empty?
+  needsources = (nodelist + [coordinator]) - havesources
+
+  unless needsources.empty?
     needsources.collect!{ |node| nodeobjlist[node] }
     exec(session,"echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' " \
       ">> /etc/apt/sources.list", needsources)
@@ -380,7 +380,7 @@ Net::SSH::Multi.start do |session|
 
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
-  
+
   if options[:git] or options[:gerrit]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord)
@@ -413,7 +413,7 @@ Net::SSH::Multi.start do |session|
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc"\
       " #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord)
-    
+
     debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",
       :coord)[coordinator][0]
     msg("Copying generated debian package #{File.basename(debarchivefile)}",
@@ -437,9 +437,9 @@ Net::SSH::Multi.start do |session|
     distempkg = (options[:version]?"#{PKG_NAME}=#{options[:version]}":PKG_NAME)
     exec(session,"echo yes | apt-get install -q -y --force-yes " \
       "--allow-unauthenticated #{distempkg}")
-	end
-	
-	msg("Installing debian misc packages",MSG_INFO)
+  end
+
+  msg("Installing debian misc packages",MSG_INFO)
   exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") \
     unless pkg_tmp_dependencies.empty?
   exec(session,"apt-get install -q -y --force-yes #{pkg_utils * ' '}") \
@@ -453,44 +453,46 @@ Net::SSH::Multi.start do |session|
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
       :coord)
   end
-  
+
   session.loop
-	
-	if options[:init_pnodes] or ARGV[0]
-	  launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false)
-	  unless launched.empty?
-	    tokill = launched.keys
-	    tokill.collect!{ |node| nodeobjlist[node] }
-	    tokill.each { |node|
+
+  if options[:init_pnodes] or ARGV[0]
+    launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",nil,false,false)
+    unless launched.empty?
+      tokill = launched.keys
+      tokill.collect!{ |node| nodeobjlist[node] }
+      tokill.each { |node|
         msg("Killing previous run of distem on #{node}",MSG_INFO)
-			}
-	    exec(session,"killall distemd",tokill,false,false)
-	    time_start = Time.now
-	    until !launched or launched.empty?
-	      exec(session,"killall -9 distemd",tokill,false,false) \
+      }
+      exec(session,"killall distemd",tokill,false,false)
+      time_start = Time.now
+      until !launched or launched.empty?
+        exec(session,"killall -9 distemd",tokill,false,false) \
           if (Time.now - time_start) > 2
-	      launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",
+        launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",
           tokill,false,false)
-	      if launched and !launched.empty?
-	        tokill = launched.keys
-	        tokill.collect!{ |node| nodeobjlist[node] }
-	      end
-	    end
-	    session.loop
-	  end
-	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
-	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
+        if launched and !launched.empty?
+          tokill = launched.keys
+          tokill.collect!{ |node| nodeobjlist[node] }
+        end
+      end
+      session.loop
+    end
+
+    msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
+    exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
+    exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
       :coord)
-	  
+
     launched = []
     until launched and !launched.empty?
       launched = exec(session,"lsof -Pnl -i4 | grep '^distemd.*$'",:coord,false,
         false)[coordinator]
       sleep(0.1)
     end
+
     session.loop
-    
+
     if options[:init_pnodes]
       msg("Initializing node #{coordinator}",MSG_INFO)
       exec(session,"distem -d #{coordinator} -i #{coordinator}",:coord,true,
@@ -504,7 +506,7 @@ Net::SSH::Multi.start do |session|
 
   end
 
-	msg('Install done',MSG_INFO)
+  msg('Install done',MSG_INFO)
 
   if ARGV[0]
     begin
@@ -524,31 +526,31 @@ Net::SSH::Multi.start do |session|
           "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
           "#{filename} #{script_args}",:coord,true,true,true)
         exec(session,"rm #{filename}",:coord)
-			end
-			msg('Script execution done',MSG_INFO)
+      end
+      msg('Script execution done',MSG_INFO)
     rescue Errno::ENOENT
       msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
     end
   end
-	
-	msg("Coordinator: #{coordinator}") if options[:init_pnodes] or ARGV[0]
+
+  msg("Coordinator: #{coordinator}") if options[:init_pnodes] or ARGV[0]
 
   # Send stats record to stats server
   if g5k? and options[:stats]
     begin
-			stats = {
-      	:time => Time.now.to_i,
-      	:site => Socket.gethostname,
-      	:user => ENV['USER'],
-      	:oar 	=> ENV['OAR_JOB_ID'].to_i,
-      	:nodes => allnodes,
-				:params => args * ' ',
-				:length => (Time.now - $startt).to_i
-			}
+      stats = {
+        :time => Time.now.to_i,
+        :site => Socket.gethostname,
+        :user => ENV['USER'],
+        :oar 	=> ENV['OAR_JOB_ID'].to_i,
+        :nodes => allnodes,
+        :params => args * ' ',
+        :length => (Time.now - $startt).to_i
+      }
       sock = TCPSocket.open(STATS_SERV, STATS_PORT)
-			sock.send(stats.to_yaml,0)
+      sock.send(stats.to_yaml,0)
       sock.close
     rescue SocketError, Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EHOSTUNREACH
     end
-	end
+  end
 end
