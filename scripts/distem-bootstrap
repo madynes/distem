@@ -355,29 +355,16 @@ Net::SSH::Multi.start do |session|
 
   #setting up ulimit-open_files, to be removed
   rule="root hard nofile"
-  rulenodes = exec(session,"grep '#{rule}' /etc/security/limits.conf; true")
-  rulemissing=allnodes - rulenodes.keys
-  rulemissing.collect!{ |node| nodeobjlist[node] }
-  rulemissing.each { |node| exec(session,"echo '#{rule} #{ULIMIT_OPEN_FILES}'" \
-    ">> /etc/security/limits.conf",node) } 
+  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || " \
+        "echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
   rule="root soft nofile"
-  rulenodes = exec(session,"grep '#{rule}' /etc/security/limits.conf; true")
-  rulemissing=allnodes - rulenodes.keys
-  rulemissing.collect!{ |node| nodeobjlist[node] }
-  rulemissing.each { |node| exec(session,"echo '#{rule} #{ULIMIT_OPEN_FILES}'" \
-    ">> /etc/security/limits.conf",node) } 
+  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || " \
+        "echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
   
-  havesources = exec(session,"grep '#{DEB_REPOSITORY}' /etc/apt/sources.list",
-    nil, false, false).keys
-	needsources = (nodelist + [coordinator]) - havesources
+  # setup Debian repo
+  exec(session,"grep -q '#{DEB_REPOSITORY}' /etc/apt/sources.list || " \
+        "echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
 	
-	unless needsources.empty?
-    needsources.collect!{ |node| nodeobjlist[node] }
-    exec(session,"echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' " \
-      ">> /etc/apt/sources.list", needsources)
-    session.loop
-  end
-
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
   
