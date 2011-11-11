@@ -4,204 +4,370 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'distem'
 require 'optparse'
 require 'pp'
+require 'pathname'
 
-USAGE="Usage: #{$0} [options]"
+USAGE="Usage: #{$0} --cordinator host=HOSTNAME,[port=PORT]] option"
 
-ERR_NONE=0
-ERR_HOST=1
-ERR_VNODE=2
-ERR_VIFACE=3
-ERR_VNETWORK=4
+def sub_opts_to_hash(sub_opts)
+  return Hash[*sub_opts.split(',').collect { |sub| sub.scan(/(.*)=(.*)/) }.flatten]
+end
 
-def errorcheck(errid,optvar,msg="")
-  unless optvar
-    case errid
-      when ERR_HOST
-        errmsg="You have to specify the host (option --host)"
-      when ERR_VNODE
-        errmsg="You have to specify the vnode (option --vnode)"
-      when ERR_VIFACE
-        errmsg="You have to specify the viface (option --viface)"
-      when ERR_VNETWORK
-        errmsg="You have to specify the vnetwork (option --vnetwork)"
-      else
-	errmsg = msg
+def check_opts(opt, subopts, required, optional)
+  required.each { |r|
+    if not subopts.has_key?(r)
+      puts "The mandatory sub-option #{r} must be set with --#{opt}"
+      return false
     end
-    puts errmsg
-    exit
-  end
+  }
+  subopts.each_key { |k|
+    if not (required.include?(k) || optional.include?(k))
+      puts "The sub-option #{k} is not supported with --#{opt}"
+      return false
+    end
+  }
+  return true
 end
 
 options = {}
-
-options['f_pnode_init'] = false
-options['f_pnodes_quit'] = false
-options['f_vnode_create'] = false
-options['f_viface_create'] = false
-options['f_vcpu_create'] = false
-options['f_vnetwork_create'] = false
-options['f_vplatform_save'] = false
-options['f_vplatform_load'] = false
-
-options['daemon_addr'] = 'localhost'
-options['daemon_port'] = 4567
-options['pnode_addr'] = false
-options['vnode_name'] = false
-options['vnode_image'] = false
-options['viface_name'] = false
-options['vcpu_val'] = false
-options['vcpu_core_nb'] = false
-options['vnetwork_name'] = false
-options['vnetwork_address'] = false
-options['vplatform_format'] = false
-options['vplatform_file'] = false
-
+options['f_options'] = []
+options['host'] = 'localhost'
+options['port'] = 4567
+options['format'] = nil
+options['file'] = nil
+options['pnode'] = nil
+options['vnode'] = nil
+options['command'] = nil
+options['user'] = 'root'
+options['src'] = nil
+options['dest'] = nil
+options['vnetwork'] = nil
+options['viface'] = nil
+options['address'] = nil
+options['latency'] = nil
+options['bw'] = nil
+options['direction'] = 'OUTPUT'
+options['corenb'] = nil
+options['cpu_speed'] = 1
+options['rootfs' ] = nil
+options['vnetsrc' ] = nil
+options['vnetdest' ] = nil
+options['gateway' ] = nil
+options['configfile'] = nil
 
 optparse = OptionParser.new(USAGE) do |opts|
-  opts.on( '-h', '--help', 'Display this screen' ) do
+  opts.on('-h', '--help', 'Display this screen' ) do
     puts opts
     exit
   end
-  opts.on( '-p', '--port NUMBER', \
-    'The port that the daemon is listening on [default: 4567]' ) do |p|
-    options['daemon_port'] = p
+  opts.on('--coordinator host=HOST[,port=PORT]', \
+          'Specify the HOST and the PORT of the coordinator' ) do |str|
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('coordinator', h, ['host'], ['port'])
+    options.update(h)
   end
-  opts.on( '-H', '--host HOSTNAME', \
-    'The HOSTNAME of the physical node that host virtual ones' ) do |h|
-    options['pnode_addr'] = h
+  opts.on('--init-pnode PNODE', \
+    'Init the physical node PNODE' ) do |str|
+    options['f_options'] << 'init_pnode'
+    options['pnode'] = str
   end
-  opts.on( '-d', '--daemon ADDRESS', \
-    'The address of the daemon [default: localhost]' ) do |h|
-    options['daemon_addr'] = h
+  opts.on('--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE]', \
+    'Create the virtual node VNODE deploying FILE' ) do |str|
+    options['f_options'] << 'create_vnode'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('create-vnode', h, ['vnode','rootfs'], ['pnode'])
+    options.update(h)
   end
-  opts.on( '-n', '--vnode VNODE', \
-    'The name of the Virtual Node' ) do |n|
-    options['vnode_name'] = n
+  opts.on('--start-vnode VNODE', \
+    'Start the virtual node VNODE' ) do |str|
+    options['f_options'] << 'start_vnode'
+    options['vnode'] = str
   end
-  opts.on( '-I', '--viface VIFACE', \
-    'The name of the Virtual Interface' ) do |i|
-    options['viface_name'] = i
+  opts.on('--stop-vnode VNODE', \
+    'Stop the virtual node VNODE' ) do |str|
+    options['f_options'] << 'stop_vnode'
+    options['vnode'] = str
   end
-  opts.on( '-N', '--vnetwork VNETWORK', \
-    'The name of the Virtual Network' ) do |n|
-    options['vnetwork_name'] = n
+  opts.on('--remove-vnode [VNODE]', \
+    'Remove VNODE or all the vnodes if VNODE is not specified' ) do |str|
+    options['f_options'] << 'remove_vnode'
+    options['vnode'] = str
   end
-  opts.on( '-i', '--init-pnode HOSTNAME', \
-    'Initialize the physical node (start daemons, ...)' ) do |h|
-    options['f_pnode_init'] = true
-    options['pnode_addr'] = h
+  opts.on('--shell vnode=VNODE[,user=USER]', \
+    'Open a shell on VNODE' ) do |str|
+    options['f_options'] << 'shell'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('shell', h, ['vnode'], ['user'])
+    options.update(h)
   end
-  opts.on( '-c', '--create-vnode NAME,IMAGE_FILE', Array,\
-    'Create the Virtual Node <NAME> deploying <IMAGE_FILE>' ) \
-    do |array|
-    options['f_vnode_create'] = true
-    options['vnode_name'] = array[0]
-    options['vnode_image'] = array[1]
+  opts.on('--execute vnode=VNODE,command=COMMAND[,user=USER]', \
+    'Execute a command COMMAND on VNODE' ) do |str|
+    options['f_options'] << 'execute'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('execute', h, ['vnode','command'], ['user'])
+    options.update(h)
   end
-  opts.on( '-f', '--create-viface NAME', \
-    'Create the virtual interface <NAME> on the Virtual Node' ) \
-    do |i|
-    options['f_viface_create'] = true
-    options['viface_name'] = i
+  opts.on('--copy-to vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
+    'Copy the file SRC on host to DEST on VNODE' ) do |str|
+    options['f_options'] << 'copy_to'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('copy-to', h, ['vnode','src','dest'], ['user'])
+    options.update(sub_opts_to_hash(str))
   end
-  opts.on( '-g', '--create-vcpu CORE_NB,VAL', Array,\
-    'Create a virtual cpu with <CORE_NB> cores at <VAL> speed on the Virtual Node' ) \
-    do |array|
-    options['f_vcpu_create'] = true
-    options['vcpu_core_nb'] = array[0].to_i
-    options['vcpu_val'] = array[1].to_f
+  opts.on('--copy-from vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
+    'Copy the file SRC on VNODE to DEST on host' ) do |str|
+    options['f_options'] << 'copy_from'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('copy-from', h, ['vnode','src','dest'], ['user'])
+    options.update(h)
   end
-  opts.on( '-C', '--create-vnetwork NAME,ADDRESS', Array,\
-    'Create the VNetwork NAME with the ADDRESS (ip/mask or ip/prefix)' ) \
-    do |array|
-    options['f_vnetwork_create'] = true
-    options['vnetwork_name'] = array[0]
-    options['vnetwork_address'] = array[1]
+  opts.on('--get-image vnode=VNODE,dest=FILE', \
+    'Get a compressed image file of the filesystem of VNODE' ) do |str|
+    options['f_options'] << 'get_image'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('get-image', h, ['vnode','dest'], [])
+    options.update(h)
   end
-  opts.on( '-s', '--save-config FORMAT,FILE', Array,\
-    'Save the vplatform in FILE using FORMAT (avaliable formats: JSON,XML)' ) \
-    do |array|
-    options['f_vplatform_save'] = true
-    options['vplatform_format'] = array[0]
-    options['vplatform_file'] = array[1]
+  opts.on('--create-vnetwork vnetwork=VNET,address=ADDRESS', \
+    'Create VNET with ADDRESS (ip/mask or ip/prefix)' ) do |str|
+    options['f_options'] << 'create_vnetwork'
+    h = sub_opts_to_hash(str)
+   exit 1 if not check_opts('create-vnetwork', h, ['vnetwork','address'], [])
+    options.update(h)
   end
-  opts.on( '-l', '--load-config FORMAT,FILE', Array,\
-    'Load a vplatform from a FILE in FORMAT (avaliable formats: JSON,XML,SIMGRID)' ) \
-    do |array|
-    options['f_vplatform_load'] = true
-    options['vplatform_format'] = array[0]
-    options['vplatform_file'] = array[1]
+  opts.on('--remove-vnetwork [VNET]', \
+    'Remove VNET or all the vnetworks if VNET is not specified' ) do |str|
+    options['f_options'] << 'remove_vnetwork'
+    options['vnetwork'] = str if str
   end
-  opts.on( '-q', '--quit', 'Close the application' ) do
-    options['f_pnodes_quit'] = true
+  opts.on('--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS]', \
+    'Create VIFACE on VNODE' ) do |str|
+    options['f_options'] << 'create_viface'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('create-viface', h, ['vnode','iface'], ['vnetwork','address'])
+    options.update(h)
+  end
+ opts.on('--remove-viface vnode=VNODE,iface=IFACE', \
+    'Remove VIFACE on VNODE' ) do |str|
+    options['f_options'] << 'remove_viface'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('remove-viface', h, ['vnode','iface'], [])
+    options.update(h)
+  end
+ opts.on('--create-vroute vnetsrc=VNETSRC,vnetdest=VNETDEST,gateway=IP', \
+    'Create a route between VNETSRC et VNETDST (names) using IP as a gateway (affect all the vnodes in VNETSRC)' ) do |str|
+    options['f_options'] << 'create_vroute'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('create-vroute', h, ['vnetsrc','vnetdest','gateway'], [])
+    options.update(h)
+  end
+ opts.on('--complete-vroutes', \
+    'Create every possible route for each vnode' ) do
+    options['f_options'] << 'complete_vroutes'
+  end
+  opts.on('--set-bandwidth vnode=VNODE,iface=IFACE,bw=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]', \
+    'Set a bandwidth limitation on IFACE with a given value and eventually a given direction' ) do |str|
+    options['f_options'] << 'set_bandwidth'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('set-bandwidth', h, ['vnode','iface','bw'], ['direction'])
+    options.update(h)
+  end
+  opts.on('--set-latency vnode=VNODE,iface=IFACE,latency=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]', \
+    'Set a latency limitation on IFACE with a given value and eventually a given direction' ) do |str|
+    options['f_options'] << 'set_latency'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('set-latency', h, ['vnode','iface','latency'], ['direction'])
+    options.update(h)
+  end
+  opts.on('--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited', \
+    'Set a virtual CPU on VNODE with NB cores clocked at SPEED percent' ) do |str|
+    options['f_options'] << 'set_vcpu'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], [])
+    options.update(h)
+  end
+  opts.on('--get-pnode-info [PNODE]', \
+          'Show information about PNODE if specified, or about all the phisical nodes' ) do |str|
+    options['f_options'] << 'get_pnode_info'
+    options['pnode'] = str if str
+  end
+  opts.on('--get-vnode-info [VNODE]', \
+          'Show information about VNODE if specified, or about all the virtual nodes' ) do |str|
+    options['f_options'] << 'get_vnode_info'
+    options['vnode'] = str if str
+  end
+  opts.on('--get-vnetwork-info [VNET]', \
+          'Show information about VNET if specified, or about all the virtual networks' ) do |str|
+    options['f_options'] << 'get_vnetwork_info'
+    options['vnetwork'] = str if str
+  end
+  opts.on('--save-config format=JSON|XML[,configfile=FILE]', \
+          'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)' ) do |str|
+    options['f_options'] << 'save_config'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('save_config', h, ['format'], ['configfile'])
+    options.update(h)
+  end
+  opts.on('--load-config format=JSON|XML|SIMGRID[,configfile=FILE]', \
+          'Load the virtual platform from the given format(if configfile is not specified, load from STDIN)' ) do |str|
+    options['f_options'] << 'load_config'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('load_config', h, ['format'], ['configfile'])
+    options.update(h)
+  end
+  opts.on('--quit', 'Close the application' ) do
+    options['f_options'] << 'quit'
   end
 end
-optparse.parse!
+
+begin
+  optparse.parse!
+rescue OptionParser::MissingArgument,OptionParser::InvalidOption => err
+  puts err
+  exit 1
+end
 
 unless ARGV.length == 0
   puts USAGE
   exit
 end
 
-
-cl=false
-
-if (options['f_pnode_init'])
-  errorcheck(ERR_HOST,options['pnode_addr'])
-
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.pnode_init(options['pnode_addr'])
+if options['f_options'].length == 0
+  puts 'Choose at least one option'
+  puts USAGE
+  exit 1
 end
 
-if (options['f_pnodes_quit'])
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.pnodes_quit()
-end
+cl = Distem::NetAPI::Client.new(options['host'],options['port'])
 
-if (options['f_vnode_create'])
-  props = {}
-  props['image'] = options['vnode_image']
-  props['target'] = options['pnode_addr'] if options['pnode_addr']
-
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.vnode_create(options['vnode_name'], props)
-end
-
-if options['f_vnetwork_create']
-  errorcheck(ERR_VNETWORK,options['vnetwork_name'])
-
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.vnetwork_create(options['vnetwork_name'],options['vnetwork_address'])
-end
-
-if (options['f_viface_create'])
-  errorcheck(ERR_VNODE,options['vnode_name'])
-
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.viface_create(options['vnode_name'], options['viface_name'])
-end
-
-if (options['f_vcpu_create'])
-  errorcheck(ERR_VNODE,options['vnode_name'])
-
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  pp cl.vcpu_create(options['vnode_name'], options['vcpu_core_nb'], options['vcpu_val'])
-end
-
-
-if (options['f_vplatform_save'])
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  ret = cl.vplatform_info(options['vplatform_format'])
-  File.open(options['vplatform_file'],'w') { |f| f.puts(ret) }
-end
-
-if (options['f_vplatform_load'])
-  cl = Distem::NetAPI::Client.new(options['daemon_addr'],options['daemon_port']) unless cl
-  if File.exists?(options['vplatform_file'])
-    str = File.read(options['vplatform_file'])
+options['f_options'].each { |option|
+  case option
+  when 'init_pnode'
+    pp cl.pnode_init(options['pnode'])
+  when 'create_vnode'
+    props = {}
+    props['image'] = options['rootfs']
+    props['target'] = options['pnode'] if options['pnode']
+    pp cl.vnode_create(options['vnode'], props)
+  when 'start_vnode'
+    pp cl.vnode_start(options['vnode'])
+  when 'stop_vnode'
+    pp cl.vnode_stop(options['vnode'])
+  when 'remove_vnode'
+    if options['vnode']
+      pp cl.vnode_remove(options['vnode'])
+    else
+      pp cl.vnodes_remove()
+    end
+  when 'shell'
+    vnode = cl.vnode_info(options['vnode'])
+    system("ssh -t #{options['user']}@#{vnode['host']} 'lxc-console -n #{options['vnode']}'")
+  when 'execute'
+    puts cl.vnode_execute(options['vnode'],options['command']).join("\n")
+  when 'copy_to','copy_from'
+    vnode = cl.vnode_info(options['vnode'])
+    pnode = vnode['host']
+    rootfs = vnode['filesystem']['shared'] ? 
+         vnode['filesystem']['sharedpath'] : vnode['filesystem']['path']
+    vfile = (option == 'copy_to') ? vfile = options['dest'] : vfile = options['src']
+    path = Pathname.new(vfile)
+    path = File.join(rootfs,(path.absolute? ? "" : DEFAULT_COPY_PATH),path.to_s)
+    if option == 'copy_to'
+      system("scp -r #{options['src']} #{options['user']}@#{pnode}:#{path}")
+    else
+      system("scp -r #{options['user']}@#{pnode}:#{path} #{options['dest']}")
+    end
+  when 'get_image'
+    vnode = cl.vnode_info(options['vnode'])
+    cl2 = Distem::NetAPI::Client.new(vnode['host'])
+    cl2.vnode_filesystem_get(vnode['name'],options['dest'])
+  when 'create_vnetwork'
+    pp cl.vnetwork_create(options['vnetwork'],options['address'])
+  when 'remove_vnetwork'
+    if options['vnetwork']
+      pp cl.vnetwork_remove(options['vnetwork'])
+    else
+      pp cl.vnetworks_remove()
+    end
+  when 'create_viface'
+    pp cl.viface_create(options['vnode'], options['iface'])
+    params = {}
+    if options['vnetwork']
+      params['vnetwork'] = options['vnetwork']
+    elsif options['address']
+      params['address'] = options['address']
+    end
+    pp cl.viface_attach(options['vnode'], options['iface'],params)
+  when 'remove_viface'
+    pp cl.viface_remove(options['vnode'], options['iface'])
+  when 'create_vroute'
+    pp cl.vroute_create(options['vnetsrc'],options['vnetdest'],options['gateway'])
+  when 'complete_vroutes'
+    pp cl.vroute_complete()
+  when 'set_bandwidth','set_latency'
+    vnode = cl.vnode_info(options['vnode'])
+    viface_addr = nil
+    vnode['vifaces'].each { |vif|
+      viface_addr = vif['address'] if vif['name'] == options['iface']
+    }
+    if not viface_addr
+      puts 'The address of the virtual interface cannot be found'
+      exit 1
+    end
+    direction = options['direction'] ? options['direction'] : 'FULLDUPLEX'
+    plimit = {}
+    plimit[direction] = {}
+    if option == 'set_bandwidth'
+      plimit[direction]['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
+    else
+      plimit[direction]['latency'] = (options['latency'] != 'unlimited') ? { "delay" => options['latency'] } : {}
+    end
+    params = {}
+    params['vtraffic'] = plimit
+    params['address'] = viface_addr
+    pp cl.viface_attach(options['vnode'], options['iface'], params)
+  when 'set_vcpu'
+    pp cl.vcpu_create(options['vnode'], options['corenb'], options['cpu_speed'])
+  when 'get_pnode_info'
+    if options['pnode']
+      pp cl.pnode_info(options['pnode'])
+    else
+      pp cl.pnodes_info()
+    end
+  when 'get_vnode_info'
+    if options['vnode']
+      pp cl.vnode_info(options['vnode'])
+    else
+      pp cl.vnodes_info()
+    end
+  when 'get_vnetwork_info'
+    if options['vnetwork']
+      pp cl.vnetwork_info(options['vnetwork'])
+    else
+      pp cl.vnetworks_info()
+    end
+  when 'save_config'
+    ret = cl.vplatform_info(options['format'])
+    if options['configfile']
+      File.open(options['configfile'],'w') { |f| f.puts(ret) }
+    else
+      puts ret
+    end
+  when 'load_config'
+    str = ""
+    if options['configfile']
+      if File.exists?(options['configfile'])
+        str = File.read(options['configfile'])
+      else
+        puts "File '#{options['configfile']}' not found !"
+        exit 1
+      end
+    else
+      str = STDIN.read
+    end
+    pp cl.vplatform_create(str,options['vplatform_format'])
+  when 'quit'
   else
-    puts "File '#{options['vplatform_file']}' not found !"
+    puts "Invalid option: #{option}"
     exit 1
   end
-  pp cl.vplatform_create(str,options['vplatform_format'])
-end
+}
