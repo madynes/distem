@@ -1,13 +1,10 @@
 #!/usr/bin/ruby
 #
-# distem-bootstrap is a script to configure a set of nodes as distem nodes
-# after they have been successfully deployed. Example usage:
-#   oarsub -t deploy -l nodes=10,walltime=1 \
-#      'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'
-#   see distem-bootstrap --help for more info.
+# distem-devbootstrap is a script to manipulate a distem development environment
+#   see distem-devbootstrap --help for more info.
 #
 ####
-# distem-bootstrap is Copyright (C) 2011 Luc Sarzyniec <luc.sarzyniec@inria.fr>
+# distem-devbootstrap is Copyright (C) 2011 Luc Sarzyniec <luc.sarzyniec@inria.fr>
 # Secondary contact: Lucas Nussbaum <lucas.nussbaum@loria.fr>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -46,10 +43,6 @@ PATH_DISTEMD_LOGS = '/var/log/distem'
 TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
-USAGE             = "Usage: #{$0} [options] [<script_to_execute>]\n"\
-                    "When executing a script file nodelist is available in the env var #{VAR_DISTEM_NODES}, the coordinator in #{VAR_DISTEM_COORD}."
-INSTRUCTIONS      = "Instructions: You should first launch 'distem-bootstrap' to get the distem debian package installed then you can use NFS symlink hack with --update, init or kill your distem instances with --init and --kill, take a look on the log files with -C and -D or just run a script by passing it as argument."
-
 
 pkg_tmp_dependencies=[
   'lsof' # needed until hack to wait for distemd startup is removed
@@ -97,7 +90,7 @@ def open_channel(session, group = nil)
   end
 end
 
-def exec(session, cmd, group = nil, critical = false, showerr = true, showout = false)
+def exec(session, cmd, group = nil, critical = true, showerr = true, showout = false)
   outs = {}
   errs = {}
   
@@ -121,20 +114,24 @@ def exec(session, cmd, group = nil, critical = false, showerr = true, showout = 
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
+    msg("[#{chtmp.connection.host} E] #{data.strip}") \
+      if @options[:debug] or showout
   end
   
   channel.on_request("exit-status") do |chtmp, data|
     status = data.read_long
-    if status != 0 and showerr
-      msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
-        "with return status #{status.to_s}",MSG_ERROR)
-      msg("---stdout dump---")
-      outs[chtmp.connection.host].each { |out| msg(out) } \
-        if outs[chtmp.connection.host]
-      msg("---stderr dump---")
-      errs[chtmp.connection.host].each { |err| msg(err) } \
-        if errs[chtmp.connection.host]
-      msg("---\n")
+    if status != 0
+      if showerr or critical
+        msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
+          "with return status #{status.to_s}",MSG_ERROR)
+        msg("---stdout dump---")
+        outs[chtmp.connection.host].each { |out| msg(out) } if \
+          outs[chtmp.connection.host]
+        msg("---stderr dump---")
+        errs[chtmp.connection.host].each { |err| msg(err) } if \
+          errs[chtmp.connection.host]
+        msg("---\n")
+      end
       exit 1 if critical
     end
   end
@@ -177,7 +174,7 @@ end
 
 def updateall(updatepaths,session,allnodes,objlist)
   # Check if debian package is installed
-  tmp = exec(session,'dpkg -s distem')
+  tmp = exec(session,'dpkg -s distem', nil, false, false)
   msg('dpkg error',MSG_ERROR,true) if tmp.keys.size != allnodes.size
   tmp.each do |node,output|
     output.each do |line|
@@ -209,8 +206,8 @@ def updateall(updatepaths,session,allnodes,objlist)
         localentries.delete('..')
         localentries.each do |localentry|
           unless updatepaths.values.include?(File.join(localpath,localentry))
-            exec(session,"rm -Rf #{File.join(remotepath,localentry)}",nil,true)
-            exec(session,"ln -s #{File.join(localpath,localentry)} #{remotepath}",nil,true)
+            exec(session,"rm -Rf #{File.join(remotepath,localentry)}")
+            exec(session,"ln -s #{File.join(localpath,localentry)} #{remotepath}")
           end
         end
       end
@@ -236,13 +233,23 @@ options[:list] = false
 
 args = ARGV.dup
 
-optparse = OptionParser.new("#{USAGE}\n#{INSTRUCTIONS}\n") do |opts|
-	opts.on( '-h', '--help', 'Display this screen' ) do
-  		puts opts
-  		exit
-	end
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
+  opts.separator ""
+  opts.separator "distem-devbootstrap helps distem developers manage their development environment:"
+  opts.separator "use a distem copy stored on NFS, start and stop nodes, peek at the log files, etc."
+  opts.separator ""
+  opts.separator "Options:"
 	
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Specify coordinator address (default: first node)' ) do |c|
+	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+  	options[:node_list] = n
+	end
+
+	opts.on( '-u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
+  	options[:update_file] = u
+	end
+
+	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
   	options[:coordinator] = c || nil
 	end
 
@@ -262,37 +269,44 @@ optparse = OptionParser.new("#{USAGE}\n#{INSTRUCTIONS}\n") do |opts|
     options[:list] = true
 	end
 	
-	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get the logs of distem daemon (#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}) on <node_number> [see --list]" ) do |d|
+	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get distemd logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}) on <node_number> [see --list]" ) do |d|
     options[:logs_daemon] = d
 	end
 	
-	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get the logs of distem commands (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
+	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get commands logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
     options[:logs_commands] = c
 	end
-	
-	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
-  	options[:node_list] = n
-	end
-	
-	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
-  	options[:debug] = true
-	end
-	
-	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
-  	options[:update_file] = u
-	end
-	
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
+
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to be installed' ) do |p|
   	options[:debpackages] = p
 	end
 	
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Specify additional gem packages to be installed' ) do |p|
+	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to be installed' ) do |p|
   	options[:gempackages] = p
 	end
+		
+	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+  	options[:debug] = true
+	end
 	
-	opts.on( '-b', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+	opts.on( '-D', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
   	options[:debug_distem] = true
 	end
+
+	opts.on( '-h', '--help', 'Display this screen' ) do
+  		puts opts
+  		exit
+	end
+
+  opts.separator ""
+  opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
+  opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
+  opts.separator ""
+  opts.separator "Examples:"
+  opts.separator "# reserve and deploy nodes, configure using distem-bootstrap and distem-devbootstrap"
+  opts.separator "oarsub -t deploy -l nodes=10,walltime=1 \\"
+  opts.separator " 'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap --git \\"
+  opts.separator "  --no-init-pnodes distem-devbootstrap --update .distem.yml'"
 end
 begin
   optparse.parse!
@@ -313,14 +327,11 @@ else
 end
 
 begin
-	File.open(nodelist_file, 'r') do |f|
-	  f.each{ |line| nodelist << line.strip unless nodelist.include?(line.strip) }
-	end
+  nodelist = IO::readlines(nodelist_file).map { |l| l.strip }.uniq
 rescue Errno::ENOENT
 	puts "File '#{nodelist_file}' not found"
 	exit 1
 end
-
 
 if nodelist.empty?
   msg("nodelist is empty",MSG_ERROR,true)
@@ -423,12 +434,12 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       unless pkg_tmp_dependencies.empty?
     options[:debpackages].each do |debpkg|
       msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
-      exec(session,"apt-get install -q -y --force-yes #{debpkg}",true)
+      exec(session,"apt-get install -q -y --force-yes #{debpkg}")
     end
     options[:gempackages].each do |gempkg|
       msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
       exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
-        :coord,true)
+        :coord)
     end
     
     session.loop
@@ -458,7 +469,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
   	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
   	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
   	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
-        :coord,true)
+        :coord)
   	  
       launched = []
       until launched and !launched.empty?

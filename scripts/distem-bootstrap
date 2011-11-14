@@ -61,11 +61,7 @@ pkg_utils=[
   'htop'
 ]
 
-pkg_tmp_dependencies=[
-	'cpufrequtils',
-  'ethtool',
-  'lsof' # needed until hack to wait for distemd startup is removed
-]
+pkg_tmp_dependencies=[]
 
 pkg_build=[
   'git',
