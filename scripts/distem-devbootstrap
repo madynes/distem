@@ -278,7 +278,7 @@ optparse = OptionParser.new("#{USAGE}\n#{INSTRUCTIONS}\n") do |opts|
   	options[:debug] = true
 	end
 	
-	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}" ) do |u|
+	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}} to be bind on distem daemons)" ) do |u|
   	options[:update_file] = u
 	end
 	
@@ -379,7 +379,7 @@ if options[:update_file]
     msg("#{options[:update_file]}: missing key(s) [needed: {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}]",MSG_WARNING) \
       if nb != DISTEM_UPDATE_PATH_CHECK.keys.size
   else
-    msg("update file '#{options[:update_file]}' not found",MSG_ERR,true)
+    msg("update file '#{options[:update_file]}' not found",MSG_ERROR,true)
   end
 end
 
