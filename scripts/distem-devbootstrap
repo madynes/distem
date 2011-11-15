@@ -276,8 +276,20 @@ optparse = OptionParser.new do |opts|
 	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get commands logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
     options[:logs_commands] = c
 	end
-
-	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to be installed' ) do |p|
+	
+	opts.on( '-n', '--node-list <nodelist_file>', 'Specify a file containing the list of the nodes to be installed' ) do |n|
+  	options[:node_list] = n
+	end
+	
+	opts.on( '-d', '--debug', 'Verbose display of every instruction sent' ) do
+  	options[:debug] = true
+	end
+	
+	opts.on( 'u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}} to be bind on distem daemons)" ) do |u|
+  	options[:update_file] = u
+	end
+	
+	opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Specify additional debian packages to be installed' ) do |p|
   	options[:debpackages] = p
 	end
 	
@@ -390,7 +402,7 @@ if options[:update_file]
     msg("#{options[:update_file]}: missing key(s) [needed: {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}}]",MSG_WARNING) \
       if nb != DISTEM_UPDATE_PATH_CHECK.keys.size
   else
-    msg("update file '#{options[:update_file]}' not found",MSG_ERR,true)
+    msg("update file '#{options[:update_file]}' not found",MSG_ERROR,true)
   end
 end
 
