@@ -38,7 +38,7 @@ end
 PKG_NAME          = 'distem'
 DEB_REPOSITORY    = 'http://distem.gforge.inria.fr/deb'
 HTTP_PROXY        = 'http://proxy:3128/'
-SSH_KEYS          = ["#{ENV['HOME']}/.ssh/id_dsa", "#{ENV['HOME']}/.ssh/id_rsa"]
+SSH_KEYS_PATH     = File.join(ENV['HOME'],'.ssh')
 PATH_DISTEMD_LOGS = '/var/log/distem'
 TMP_DIR           = '/tmp/distem'
 VAR_DISTEM_NODES  = 'DISTEM_NODES'
@@ -305,16 +305,34 @@ if options[:ssh_key]
     msg("ssh key #{options[:ssh_key]} not found",MSG_ERR,true)
   end
 else
-  sshkeyfiles = SSH_KEYS.select { |keypath| File.exists?(keypath) }
+  sshkeyfiles = []
+  begin 
+    sshkeyfiles = Dir.entries(SSH_KEYS_PATH).select do |v|
+      v =~ /^id.*$/ and File.extname(v) =~  /^(?!\.pub)$/
+    end if File.directory?(SSH_KEYS_PATH)
+  rescue ArgumentError
+  end
+  sshkeyfiles.collect!{|v| File.join(SSH_KEYS_PATH,v)}
+
   if sshkeyfiles.empty?
     msg("no ssh private key file found (specify one with -k)",MSG_ERROR,true)
   else
     sshkeyfile = sshkeyfiles[0]
+    msg("Auto selecting ssh key '#{sshkeyfile}'",MSG_INFO)
   end
 end
-msg("Copying ssh private key file to the coordinator machine (#{coordinator})",
+msg("Copying SSH key pair files",
   MSG_INFO)
-`scp #{sshkeyfile} root@#{coordinator}:/root/.ssh/`
+allnodes.each do |node|
+  `scp #{sshkeyfile} root@#{node}:/root/.ssh/`
+end
+if File.exists?("#{sshkeyfile}.pub")
+  allnodes.each do |node|
+    `scp #{sshkeyfile}.pub root@#{node}:/root/.ssh/` 
+  end
+else
+  msg("Public key file for '#{sshkeyfile}' key not found",MSG_WARNING)
+end
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
 Net::SSH::Multi.start do |session|
