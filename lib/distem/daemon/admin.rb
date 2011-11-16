@@ -8,8 +8,37 @@ module Distem
     class Admin
       # The file used to store the stdout and stderr logs for the launched daemons
       PATH_DISTEMD_LOG=File.join(Node::Admin::PATH_DISTEM_LOGS,"distemd.log")
+      # Default SSH user
+      SSH_USER=ENV['USER']
       # Paths to the SSH key files
-      PATH_SSH_KEYS=['/root/.ssh/id_rsa','/root/.ssh/id_dsa']
+      PATH_SSH_KEYS=File.join(File.expand_path("~#{SSH_USER}"),'.ssh')
+
+      # Get current user SSH public keys paths (looking in PATH_SSH_KEYS directory)
+      # ==== Returns
+      # Array of String object
+      def self.ssh_keys_pub
+        ret = []
+        begin 
+          ret = Dir.entries(PATH_SSH_KEYS).select {|v| v =~ /^id.*\.pub$/} \
+            if File.directory?(PATH_SSH_KEYS)
+        rescue ArgumentError
+        end
+        return ret.collect!{|v| File.join(PATH_SSH_KEYS,v)}
+      end
+
+      # Get current user SSH private keys paths (looking in PATH_SSH_KEYS directory)
+      # ==== Returns
+      # Array of String object
+      def self.ssh_keys_priv
+        ret = []
+        begin 
+          ret = Dir.entries(PATH_SSH_KEYS).select do |v|
+            v =~ /^id.*$/ and File.extname(v) =~  /^(?!\.pub)$/
+          end if File.directory?(PATH_SSH_KEYS)
+        rescue ArgumentError
+        end
+        return ret.collect!{|v| File.join(PATH_SSH_KEYS,v)}
+      end
 
       # Run a daemon on a distant server (physical node)
       # ==== Attributes
@@ -20,7 +49,7 @@ module Distem
 
         if pnode.status == Resource::Status::INIT
           begin
-            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => PATH_SSH_KEYS, :password => pnode.ssh_password) do |ssh|
+            Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => ssh_keys_priv, :password => pnode.ssh_password) do |ssh|
               ssh.exec!("mkdir -p #{Node::Admin::PATH_DISTEM_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
 
@@ -56,7 +85,7 @@ module Distem
         raise unless vnode.vifaces[0].attached?
         
         ret = ""
-        Net::SSH.start(vnode.vifaces[0].address.to_s, 'root', :keys => PATH_SSH_KEYS, :password => 'root') do |ssh|
+        Net::SSH.start(vnode.vifaces[0].address.to_s, 'root', :keys => ssh_keys_priv, :password => 'root') do |ssh|
           ret = ssh.exec!(command)
         end
 
