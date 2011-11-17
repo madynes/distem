@@ -40,8 +40,7 @@ module Distem
       # Hash object that describes the virtual platform (see Lib::Validator)
       # 
       def parse_platform(xmldoc,result,tmp={})
-        raise Lib::NotImplementedError \
-          unless xmldoc.root.attributes['version'] == '2'
+        raise Lib::NotImplementedError unless xmldoc.root.attributes['version'] == '2'
         result['vplatform'] = {}
         result['vplatform']['vnodes'] = []
         result['vplatform']['vnetworks'] = []
@@ -286,8 +285,7 @@ module Distem
       # See the parse_platform method documentation
       def parse_link_ctn(xmldoc,result,tmp)
         name = xmldoc.attribute('id').to_s
-        switch = tmp['switches'].select{ |switch| switch['name'] == name }[0] \
-          if tmp['switches']
+        switch = tmp['switches'].select{ |switch| switch['name'] == name }[0] if tmp['switches']
         ret = true
         if switch
           ret = switch
