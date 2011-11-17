@@ -40,10 +40,10 @@ module Node
       @vnode = vnode
       @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
       @fsforge = FileSystemForge.new(@vnode)
-      raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
-        unless File.exists?(@vnode.filesystem.path)
-      raise Lib::InvalidParameterError, @vnode.filesystem.path \
-        unless File.directory?(@vnode.filesystem.path)
+      raise Lib::ResourceNotFoundError, @vnode.filesystem.path unless \
+        File.exists?(@vnode.filesystem.path)
+      raise Lib::InvalidParameterError, @vnode.filesystem.path unless \
+        File.directory?(@vnode.filesystem.path)
       @networkforges = {}
       @vnode.vifaces.each do |viface|
         @networkforges[viface] = NetworkForge.new(viface)

@@ -341,8 +341,7 @@ module Distem
       # The path where the compressed image was retrieved
       def vnode_filesystem_get(vnode,target='.')
         check_net("/vnodes/#{URI.escape(vnode)}/filesystem/image") do |req|
-          raise Lib::ResourceNotFoundError, File.dirname(target) \
-            unless File.exists?(File.dirname(target))
+          raise Lib::ResourceNotFoundError, File.dirname(target) unless File.exists?(File.dirname(target))
           if File.directory?(target)
             target = File.join(target,"#{vnode}-fsimage.tar.gz")
           end
