@@ -27,10 +27,10 @@ module TCWrapper # :nodoc: all
     def get_cmd(*args)
       super(*args) \
         + ((@parent.kind_of? QdiscRoot) ? \
-          "root" : "parent " + @parentid.to_s) \
-        + " protocol " + @protocol + (@prio > 0 ? " prio " + @prio.to_s : "") \
-        + " " + @type + " " + get_filter_params + " flowid " + @destid.to_s \
-        + " " + get_params
+           "root" : "parent " + @parentid.to_s) \
+           + " protocol " + @protocol + (@prio > 0 ? " prio " + @prio.to_s : "") \
+           + " " + @type + " " + get_filter_params + " flowid " + @destid.to_s \
+           + " " + get_params
     end
 
     def get_filter_params

@@ -1,22 +1,22 @@
 module TCWrapper # :nodoc: all
 
-require 'distem'
+  require 'distem'
 
 
-class QdiscIngress < Wrapper
-  TYPE="qdisc"
+  class QdiscIngress < Wrapper
+    TYPE="qdisc"
 
-  attr_reader :id
+    attr_reader :id
 
-  def initialize(iface)
-    super(iface,TYPE,"ingress",Hash.new)
-    @id = Id.new("ffff")
+    def initialize(iface)
+      super(iface,TYPE,"ingress",Hash.new)
+      @id = Id.new("ffff")
+    end
+
+    def get_cmd(*args)
+      super(*args) + "ingress"
+    end
   end
-
-  def get_cmd(*args)
-    super(*args) + "ingress"
-  end
-end
 
 end
 

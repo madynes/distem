@@ -1,11 +1,11 @@
 module TCWrapper # :nodoc: all
 
-require 'distem'
+  require 'distem'
 
-class Action
-  ADD="add"
-  DEL="del"
-  CHANGE="change"
-end
+  class Action
+    ADD="add"
+    DEL="del"
+    CHANGE="change"
+  end
 
 end

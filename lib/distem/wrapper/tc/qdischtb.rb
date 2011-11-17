@@ -1,14 +1,14 @@
 module TCWrapper # :nodoc: all
 
-require 'distem'
+  require 'distem'
 
 
-class QdiscHTB < Qdisc
-  TYPE="htb"
+  class QdiscHTB < Qdisc
+    TYPE="htb"
 
-  def initialize(iface,parent,params=Hash.new)
-    super(iface,parent,TYPE,params)
+    def initialize(iface,parent,params=Hash.new)
+      super(iface,parent,TYPE,params)
+    end
   end
-end
 
 end
