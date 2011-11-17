@@ -29,9 +29,8 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.rootfs = #{vnode.filesystem.path}"
         end
 
-        Distem::Lib::Shell.run("mkdir -p #{PATH_LOG_DIR}") \
-          unless File.directory?(PATH_LOG_DIR)
-        
+        Distem::Lib::Shell.run("mkdir -p #{PATH_LOG_DIR}") unless File.directory?(PATH_LOG_DIR)
+
         f.puts "lxc.mount.entry=proc #{vnode.filesystem.path}/proc " \
           "proc nodev,noexec,nosuid 0 0"
         f.puts "lxc.mount.entry=sysfs #{vnode.filesystem.path}/sys " \

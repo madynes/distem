@@ -18,7 +18,7 @@ module TCWrapper # :nodoc: all
       if (@parent.kind_of? QdiscRoot)
         raise "Can't link a class to root directly"
       end
-      
+
       super(*args) + "parent " + @parentid.to_s + " classid " + @id.to_s + " " \
         + @type + " " + get_params
     end

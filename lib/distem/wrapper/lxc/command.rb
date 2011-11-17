@@ -14,12 +14,12 @@ module LXCWrapper # :nodoc: all
 
     def self.create(contname, configfile, wait=true)
       destroy(contname,wait) if ls().include?(contname)
-          
+
       contsync(contname) {
         Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
       }
     end
-    
+
     def self.destroy(contname,wait=true)
       contsync(contname) {
         Distem::Lib::Shell.run("lxc-destroy -n #{contname}",true) if ls().include?(contname)
@@ -74,7 +74,7 @@ module LXCWrapper # :nodoc: all
 
     def self.status(contname)
       contsync(contname) {
-       Distem::Lib::Shell.run("lxc-info -n #{contname}",true).split().last
+        Distem::Lib::Shell.run("lxc-info -n #{contname}",true).split().last
       }
     end
 
