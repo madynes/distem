@@ -142,3 +142,12 @@ desc "Reindent everything"
 task :reindent do
   system('find bin lib -type f -exec vim -s .vim-reindent {} \;')
 end
+
+desc "Find patterns that confuse vim"
+task :makevimfriendly do
+  Dir['**/*.rb'].each do |f|
+    if IO::read(f) =~ /\\\n\s*(unless|if)/
+      puts f
+    end
+  end
+end
