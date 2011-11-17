@@ -2,75 +2,104 @@ require 'distem'
 require 'thread'
 
 module Distem
-module Node
+  module Node
 
-  # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
-  class Container
-    # The maximum simultaneous actions (start,stop)
-    MAX_SIMULTANEOUS_ACTIONS = 32
-    MAX_SIMULTANEOUS_CONFIG = 32
+    # Class that allow to manage all container (cgroup/lxc) associated physical and virtual resources
+    class Container
+      # The maximum simultaneous actions (start,stop)
+      MAX_SIMULTANEOUS_ACTIONS = 32
+      MAX_SIMULTANEOUS_CONFIG = 32
+      # The prefix to set to the SSH key whick are copied on the virtual nodes
+      SSH_KEY_PREFIX = 'distemkey-'
 
-    # Clean only one time
-    @@cleanlock = Mutex.new
-    # Was the system cleaned
-    @@cleaned = false
-    # Only write on common files once at the same time
-    @@filelock = Mutex.new
-    # Max number of simultaneous action
-    @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
-    # Max number of simultaneous config action
-    @@confsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_CONFIG)
+      # Clean only one time
+      @@cleanlock = Mutex.new
+      # Was the system cleaned
+      @@cleaned = false
+      # Only write on common files once at the same time
+      @@filelock = Mutex.new
+      # Max number of simultaneous action
+      @@contsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_ACTIONS)
+      # Max number of simultaneous config action
+      @@confsem = Lib::Semaphore.new(MAX_SIMULTANEOUS_CONFIG)
 
-    # The virtual node this container is set for
-    attr_reader :vnode
-    # The object used to set up physical CPU limitations
-    attr_reader  :cpuforge
-    # The object used to set up physical filesystem
-    attr_reader  :fsforge
-    # The object used to set up network limitations
-    attr_reader  :networkforges
+      # The virtual node this container is set for
+      attr_reader :vnode
+      # The object used to set up physical CPU limitations
+      attr_reader  :cpuforge
+      # The object used to set up physical filesystem
+      attr_reader  :fsforge
+      # The object used to set up network limitations
+      attr_reader  :networkforges
 
-    # Create a new Container and associate it to a virtual node
-    # ==== Attributes
-    # * +vnode+ The VNode object
-    #
-    def initialize(vnode,cpu_algorithm=nil)
-      raise unless vnode.is_a?(Resource::VNode)
+      # Create a new Container and associate it to a virtual node
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      #
+      def initialize(vnode,cpu_algorithm=nil)
+        raise unless vnode.is_a?(Resource::VNode)
 
-      @vnode = vnode
-      @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
-      @fsforge = FileSystemForge.new(@vnode)
-      raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
-        unless File.exists?(@vnode.filesystem.path)
-      raise Lib::InvalidParameterError, @vnode.filesystem.path \
-        unless File.directory?(@vnode.filesystem.path)
-      @networkforges = {}
-      @vnode.vifaces.each do |viface|
-        @networkforges[viface] = NetworkForge.new(viface)
+        @vnode = vnode
+        @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
+        @fsforge = FileSystemForge.new(@vnode)
+        raise Lib::ResourceNotFoundError, @vnode.filesystem.path \
+          unless File.exists?(@vnode.filesystem.path)
+        raise Lib::InvalidParameterError, @vnode.filesystem.path \
+          unless File.directory?(@vnode.filesystem.path)
+        @networkforges = {}
+        @vnode.vifaces.each do |viface|
+          @networkforges[viface] = NetworkForge.new(viface)
+        end
+        @curname = ""
+        @configfile = ""
+        @id = 0
+
+        setup()
       end
-      @curname = ""
-      @configfile = ""
-      @id = 0
 
-      setup()
-    end
+      # Setup the virtual node container (copy ssh keys, ...)
+      #
+      def setup()
+        rootfspath = nil
+        if @vnode.filesystem.shared
+          rootfspath = @vnode.filesystem.sharedpath
+        else
+          rootfspath = @vnode.filesystem.path
+        end
+        rootfspath = File.join(rootfspath,'root','.ssh')
 
-    # Setup the virtual node container (copy ssh keys, ...)
-    #
-    def setup()
-      rootfspath = nil
-      if @vnode.filesystem.shared
-        rootfspath = @vnode.filesystem.sharedpath
-      else
-        rootfspath = @vnode.filesystem.path
+        # Creating SSH directory
+        unless File.exists?(rootfspath)
+          Lib::Shell.run("mkdir -p #{rootfspath}")
+        end
+
+        # Copying every private keys if not already existing
+        Daemon::Admin.ssh_keys_priv.each do |keyfile|
+          keypath=File.join(rootfspath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
+          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
+        end
+        
+        # Copying every public keys if not already existing
+        Daemon::Admin.ssh_keys_pub.each do |keyfile|
+          keypath=File.join(rootfspath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
+          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
+        end
+
+        # Adding public keys to SSH authorized_keys file
+        authfile = File.join(rootfspath,'authorized_keys')
+        if File.exists?(authfile)
+          authkeys = IO.readlines(authfile).collect{|v| v.chomp}
+          Daemon::Admin.ssh_keys_pub.each do |keyfile|
+            key=IO.read(keyfile).chomp
+            File.open(authfile,'a+') {|f| f.puts key} unless authkeys.include?(key)
+          end
+        else
+          Daemon::Admin.ssh_keys_pub.each do |keyfile|
+            File.open(authfile,'a+') {|f| f.puts IO.read(keyfile).chomp}
+          end
+        end
+
       end
-      rootfspath = File.join(rootfspath,'root','.ssh')
-
-      unless File.exists?(rootfspath)
-        Lib::Shell.run("mkdir -p #{rootfspath}")
-        Lib::Shell.run("cp -f #{File.join(ENV['HOME'],'.ssh')}/* #{rootfspath}/")
-      end
-    end
 
       # Create new resource limitation objects if the virtual node resource has changed
       def update()
