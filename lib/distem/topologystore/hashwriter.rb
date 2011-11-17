@@ -72,9 +72,9 @@ module Distem
 
         cpu.critical_cache_links.each do |cachelink|
           ret['critical_cache_links'] <<
-            cachelink.collect { |core| core.physicalid }
+          cachelink.collect { |core| core.physicalid }
         end
-        
+
         return ret
       end
 
@@ -116,7 +116,7 @@ module Distem
             pcorenum = vcore.pcore.to_s
           end
         end
-        
+
         return {
           'id' => vcore.id.to_s,
           'pcore' => pcorenum,

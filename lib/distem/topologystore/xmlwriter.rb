@@ -17,7 +17,7 @@ module Distem
         visit(vplatform.pnodes).each { |elem| evplatform.add_element(elem) }
         visit(vplatform.vnodes).each { |elem| evplatform.add_element(elem) }
         visit(vplatform.vnetworks).each { |elem| evplatform.add_element(elem) }
-        
+
         ret = REXML::Document.new
         ret << REXML::XMLDecl.new
         ret.add_element(evplatform)

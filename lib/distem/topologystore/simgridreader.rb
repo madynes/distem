@@ -80,22 +80,22 @@ module Distem
         vnode = nil
         create_vnode = Proc.new {
           vnode = {
-              'name' => nil,
-              'vifaces' => [{
-                'name' => 'if0',
-                'vnetwork' => netname,
-                'vinput' => nil,
-                'voutput' => {
-                  'direction' => 'OUTPUT',
-                  'properties' => [
-                    { 'type' => 'bandwidth', 'rate' => xmldoc.attribute('bw').to_s.to_f.to_s + 'bps' },
-                    { 'type' => 'latency', 'delay' => xmldoc.attribute('lat').to_s.to_f.to_s + 's' },
-                  ]
-                }
-              }],
-              'filesystem' =>  {
-                'image' => @image
+            'name' => nil,
+            'vifaces' => [{
+              'name' => 'if0',
+              'vnetwork' => netname,
+              'vinput' => nil,
+              'voutput' => {
+                'direction' => 'OUTPUT',
+                'properties' => [
+                  { 'type' => 'bandwidth', 'rate' => xmldoc.attribute('bw').to_s.to_f.to_s + 'bps' },
+                  { 'type' => 'latency', 'delay' => xmldoc.attribute('lat').to_s.to_f.to_s + 's' },
+                ]
               }
+            }],
+            'filesystem' =>  {
+              'image' => @image
+            }
           }
         }
 
@@ -127,7 +127,7 @@ module Distem
           vnode['name'] = xmldoc.attribute('prefix').to_s + no.to_s + xmldoc.attribute('sufix').to_s
           result['vnodes'] << vnode
         end
-        
+
       end
 
       # See the parse_platform method documentation
