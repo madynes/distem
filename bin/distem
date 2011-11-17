@@ -59,156 +59,206 @@ optparse = OptionParser.new(USAGE) do |opts|
     puts opts
     exit
   end
-  opts.on('--coordinator host=HOST[,port=PORT]', \
-          'Specify the HOST and the PORT of the coordinator' ) do |str|
+  opts.on(
+    '--coordinator host=HOST[,port=PORT]',
+    'Specify the HOST and the PORT of the coordinator'
+  ) do |str|
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('coordinator', h, ['host'], ['port'])
     options.update(h)
   end
-  opts.on('--init-pnode PNODE', \
-    'Init the physical node PNODE' ) do |str|
+  opts.on(
+    '--init-pnode PNODE',
+    'Init the physical node PNODE'
+  ) do |str|
     options['f_options'] << 'init_pnode'
     options['pnode'] = str
   end
-  opts.on('--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE]', \
-    'Create the virtual node VNODE deploying FILE' ) do |str|
+  opts.on(
+    '--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE]',
+    'Create the virtual node VNODE deploying FILE'
+  ) do |str|
     options['f_options'] << 'create_vnode'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('create-vnode', h, ['vnode','rootfs'], ['pnode'])
     options.update(h)
   end
-  opts.on('--start-vnode VNODE', \
-    'Start the virtual node VNODE' ) do |str|
+  opts.on(
+    '--start-vnode VNODE',
+    'Start the virtual node VNODE'
+  ) do |str|
     options['f_options'] << 'start_vnode'
     options['vnode'] = str
   end
-  opts.on('--stop-vnode VNODE', \
-    'Stop the virtual node VNODE' ) do |str|
+  opts.on(
+    '--stop-vnode VNODE',
+    'Stop the virtual node VNODE'
+  ) do |str|
     options['f_options'] << 'stop_vnode'
     options['vnode'] = str
   end
-  opts.on('--remove-vnode [VNODE]', \
-    'Remove VNODE or all the vnodes if VNODE is not specified' ) do |str|
+  opts.on(
+    '--remove-vnode [VNODE]',
+    'Remove VNODE or all the vnodes if VNODE is not specified'
+  ) do |str|
     options['f_options'] << 'remove_vnode'
     options['vnode'] = str
   end
-  opts.on('--shell vnode=VNODE[,user=USER]', \
-    'Open a shell on VNODE' ) do |str|
+  opts.on(
+    '--shell vnode=VNODE[,user=USER]',
+    'Open a shell on VNODE'
+  ) do |str|
     options['f_options'] << 'shell'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('shell', h, ['vnode'], ['user'])
     options.update(h)
   end
-  opts.on('--execute vnode=VNODE,command=COMMAND[,user=USER]', \
-    'Execute a command COMMAND on VNODE' ) do |str|
+  opts.on(
+    '--execute vnode=VNODE,command=COMMAND[,user=USER]',
+    'Execute a command COMMAND on VNODE'
+  ) do |str|
     options['f_options'] << 'execute'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('execute', h, ['vnode','command'], ['user'])
     options.update(h)
   end
-  opts.on('--copy-to vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
-    'Copy the file SRC on host to DEST on VNODE' ) do |str|
+  opts.on(
+    '--copy-to vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
+    'Copy the file SRC on host to DEST on VNODE'
+  ) do |str|
     options['f_options'] << 'copy_to'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('copy-to', h, ['vnode','src','dest'], ['user'])
     options.update(sub_opts_to_hash(str))
   end
-  opts.on('--copy-from vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
-    'Copy the file SRC on VNODE to DEST on host' ) do |str|
+  opts.on(
+    '--copy-from vnode=VNODE,src=SRC,dest=DEST[,user=USER]',
+    'Copy the file SRC on VNODE to DEST on host'
+  ) do |str|
     options['f_options'] << 'copy_from'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('copy-from', h, ['vnode','src','dest'], ['user'])
     options.update(h)
   end
-  opts.on('--get-image vnode=VNODE,dest=FILE', \
-    'Get a compressed image file of the filesystem of VNODE' ) do |str|
+  opts.on(
+    '--get-image vnode=VNODE,dest=FILE',
+    'Get a compressed image file of the filesystem of VNODE'
+  ) do |str|
     options['f_options'] << 'get_image'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('get-image', h, ['vnode','dest'], [])
     options.update(h)
   end
-  opts.on('--create-vnetwork vnetwork=VNET,address=ADDRESS', \
-    'Create VNET with ADDRESS (ip/mask or ip/prefix)' ) do |str|
+  opts.on(
+    '--create-vnetwork vnetwork=VNET,address=ADDRESS',
+    'Create VNET with ADDRESS (ip/mask or ip/prefix)'
+  ) do |str|
     options['f_options'] << 'create_vnetwork'
     h = sub_opts_to_hash(str)
-   exit 1 if not check_opts('create-vnetwork', h, ['vnetwork','address'], [])
+    exit 1 if not check_opts('create-vnetwork', h, ['vnetwork','address'], [])
     options.update(h)
   end
-  opts.on('--remove-vnetwork [VNET]', \
-    'Remove VNET or all the vnetworks if VNET is not specified' ) do |str|
+  opts.on(
+    '--remove-vnetwork [VNET]',
+    'Remove VNET or all the vnetworks if VNET is not specified'
+  ) do |str|
     options['f_options'] << 'remove_vnetwork'
     options['vnetwork'] = str if str
   end
-  opts.on('--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS]', \
-    'Create VIFACE on VNODE' ) do |str|
+  opts.on(
+    '--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS]',
+    'Create VIFACE on VNODE'
+  ) do |str|
     options['f_options'] << 'create_viface'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('create-viface', h, ['vnode','iface'], ['vnetwork','address'])
     options.update(h)
   end
- opts.on('--remove-viface vnode=VNODE,iface=IFACE', \
-    'Remove VIFACE on VNODE' ) do |str|
+  opts.on(
+    '--remove-viface vnode=VNODE,iface=IFACE',
+    'Remove VIFACE on VNODE'
+  ) do |str|
     options['f_options'] << 'remove_viface'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('remove-viface', h, ['vnode','iface'], [])
     options.update(h)
   end
- opts.on('--create-vroute vnetsrc=VNETSRC,vnetdest=VNETDEST,gateway=IP', \
-    'Create a route between VNETSRC et VNETDST (names) using IP as a gateway (affect all the vnodes in VNETSRC)' ) do |str|
+  opts.on(
+    '--create-vroute vnetsrc=VNETSRC,vnetdest=VNETDEST,gateway=IP',
+    'Create a route between VNETSRC et VNETDST (names) using IP as a gateway (affect all the vnodes in VNETSRC)'
+  ) do |str|
     options['f_options'] << 'create_vroute'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('create-vroute', h, ['vnetsrc','vnetdest','gateway'], [])
     options.update(h)
   end
- opts.on('--complete-vroutes', \
-    'Create every possible route for each vnode' ) do
+  opts.on(
+    '--complete-vroutes',
+    'Create every possible route for each vnode'
+  ) do
     options['f_options'] << 'complete_vroutes'
   end
-  opts.on('--set-bandwidth vnode=VNODE,iface=IFACE,bw=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]', \
-    'Set a bandwidth limitation on IFACE with a given value and eventually a given direction' ) do |str|
+  opts.on(
+    '--set-bandwidth vnode=VNODE,iface=IFACE,bw=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]',
+    'Set a bandwidth limitation on IFACE with a given value and eventually a given direction'
+  ) do |str|
     options['f_options'] << 'set_bandwidth'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('set-bandwidth', h, ['vnode','iface','bw'], ['direction'])
     options.update(h)
   end
-  opts.on('--set-latency vnode=VNODE,iface=IFACE,latency=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]', \
-    'Set a latency limitation on IFACE with a given value and eventually a given direction' ) do |str|
+  opts.on(
+    '--set-latency vnode=VNODE,iface=IFACE,latency=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]',
+    'Set a latency limitation on IFACE with a given value and eventually a given direction'
+  ) do |str|
     options['f_options'] << 'set_latency'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('set-latency', h, ['vnode','iface','latency'], ['direction'])
     options.update(h)
   end
-  opts.on('--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited', \
-    'Set a virtual CPU on VNODE with NB cores clocked at SPEED percent' ) do |str|
+  opts.on(
+    '--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited',
+    'Set a virtual CPU on VNODE with NB cores clocked at SPEED percent'
+  ) do |str|
     options['f_options'] << 'set_vcpu'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], [])
     options.update(h)
   end
-  opts.on('--get-pnode-info [PNODE]', \
-          'Show information about PNODE if specified, or about all the phisical nodes' ) do |str|
+  opts.on(
+    '--get-pnode-info [PNODE]',
+    'Show information about PNODE if specified, or about all the physical nodes'
+  ) do |str|
     options['f_options'] << 'get_pnode_info'
     options['pnode'] = str if str
   end
-  opts.on('--get-vnode-info [VNODE]', \
-          'Show information about VNODE if specified, or about all the virtual nodes' ) do |str|
+  opts.on(
+    '--get-vnode-info [VNODE]',
+    'Show information about VNODE if specified, or about all the virtual nodes'
+  ) do |str|
     options['f_options'] << 'get_vnode_info'
     options['vnode'] = str if str
   end
-  opts.on('--get-vnetwork-info [VNET]', \
-          'Show information about VNET if specified, or about all the virtual networks' ) do |str|
+  opts.on(
+    '--get-vnetwork-info [VNET]',
+    'Show information about VNET if specified, or about all the virtual networks'
+  ) do |str|
     options['f_options'] << 'get_vnetwork_info'
     options['vnetwork'] = str if str
   end
-  opts.on('--save-config format=JSON|XML[,configfile=FILE]', \
-          'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)' ) do |str|
+  opts.on(
+    '--save-config format=JSON|XML[,configfile=FILE]',
+    'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
+  ) do |str|
     options['f_options'] << 'save_config'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('save_config', h, ['format'], ['configfile'])
     options.update(h)
   end
-  opts.on('--load-config format=JSON|XML|SIMGRID[,configfile=FILE]', \
-          'Load the virtual platform from the given format(if configfile is not specified, load from STDIN)' ) do |str|
+  opts.on(
+    '--load-config format=JSON|XML|SIMGRID[,configfile=FILE]',
+    'Load the virtual platform from the given format(if configfile is not specified, load from STDIN)'
+  ) do |str|
     options['f_options'] << 'load_config'
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('load_config', h, ['format'], ['configfile'])
@@ -267,7 +317,7 @@ options['f_options'].each { |option|
     vnode = cl.vnode_info(options['vnode'])
     pnode = vnode['host']
     rootfs = vnode['filesystem']['shared'] ? 
-         vnode['filesystem']['sharedpath'] : vnode['filesystem']['path']
+      vnode['filesystem']['sharedpath'] : vnode['filesystem']['path']
     vfile = (option == 'copy_to') ? vfile = options['dest'] : vfile = options['src']
     path = Pathname.new(vfile)
     path = File.join(rootfs,(path.absolute? ? "" : DEFAULT_COPY_PATH),path.to_s)
