@@ -54,7 +54,7 @@ module Distem
         raise unless vnode.is_a?(Resource::VNode)
         raise unless vnode.vifaces[0].is_a?(Resource::VIface)
         raise unless vnode.vifaces[0].attached?
-        
+
         ret = ""
         Net::SSH.start(vnode.vifaces[0].address.to_s, 'root', :keys => PATH_SSH_KEYS, :password => 'root') do |ssh|
           ret = ssh.exec!(command)

@@ -23,8 +23,8 @@ module Distem
           if vnode.vcpu and vnode.vcpu.vcores
             vnode.vcpu.vcores.each_value do |vcore|
               coresdesc[vcore.pcore.physicalid.to_i] = 
-                vcore.frequency.to_f / vcore.pcore.frequency.to_f \
-                if vcore.frequency < vcore.pcore.frequency
+                vcore.frequency.to_f / vcore.pcore.frequency.to_f if \
+                vcore.frequency < vcore.pcore.frequency
             end
           end
 
