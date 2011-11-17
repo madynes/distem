@@ -137,3 +137,8 @@ task :man do
     puts "Remember to use git add -f (.html ignored by default)"
   end
 end
+
+desc "Reindent everything"
+task :reindent do
+  system('find bin lib -type f -exec vim -s .vim-reindent {} \;')
+end
