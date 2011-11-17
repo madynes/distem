@@ -33,37 +33,41 @@ module Distem
         #
         def apply_vtraffic(vtraffic)
           iface = Lib::NetTools::get_iface_name(vtraffic.viface.vnode,
-            vtraffic.viface)
+                                                vtraffic.viface)
           baseiface = iface
 
           case vtraffic.direction
-            when Resource::VIface::VTraffic::Direction::OUTPUT
-              tcroot = TCWrapper::QdiscRoot.new(iface)
-              tmproot = tcroot
-            when Resource::VIface::VTraffic::Direction::INPUT
-              tcroot = TCWrapper::QdiscIngress.new(iface)
-              Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
-              iface = "ifb#{vtraffic.viface.id}"
-              tmproot = TCWrapper::QdiscRoot.new(iface)
-            else
-              raise "Invalid direction"
+          when Resource::VIface::VTraffic::Direction::OUTPUT
+            tcroot = TCWrapper::QdiscRoot.new(iface)
+            tmproot = tcroot
+          when Resource::VIface::VTraffic::Direction::INPUT
+            tcroot = TCWrapper::QdiscIngress.new(iface)
+            Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
+            iface = "ifb#{vtraffic.viface.id}"
+            tmproot = TCWrapper::QdiscRoot.new(iface)
+          else
+            raise "Invalid direction"
           end
 
 
           primroot = nil
           bwlim = vtraffic.get_property(Resource::Bandwidth.name)
           if bwlim
-            tmproot = TCWrapper::QdiscTBF.new(iface,tmproot, \
-                { 'rate' => "#{bwlim.rate}", 'buffer' => 1800, \
-                  'latency' => '50ms'})
+            tmproot = TCWrapper::QdiscTBF.new(
+              iface,tmproot,
+              { 'rate' => "#{bwlim.rate}", 'buffer' => 1800,
+                'latency' => '50ms'}
+            )
             primroot = tmproot unless primroot
             Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
           end
 
           latlim = vtraffic.get_property(Resource::Latency.name)
           if latlim
-            tmproot = TCWrapper::QdiscNetem.new(iface,tmproot, \
-              {'delay' => "#{latlim.delay}"})
+            tmproot = TCWrapper::QdiscNetem.new(
+              iface,tmproot,
+              {'delay' => "#{latlim.delay}"}
+            )
             primroot = tmproot unless primroot
             Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
           end
@@ -77,7 +81,7 @@ module Distem
           end
         end
 
-  
+
         # Undo limitations effective on a specific virtual network interface
         # ==== Attributes
         # * +viface+ The VIface object
@@ -101,7 +105,6 @@ module Distem
           end
         end
       end
-
     end
   end
 end
