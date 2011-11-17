@@ -77,7 +77,7 @@ module Distem
         return str
       end
 
-      
+
       # Visit an Hash object, call the "visit" method for each *values* in the Hash.
       # ==== Attributes
       # * +hash+ The Hash object
