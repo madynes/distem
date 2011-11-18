@@ -252,7 +252,7 @@ module Distem
       #
       # ==== Attributes
       # * +name+ the -unique- name of the virtual node to create (it will be used in a lot of methods)
-      # * +properties+ target,image,async
+      # * +properties+ target,image,async,fs_shared,ssh_key
       # ==== Returns
       # Resource::VNode object
       # ==== Exceptions
@@ -287,7 +287,7 @@ module Distem
 
           #Create the resource
           fs = Resource::FileSystem.new(properties['image'],properties['fs_shared'])
-          vnode = Resource::VNode.new(pnode,name,fs)
+          vnode = Resource::VNode.new(pnode,name,fs,properties['ssh_key'])
 
           nodemodeblock = Proc.new {
             vnode.status = Resource::Status::CONFIGURING
