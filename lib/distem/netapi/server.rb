@@ -175,8 +175,18 @@ module Distem
       # * *name* -- The -unique- name of the virtual node to create (it will be used in a lot of methods)
       # * *properties* -- JSON Hash of:
       #   * +target+ -- The address of the physical node the virtual node should be created on
-      #   * +image+ -- The URI to a compressed archive that should contain the virtual node file system
+      #   * +image+ -- _MANDATORY_ The URI to a compressed archive that should contain the virtual node file system
       #   * +fs_shared+ -- Share the file system of this virtual node with every other virtual node that have this property (local to the physical node)
+      #   * +ssh_key+ -- SSH key pair to be copied on the virtual node (also adding the public key to .ssh/authorized_keys). Note that every SSH keys located on the physical node which hosts this virtual node are also copied in .ssh/ directory of the node (copied key have a specific filename prefix). The key are copied in .ssh/ directory of SSH user (see {Distem::Daemon::Admin#SSH_USER} and {Distem::Node::Container#SSH_KEY_FILENAME})
+      #
+      #     _Format_: JSON Hash.
+      #
+      #     _Structure_:
+      #       {
+      #         "public" : "KEYHASH",
+      #         "private" : "KEYHASH"
+      #       }
+      #     Both of +public+ and +private+ parameters are optional
       #   * +async+ -- Asynchronious mode, check virtual node status to know when node is configured (see GET /vnodes/:vnode)
       #
       post '/vnodes/?' do

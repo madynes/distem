@@ -11,6 +11,8 @@ module Distem
       MAX_SIMULTANEOUS_CONFIG = 32
       # The prefix to set to the SSH key whick are copied on the virtual nodes
       SSH_KEY_PREFIX = 'distemkey-'
+      # The default file to save virtual node specific ssh key pair (see Distem::Resource::VNode::sshkey)
+      SSH_KEY_FILENAME = 'identity'
 
       # Clean only one time
       @@cleanlock = Mutex.new
@@ -66,36 +68,44 @@ module Distem
         else
           rootfspath = @vnode.filesystem.path
         end
-        rootfspath = File.join(rootfspath,'root','.ssh')
+        sshpath = File.join(rootfspath,'root','.ssh')
 
         # Creating SSH directory
-        unless File.exists?(rootfspath)
-          Lib::Shell.run("mkdir -p #{rootfspath}")
+        unless File.exists?(sshpath)
+          Lib::Shell.run("mkdir -p #{sshpath}")
         end
 
         # Copying every private keys if not already existing
         Daemon::Admin.ssh_keys_priv.each do |keyfile|
-          keypath=File.join(rootfspath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
+          keypath=File.join(sshpath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
           Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
         end
-        
+        File.open(File.join(sshpath,SSH_KEY_FILENAME),'w') do |f|
+          f.puts @vnode.sshkey['private']
+        end if @vnode.sshkey and @vnode.sshkey['private']
+
         # Copying every public keys if not already existing
         Daemon::Admin.ssh_keys_pub.each do |keyfile|
-          keypath=File.join(rootfspath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
+          keypath=File.join(sshpath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
           Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
         end
+        File.open(File.join(sshpath,"#{SSH_KEY_FILENAME}.pub"),'w') do |f|
+          f.puts @vnode.sshkey['public']
+        end if @vnode.sshkey and @vnode.sshkey['public']
 
         # Adding public keys to SSH authorized_keys file
-        authfile = File.join(rootfspath,'authorized_keys')
+        authfile = File.join(sshpath,'authorized_keys')
+        pubkeys = Daemon::Admin.ssh_keys_pub.collect{ |v| IO.read(v).chomp }
+        pubkeys << @vnode.sshkey['public'] if @vnode.sshkey and @vnode.sshkey['public']
         if File.exists?(authfile)
           authkeys = IO.readlines(authfile).collect{|v| v.chomp}
-          Daemon::Admin.ssh_keys_pub.each do |keyfile|
-            key=IO.read(keyfile).chomp
-            File.open(authfile,'a+') {|f| f.puts key} unless authkeys.include?(key)
+          pubkeys.each do |key|
+            File.open(authfile,'a') { |f| f.puts key } unless \
+              authkeys.include?(key)
           end
         else
-          Daemon::Admin.ssh_keys_pub.each do |keyfile|
-            File.open(authfile,'a+') {|f| f.puts IO.read(keyfile).chomp}
+          pubkeys.each do |key|
+            File.open(authfile,'a') { |f| f.puts key }
           end
         end
 

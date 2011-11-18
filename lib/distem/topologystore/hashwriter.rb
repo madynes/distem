@@ -32,7 +32,7 @@ module Distem
 
       # See the visit_vplatform documentation
       def visit_vnode(vnode)
-        return {
+        ret = {
           'id' => vnode.id.to_s,
           'name' => vnode.name,
           'status' => vnode.status,
@@ -42,6 +42,15 @@ module Distem
           'vcpu' => visit(vnode.vcpu),
           'gateway' => vnode.gateway,
         }
+        if vnode.sshkey
+          ret['sshkey'] = {}
+          ret['sshkey']['public'] = vnode.sshkey['public'] if vnode.sshkey['public']
+          ret['sshkey']['private'] = vnode.sshkey['private'] if vnode.sshkey['private']
+        else
+          ret['sshkey'] = nil
+        end
+
+        return ret
       end
 
       # See the visit_vplatform documentation
