@@ -30,6 +30,8 @@ module Distem
       attr_accessor :status
       # Boolean describing if this node is in gateway mode or not
       attr_accessor :gateway
+      # SSH key pair to be used on the virtual node (Hash)
+      attr_accessor :sshkey
 
       
       # Create a new Virtual Node specifying it's filesystem
@@ -38,7 +40,7 @@ module Distem
       # * +name+ The name of that Virtual Node
       # * +filesystem+ The FileSystem object
       #
-      def initialize(host, name, filesystem)
+      def initialize(host, name, filesystem, ssh_key = nil)
         raise unless host.is_a?(PNode)
         raise unless name.is_a?(String)
         raise unless filesystem.is_a?(FileSystem)
@@ -54,6 +56,11 @@ module Distem
         @host = host
         @filesystem = filesystem 
         @filesystem.vnode = self
+        if ssh_key.is_a?(Hash) and !ssh_key.empty?
+          @sshkey = ssh_key 
+        else
+          @sshkey = nil
+        end
         @gateway = false
         @vifaces = []
         @vcpu = nil
