@@ -6,7 +6,9 @@ require 'json'
 require 'cgi'
 require 'webrick'
 
-module WEBrick # :nodoc:
+# @private
+module WEBrick
+  # @private
   module Config
     General[:MaxClients] = 2048
   end
@@ -15,31 +17,47 @@ end
 module Distem
   module NetAPI
 
-    # The REST API server, see doc/netapi for the documentation of the REST API.
-    class Server < Sinatra::Base # :nodoc: all
-      HTTP_HEADER_ERR = 'X-Application-Error-Code'
-      HTTP_STATUS_OK = 200
-      HTTP_STATUS_NOT_FOUND = 404
-      HTTP_STATUS_BAD_REQUEST = 400
-      HTTP_STATUS_INTERN_SERV_ERROR = 500
-      HTTP_STATUS_NOT_IMPLEMENTED = 501
+    # @note Every method of the REST API should return HTTP Status following this rule:
+    #
+    #   * 200: OK
+    #   * 400: Parameter error
+    #   * 404: Resource error
+    #   * 500: Shell error (check the logs)
+    #   * 501: Not implemented yet
+    #
+    #   In addition, the HTTP Header 'X-Application-Error-Code' contains more informations about a specific error
+    # @note Default return HTTP Content-Types is /application\/json/
+    # @note +property+ query parameters should be in JSON hashtables format
+    #
+    class Server < Sinatra::Base
+      HTTP_HEADER_ERR = 'X-Application-Error-Code' # @private
+      HTTP_STATUS_OK = 200 # @private
+      HTTP_STATUS_NOT_FOUND = 404 # @private
+      HTTP_STATUS_BAD_REQUEST = 400 # @private
+      HTTP_STATUS_INTERN_SERV_ERROR = 500 # @private
+      HTTP_STATUS_NOT_IMPLEMENTED = 501 # @private
 
       set :environment, :development
       set :show_exceptions, false
       set :run, true
       set :verbose, true
 
-      def initialize() #:nodoc:
+      # @private
+      def initialize()
         super
         @mode = settings.mode
         @daemon = Daemon::DistemDaemon.new(@mode)
       end
 
-      def run #:nodoc:
+      # @private
+      # @abstract
+      def run
         raise "Server can not be run directly, use ServerDaemon or ServerNode"
       end
 
-      before do #:nodoc:
+      # Ensure that return content_type is JSON and charset utf-8
+      # @private
+      before do
         @status = HTTP_STATUS_OK
         @headers = {}
         @body = {}
@@ -47,12 +65,15 @@ module Distem
         content_type 'application/json', :charset => 'utf-8'
       end
 
-      not_found do #:nodoc:
+      # Return server resource error
+      # @private
+      not_found do
         #response.headers[HTTP_HEADER_ERR] = \
           "ServerResourceError #{request.request_method} #{request.url}"
       end
 
       # Try to catch and wrapp every kind of exception
+      # @private
       def check
         # >>> FIXME: remove retries hack
         retries = 4
@@ -66,7 +87,7 @@ module Distem
             sleep(0.5)
             retries -= 1
             retry
-          else
+          els formate
             @status = HTTP_STATUS_NOT_FOUND
             @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
           end
@@ -83,33 +104,15 @@ module Distem
         end
       end
 
-      ##
-      # :method: post(/pnodes)
+      # Initialize a physical machine (launching daemon, creating cgroups, ...)
+      # This step have to be performed to be able to create virtual nodes on a machine
       #
-      # :call-seq:
-      #   POST /pnodes
-      # 
-      # Initialise a physical machine (launching daemon, creating cgroups, ...)
-      # This step have to be performed to be able to create virtual nodes on a machine 
-      #
-      # == Query parameters
-      # <tt>target</tt>:: the name/address of the physical machine
-      # <tt>properties</tt>:: async
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *target* -- The name/address of the physical machine
+      # * *properties* -- JSON Hash of:
+      #   * +async+ -- asynchronious mode, check status to see when initialized (see GET /pnodes/:pnode)
+      #   * +max_vifaces+ -- the maximum number of virtual network interfaces that shoud be created on this physical node
+      #   * +cpu_algorithm+ -- the algorithm to be used for CPU emulation (limitations). Algorithms: _Hogs_, _Gov_.
       #
       post '/pnodes/?' do
         check do  
@@ -120,32 +123,8 @@ module Distem
 
         return result!
       end
-
-      ##
-      # :method: delete(/pnodes/:pnodename)
-      #
-      # :call-seq:
-      #   DELETE /pnodes/:pnodename
-      # 
-      # Quit distem on a physical machine (remove everything that was created)
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
       
-      #
+      # Quit distem on a physical machine (remove everything that was created)
       delete '/pnodes/:pnode/?' do
         check do 
           @body = @daemon.pnode_quit(params['pnode'])
@@ -154,31 +133,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/pnodes/:pnodename)
-      #
-      # :call-seq:
-      #   GET /pnodes/:pnodename
-      # 
       # Get the description of a virtual node
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/pnodes/:pnode/?' do
         check do
           @body = @daemon.pnode_get(params['pnode'])
@@ -187,31 +142,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/pnodes)
-      #
-      # :call-seq:
-      #   DELETE /pnodes
-      # 
       # Quit distem on all the physical machines (remove everything that was created)
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/pnodes/?' do
         check do 
           @body = @daemon.pnodes_quit()
@@ -219,27 +150,8 @@ module Distem
 
         return result!
       end
-      ##
-      # :method: get(/pnodes)
-      #
-      # :call-seq:
-      #   GET /pnodes
-      # 
-      # Get the list of the the currently created physical nodes
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # 
-      # == Usage
-      # ...
       
-      #
+      # Get the list of the the currently created physical nodes
       get '/pnodes/?' do
         check do
           @body = @daemon.pnodes_get()
@@ -248,28 +160,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/vnodes/:vnodename)
-      #
-      # :call-seq:
-      #   DELETE /vnodes/:vnodename
-      # 
       # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
-      #
-      # == Query parameters
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/vnodes/:vnode/?' do
         check do
           @body = @daemon.vnode_remove(URI.unescape(params['vnode']))
@@ -278,34 +169,7 @@ module Distem
         return result!
       end
 
-
-      ##
-      # :method: post(/vnodes)
-      #
-      # :call-seq:
-      #   POST /vnodes
-      # 
       # Create a virtual node using a compressed file system image.
-      #
-      # == Query parameters
-      # <tt>name</tt>:: the -unique- name of the virtual node to create (it will be used in a lot of methods)
-      # <tt>properties</tt>:: target,image,async
-      # 
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       post '/vnodes/?' do
         check do
           props = {}
@@ -316,31 +180,7 @@ module Distem
         return result!
       end
       
-      ##
-      # :method: get(/vnodes/:vnodename)
-      #
-      # :call-seq:
-      #   GET /vnodes/:vnodename
-      # 
       # Get the description of a virtual node
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnodes/:vnode/?' do
         check do
           @body = @daemon.vnode_get(URI.unescape(params['vnode']))
@@ -349,28 +189,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/vnodes)
-      #
-      # :call-seq:
-      #   DELETE /vnodes
-      # 
       # Remove every virtual nodes
-      #
-      # == Query parameters
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/vnodes/?' do
         check do
           @body = @daemon.vnodes_remove()
@@ -379,27 +198,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vnodes)
-      #
-      # :call-seq:
-      #   GET /vnodes
-      # 
       # Get the list of the the currently created virtual nodes
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnodes/?' do
         check do
           @body = @daemon.vnodes_get()
@@ -408,32 +207,12 @@ module Distem
         return result!
       end
       
-      ##
-      # :method: put(/vnodes/:vnodename)
-      #
-      # :call-seq:
-      #   PUT /vnodes/:vnodename
-      # 
       # Change the status of the -previously created- virtual node.
       #
-      # == Query parameters
-      # <tt>status</tt>:: the status to set: "Running" or "Ready"
-      # <tt>properties</tt>:: async
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *status* -- the status to set: "Running" or "Ready"
+      # * *properties* -- JSON Hash of:
+      #   * +async+ -- asynchronious mode, check virtual node status (see GET /vnode/:vnode)
       #
       put '/vnodes/:vnode/?' do
         check do
@@ -445,32 +224,11 @@ module Distem
 
         return result!
       end
-
-      ##
-      # :method: put(/vnodes/:vnodename/mode)
-      #
-      # :call-seq:
-      #   PUT /vnodes/:vnodename/mode
-      # 
+      
       # Change the mode of a virtual node (normal or gateway)
       #
-      # == Query parameters
-      # <tt>mode</tt>:: "Normal" or "Gateway"
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *mode* -- "Normal" or "Gateway"
       #
       put '/vnodes/:vnode/mode/?' do
         check do
@@ -481,31 +239,7 @@ module Distem
         return result!
       end
       
-      ##
-      # :method: get(/vnodes/:vnodename/filesystem)
-      #
-      # :call-seq:
-      #   GET /vnodes/:vnodename/filesystem
-      # 
       # Retrieve informations about the virtual node filesystem
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnodes/:vnode/filesystem/?' do
         check do
           @body = @daemon.vnode_filesystem_get(URI.unescape(params['vnode']))
@@ -514,32 +248,9 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vnodes/:vnodename/filesystem/image)
-      #
-      # :call-seq:
-      #   GET /vnodes/:vnodename/filesystem/image
-      # 
       # Get a compressed archive of the current filesystem (tgz)
+      #
       # WARNING: You have to contact the physical node the vnode is hosted on directly
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnodes/:vnode/filesystem/image/?' do
         check do
           @body = @daemon.vnode_filesystem_image_get(URI.unescape(params['vnode']))
@@ -547,31 +258,10 @@ module Distem
         end
       end
       
-      ##
-      # :method: post(/vnodes/:vnodename/commands)
-      #
-      # :call-seq:
-      #   POST /vnodes/:vnodename/commands
-      # 
       # Execute and get the result of a command on a virtual node
       #
-      # == Query parameters
-      # <tt>command</tt>:: the command to be executed
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *command* -- the command to be executed
       #
       post '/vnodes/:vnode/commands/?' do
         check do
@@ -583,31 +273,10 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: post(/vnodes/:vnodename/vifaces)
-      #
-      # :call-seq:
-      #   POST /vnodes/:vnodename/vifaces
-      # 
       # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
       #
-      # == Query parameters
-      # <tt>name</tt>:: the name of the virtual interface (need to be unique on this virtual node)
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *name* -- the name of the virtual interface (need to be unique on this virtual node)
       #
       post '/vnodes/:vnode/vifaces/?' do
         check do
@@ -617,31 +286,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/vnodes/:vnodename/vifaces/:vifacename)
-      #
-      # :call-seq:
-      #   DELETE /vnodes/:vnodename/vifaces/:vifacename
-      # 
       # Remove the virtual interface
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/vnodes/:vnode/vifaces/:viface/?' do
         check do
           @body = @daemon.viface_remove(URI.unescape(params['vnode']),
@@ -651,31 +296,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vnodes/:vnodename/vifaces/:vifacename)
-      #
-      # :call-seq:
-      #   GET /vnodes/:vnodename/vifaces/:vifacename
-      # 
       # Get the description of a virtual network interface
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnodes/:vnode/vifaces/:viface/?' do
         check do
           @body = @daemon.viface_get(URI.unescape(params['vnode']),
@@ -685,34 +306,12 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: post(/vnodes/:vnodename/vcpu)
-      #
-      # :call-seq:
-      #   POST /vnodes/:vnodename/vcpu
-      # 
       # Create a new virtual cpu on the targeted virtual node.
       # By default all the virtual nodes on a same physical one are sharing available CPU resources, using this method you can allocate some cores to a virtual node and apply some limitations on them
       #
-      # == Query parameters
-      # <tt>corenb</tt>:: the number of cores to allocate (need to have enough free ones on the physical node)
-      # <tt>frequency</tt>:: (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
+      # ==== Query parameters:
+      # * *corenb* -- the number of cores to allocate (need to have enough free ones on the physical node)
+      # * *frequency* -- (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number
       post '/vnodes/:vnode/vcpu/?' do
         check do
           @body = @daemon.vcpu_create(URI.unescape(params['vnode']),
@@ -722,33 +321,11 @@ module Distem
         return result!
       end
 
-      
-      ##
-      # :method: post(/vnetworks)
-      #
-      # :call-seq:
-      #   POST /vnetworks
-      # 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
       #
-      # == Query parameters
-      # <tt>name</tt>:: the -unique- name of the virtual network (it will be used in a lot of methods)
-      # <tt>address</tt>:: the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *name* -- the -unique- name of the virtual network (it will be used in a lot of methods)
+      # * *address* -- the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
       #
       post '/vnetworks/?' do
         check do
@@ -758,31 +335,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/vnetworks/:vnetworkname)
-      #
-      # :call-seq:
-      #   DELETE /vnetworks/:vnetworkname
-      # 
       # Delete the virtual network
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/vnetworks/:vnetwork/?' do
         check do
           @body = @daemon.vnetwork_remove(URI.unescape(params['vnetwork']))
@@ -791,31 +344,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vnetworks/:vnetworkname)
-      #
-      # :call-seq:
-      #   GET /vnetworks/:vnetworkname
-      # 
       # Get the description of a virtual network
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnetworks/:vnetwork/?' do
         check do
           @body = @daemon.vnetwork_get(URI.unescape(params['vnetwork']))
@@ -824,31 +353,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: delete(/vnetworks)
-      #
-      # :call-seq:
-      #   DELETE /vnetworks
-      # 
       # Delete every virtual networks
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
       delete '/vnetworks/?' do
         check do
           @body = @daemon.vnetworks_remove()
@@ -857,27 +362,7 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vnetworks)
-      #
-      # :call-seq:
-      #   GET /vnetworks
-      # 
       # Get the list of the the currently created virtual networks
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # 
-      # == Usage
-      # ...
-      
-      #
       get '/vnetworks/?' do
         check do
           @body = @daemon.vnetworks_get()
@@ -886,34 +371,52 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: put(/vnodes/:vnodename/vifaces/:vifacename)
-      #
-      # :call-seq:
-      #   PUT /vnodes/:vnodename/vifaces/:vifacename
-      # 
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       # Dettach the virtual interface if properties is empty
       # You can change the traffic specification on the fly, only specifying the vtraffic property
       #
-      # == Query parameters
-      # <tt>properties</tt>:: the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT/FULLDUPLEX)
+      # ==== Query parameters:
+      # * *properties* -- JSON Hash of :
+      #   * +address+ | +vnetwork+ -- the address or the vnetwork to connect the virtual interface with
+      #   * +vtraffic+ -- the traffic the interface will have to emulate (not mandatory)
       #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
+      #     _Format_: JSON Hash.
       #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
-      
+      #     _Structure_:
+      #       {
+      #         Target : {
+      #           Property1 : {
+      #             Param1 : Value 1,
+      #             Param2 : Value 2
+      #           },
+      #           ...
+      #         }
+      #       }
+      #
+      #     _Targets_:
+      #       INPUT, OUTPUT, FULLDUPLEX
+      #
+      #     _Properties_:
+      #       bandwidth, latency
+      #
+      #     Bandwidth property params:
+      #       rate
+      #
+      #     Latency property params:
+      #       delay
+      #
+      #   +Sample+:
+      #     {
+      #       "address" : "10.0.0.1",
+      #       "vtraffic" :
+      #       {
+      #         "OUTPUT" : {
+      #           "bandwidth" : {"rate" : "20mbps"},
+      #           "latency" : {"delay" : "5ms"}
+      #         }
+      #       }
+      #     }
       #
       put '/vnodes/:vnode/vifaces/:viface/?' do 
         check do
@@ -937,36 +440,14 @@ module Distem
         return result!
       end
 
-
-      ##
-      # :method: post(/vnetworks/:networkname/vroutes)
-      #
-      # :call-seq:
-      #   POST /vnetworks/:networkname/vroutes
-      # 
       # Create a virtual route ("go from <networkname> to <destnetwork> via <gatewaynode>").
       # The virtual route is applied to all the vnodes of <networkname>.
       # This method automagically set <gatewaynode> in gateway mode (if it's not already the case) and find the right virtual interface to set the virtual route on
       #
-      # == Query parameters
-      # <tt>destnetwork</tt>:: the name of the destination network
-      # <tt>gatewaynode</tt>:: the name of the virtual node to use as a gateway
-      # Deprecated: <tt>vnode</tt>:: the virtual node to set the virtual route on (optional)
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
+      # ==== Query parameters:
+      # * *destnetwork* -- the name of the destination network
+      # * *gatewaynode* -- the name of the virtual node to use as a gateway
+      # Deprecated: *vnode* -- the virtual node to set the virtual route on (optional)
       #
       post '/vnetworks/:vnetwork/vroutes/?' do
         check do
@@ -979,33 +460,10 @@ module Distem
 
         return result!
       end
-      
-      ##
-      # :method: post(/vnetworks/vroutes/complete)
-      #
-      # :call-seq:
-      #   POST /vnetworks/vroutes/complete
-      # 
-      # Try to create every possible virtual routes between the current 
-      # set of virtual nodes automagically finding and setting up 
+
+      # Try to create every possible virtual routes between the current
+      # set of virtual nodes automagically finding and setting up
       # the gateways to use
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/json</tt>:: JSON
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
       #
       post '/vnetworks/vroutes/complete/?' do
         check do
@@ -1015,31 +473,12 @@ module Distem
         return result!
       end
 
-      ##
-      # :method: get(/vplatform/:format)
-      #
-      # :call-seq:
-      #   GET /vplatform/:format
-      # 
       # Get the description file of the current platform in a specified format (JSON if not specified)
-      #
-      # == Query parameters
-      #
-      # == Content-Types
-      # <tt>application/file</tt>:: The file in the requested format
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
+      get '/vplatform/?:format?/?' do end
+
+      # (see GET /vplatform/:format)
+      get '/:format?/?' do end
+
       ['/vplatform/?:format?/?', '/:format?/?'].each do |path|
       get path do
         check do
@@ -1052,33 +491,19 @@ module Distem
       end
       end
 
-      ##
-      # :method: post(/vplatform)
-      #
-      # :call-seq:
-      #   POST /vplatform
-      # 
       # Load a configuration
       #
-      # == Query parameters
-      # <tt>data</tt>:: data to be applied
-      # <tt>format</tt>:: the format of the data
+      # ==== Query parameters:
+      # * *data* -- data to be applied
+      # * *format* -- the format of the data
+      # ==== Return Content-Type:
+      # +application/file+ -- The file in the requested format
       #
-      # == Content-Types
-      # <tt>application/file</tt>:: The file in the requested format
-      #
-      # == Status codes
-      # Check the content of the header 'X-Application-Error-Code' for more informations about an error
-      # <tt>200</tt>:: OK
-      # <tt>400</tt>:: Parameter error 
-      # <tt>404</tt>:: Resource error
-      # <tt>500</tt>:: Shell error (check the logs)
-      # <tt>501</tt>:: Not implemented yet
-      # 
-      # == Usage
-      # ...
-      
-      #
+      post '/vplatform/?' do end
+
+      # (see POST /vplatform)
+      post '/' do end
+
       ['/vplatform/?', '/'].each do |path|
       post path do
         check do
@@ -1091,7 +516,10 @@ module Distem
 
       protected
 
-      def result! #:nodoc:
+      # Setting up result (auto generate JSON if @body is a {Distem::Resource})
+      # @return [Array] An array of the format [@status,@headers,@body]
+      # @private
+      def result!
         classname = @body.class.name.split('::').last
           #or Distem::Limitation::Network.constants.include?(classname) \
         if Distem::Resource.constants.include?(classname) \
@@ -1122,7 +550,8 @@ module Distem
     end
 
 
-    class ServerDaemon < Server #:nodoc: all
+    # @private
+    class ServerDaemon < Server
       set :mode, Daemon::DistemDaemon::MODE_DAEMON
 
       def initialize
@@ -1135,7 +564,8 @@ module Distem
       end
     end
 
-    class ServerNode < Server #:nodoc: all
+    # @private
+    class ServerNode < Server
       set :mode, Daemon::DistemDaemon::MODE_NODE
 
       def run
