@@ -125,7 +125,7 @@ module Distem
         basename = File.basename(archivefile)
         link = File.join(target_dir, basename)
         Lib::Shell.run("ln -sf #{archivefile} #{link}")
-        Lib::Shell.run("#{BIN_TAR} -C #{target_dir} -xf #{basename}") 
+        Lib::Shell.run("(cd #{target_dir} && #{BIN_TAR} xf #{basename})")
         Lib::Shell.run("rm #{link}")
       end
 
