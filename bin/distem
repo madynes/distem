@@ -266,8 +266,9 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('load_config', h, ['format'], ['configfile'])
     options.update(h)
   end
-  opts.on('--quit', 'Close the application' ) do
+  opts.on('--quit [PNODE]', 'Close the given PNODE or all the physical nodes' ) do |str|
     options['f_options'] << 'quit'
+    options['pnode'] = str if str
   end
 end
 
@@ -418,6 +419,11 @@ options['f_options'].each { |option|
     end
     pp cl.vplatform_create(str,options['vplatform_format'])
   when 'quit'
+    if options['pnode']
+      pp cl.pnode_quit(options['pnode'])
+    else
+      pp cl.pnodes_quit()
+    end
   else
     puts "Invalid option: #{option}"
     exit 1
