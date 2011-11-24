@@ -87,7 +87,7 @@ module Distem
             sleep(0.5)
             retries -= 1
             retry
-          els formate
+          else
             @status = HTTP_STATUS_NOT_FOUND
             @headers[HTTP_HEADER_ERR] = get_http_err_desc(re)
           end
