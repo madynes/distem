@@ -31,29 +31,68 @@ module Distem
         # * +pcore+ The Core object that describes the physical core to attach
         #
         def attach(pcore)
-          raise Lib::InvalidParameterError, @frequency \
-            if @frequency > pcore.frequency or @frequency <= 0
           @pcore = pcore
-          if @frequency > 0 and @frequency <= 1
-            @frequency = (pcore.frequency * @frequency).to_i
+          update(@frequency)
+        end
+
+        def attached?
+          return @pcore != nil
+        end
+
+        # Modify the frequency of this virtual one (to be used after attaching the vcore)
+        # ==== Attributes
+        # * +freq+ The new frequemcy
+        def update(freq)
+          if attached?
+            raise Lib::InvalidParameterError, @frequency if \
+              @frequency > @pcore.frequency or @frequency <= 0
+
+            if @frequency > 0 and @frequency <= 1
+              @frequency = (@pcore.frequency * @frequency).to_i
+            else
+              @frequency = @frequency.to_i
+            end
           else
-            @frequency = @frequency.to_i
+            @frequency = freq
           end
         end
       end
 
       # The physical CPU associated to this virtual one
-      attr_reader :pcpu
+      attr_accessor :pcpu
       # Hash describing the associated virtual cores (key: VCore.id, val: VCore)
       attr_reader :vcores
 
       # Create a new VCPU
-      # ==== Attributes
-      # * +pcpu+ The physical CPU to associate to this virtual one
       #
-      def initialize(pcpu)
-        @pcpu = pcpu
+      def initialize(vnode)
         @vcores = {}
+        @vnode = vnode
+        @pcpu = nil
+      end
+
+      # Attach a physical cpu to this virtual one
+      def attach
+        raise Lib::UninitializedResourceError 'vnode.host' unless @vnode.host
+        @pcpu = @vnode.host.cpu
+
+        cores = @pcpu.alloc_cores(@vnode,@vcores.size,
+          (@vnode.host.algorithms[:cpu] == Algorithm::CPU::GOV)
+        )
+
+        i = 0
+        @vcores.each_value do |vcore|
+          vcore.attach(cores[i])
+          i += 1
+        end
+      end
+
+      def attached?
+        return @pcpu != nil
+      end
+
+      def detach
+        @pcpu.free_cores(@vnode) if @pcpu
       end
 
       # Adds a new virtual core to this virtual CPU
@@ -81,6 +120,14 @@ module Distem
       #
       def remove_vcore(id)
         @vcores.delete(id)
+      end
+
+      # Update every virtual cores of this virtual CPU
+      # ==== Attributes
+      # * +freq+ The new frequency to set on the virtual cores
+      #
+      def update_vcores(freq)
+        @vcores.each_value { |vcore| vcore.update(freq) }
       end
     end
 

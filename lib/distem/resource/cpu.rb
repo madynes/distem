@@ -84,6 +84,14 @@ module Distem
         return @cores_alloc.select{ |core,node| vnode == node }.collect{|v| v[0]}
       end
 
+      # Get cores that are not associated with any VNode at the moment
+      # ==== Returns
+      # Array of Core objects
+      #
+      def get_free_cores
+        return @cores.values - @cores_alloc.keys
+      end
+
       # Dettach a Core from this CPU
       # ==== Attributes
       # * +physicalid+ The physical id of the Core to dettach
@@ -104,7 +112,7 @@ module Distem
             raise Lib::InvalidParameterError, core unless core
           end
           core
-        end 
+        end
 
         cores.each do |core|
           core = get_core(core) unless core.is_a?(Core)
@@ -120,15 +128,14 @@ module Distem
 
       # Allocate Cores to a VNode
       # ==== Attributes
-      # * +vnode+ The VNode object 
+      # * +vnode+ The VNode object
       # * +corenb+ The number of Cores to allocate
       # * +cache_linked+ Specify if the allocated Cores should be or not cache linked
       # ==== Exceptions
       # * +UnavailableResourceError+ If there is no more cores available (or if there it's not possible to find +corenb+ cache linked Cores to allocate)
       #
-
       def alloc_cores(vnode,corenb=1,cache_linked=false)
-        freecores = @cores.values - @cores_alloc.keys
+        freecores = get_free_cores
         raise Lib::UnavailableResourceError, "Core x#{corenb}" \
           if freecores.empty? or freecores.size < corenb
         if cache_linked
@@ -137,7 +144,7 @@ module Distem
           realcorenb = corelknb*clsize
           raise Lib::UnavailableResourceError, "CoreLinked x#{realcorenb}" \
             if freecores.empty? or freecores.size < realcorenb
-        
+
           toallocate = []
           i = 0
           corelknb.times do

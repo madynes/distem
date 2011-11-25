@@ -27,6 +27,7 @@ module Distem
           'cpu' => visit(pnode.cpu),
           'memory' => visit(pnode.memory),
           'status' => pnode.status,
+          'algorithms' => pnode.algorithms,
         }
       end
 
@@ -36,12 +37,18 @@ module Distem
           'id' => vnode.id.to_s,
           'name' => vnode.name,
           'status' => vnode.status,
-          'host' => vnode.host.address.to_s,
-          'filesystem' => visit(vnode.filesystem),
+          'vfilesystem' => visit(vnode.filesystem),
           'vifaces' => visit(vnode.vifaces),
           'vcpu' => visit(vnode.vcpu),
           'gateway' => vnode.gateway,
         }
+
+        if vnode.host
+          ret['host'] = vnode.host.address.to_s
+        else
+          ret['host'] = nil
+        end
+
         if vnode.sshkey
           ret['sshkey'] = {}
           ret['sshkey']['public'] = vnode.sshkey['public'] if vnode.sshkey['public']
@@ -61,8 +68,8 @@ module Distem
           'vnode' => viface.vnode.name,
           'address' => viface.address.to_string,
           'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
-          'vinput' => (viface.vinput ? visit(viface.vinput) : nil),
-          'voutput' => (viface.voutput ? visit(viface.voutput) : nil),
+          'input' => (viface.vinput ? visit(viface.vinput) : nil),
+          'output' => (viface.voutput ? visit(viface.voutput) : nil),
         }
       end
 

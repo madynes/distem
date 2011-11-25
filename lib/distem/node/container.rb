@@ -38,16 +38,17 @@ module Distem
       # ==== Attributes
       # * +vnode+ The VNode object
       #
-      def initialize(vnode,cpu_algorithm=nil)
+      def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
+        raise Lib::UninitializedResourceError, "vfilesysem/image" unless vnode.filesystem
 
         @vnode = vnode
-        @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
+
         @fsforge = FileSystemForge.new(@vnode)
-        raise Lib::ResourceNotFoundError, @vnode.filesystem.path unless \
-          File.exists?(@vnode.filesystem.path)
-        raise Lib::InvalidParameterError, @vnode.filesystem.path unless \
-          File.directory?(@vnode.filesystem.path)
+        raise Lib::ResourceNotFoundError, @vnode.filesystem.path if \
+          !File.exists?(@vnode.filesystem.path) and
+          !File.exists?(@vnode.filesystem.sharedpath)
+        @cpuforge = CPUForge.new(@vnode,@vnode.host.algorithms[:cpu])
         @networkforges = {}
         @vnode.vifaces.each do |viface|
           @networkforges[viface] = NetworkForge.new(viface)
@@ -108,22 +109,8 @@ module Distem
             File.open(authfile,'a') { |f| f.puts key }
           end
         end
-
       end
 
-      # Create new resource limitation objects if the virtual node resource has changed
-      def update()
-        iftocreate = @vnode.vifaces - @networkforges.keys
-        iftocreate.each do |viface|
-          @networkforges[viface] = NetworkForge.new(viface)
-        end
-        iftoremove = @networkforges.keys - @vnode.vifaces
-        iftoremove.each do |viface|
-          @networkforges[viface].undo
-          @networkforges.delete(viface)
-        end
-      end
-      
       # Clean every previously created containers (previous distem run, lxc, ...)
       def self.clean
         unless @@cleaned
@@ -140,21 +127,19 @@ module Distem
 
       # Start all the resources associated to a virtual node (Run the virtual node)
       def start
-        update()
-
+        raise @vnode.name if @vnode.status == Resource::Status::RUNNING
         @@contsem.synchronize do
           LXCWrapper::Command.start(@vnode.name)
-          @cpuforge.apply
-          @networkforges.each_value { |netforge| netforge.apply }
           @vnode.vifaces.each do |viface|
             Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
           end
+          @cpuforge.apply
+          @networkforges.each_value { |netforge| netforge.apply }
         end
       end
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
-        #update()
         @@contsem.synchronize do
           @cpuforge.undo
           @networkforges.each_value { |netforge| netforge.undo }
@@ -165,19 +150,18 @@ module Distem
       # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
         LXCWrapper::Command.destroy(@vnode.name,true)
+        Lib::Shell.run("rm -R #{@vnode.filesystem.path}") unless \
+          @vnode.filesystem.shared
       end
 
       # Remove and shutdown the virtual node, remove it's filesystem, ...
       def destroy
         stop()
         remove()
-        # >>>TODO: remove created files in shared filesystem
-        Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
       end
 
       # Update and reconfigure a virtual node (if the was some changes in the virtual resources description)
       def reconfigure
-          update()
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
       end
@@ -193,7 +177,7 @@ module Distem
           end
 
           @curname = "#{@vnode.name}-#{@id}"
-          
+
           # Generate lxc configfile
           configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
           LXCWrapper::ConfigFile.generate(@vnode,configfile)
@@ -202,7 +186,7 @@ module Distem
           etcpath = File.join(rootfspath,'etc')
 
           Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
-          
+
           # Make hostname local
           unless @vnode.filesystem.shared
             File.open(File.join(etcpath,'hosts'),'a') do |f|
@@ -220,7 +204,7 @@ module Distem
                 end
               end
             end
-            
+
             # Load config in rc.local
             filename = File.join(etcpath,'rc.local')
             cmd = '. /etc/rc.local-`hostname`'
