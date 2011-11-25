@@ -16,6 +16,8 @@ module Distem
       attr_accessor :memory
       # The status in which the Node is (see Status)
       attr_accessor :status
+      # The emulation algorithms that are used on this physical node (Hash)
+      attr_accessor :algorithms
 
       # Deprecated, used to contact the physical node if the SSH key file is not set
       attr_reader :ssh_user, :ssh_password
@@ -41,6 +43,8 @@ module Distem
         @ssh_user = ssh_user
         @ssh_password = ssh_password
         @status = Status::INIT
+        @algorithms = {}
+        @algorithms[:cpu] = Algorithm::CPU::HOGS
 
         @@ids += 1
       end

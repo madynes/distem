@@ -37,16 +37,16 @@ module Distem
       # This step is required to be able to set up some virtual node on a physical one
       # ==== Attributes
       # * +target+ The hostname/address of the physical node
-      # * +properties+ A Hash (or a JSON string) with the parameters used to set up the physical machine
+      # * +desc+ A Hash (or a JSON string) with the parameters used to set up the physical machine
       # * * +async+ Do not block waiting for the machine to install
       # ==== Returns
       # The physical node which have been initialized (Hash)
-      def pnode_init(target = nil, properties = {})
+      def pnode_init(target = nil, desc = {}, async=false)
         check_net("/pnodes") do |req|
-          properties = properties.to_json if properties.is_a?(Hash)
+          desc = desc.to_json if desc.is_a?(Hash)
           ret = {}
           @resource[req].post(
-            { :target => target, :properties => properties }
+            { :target => target, :desc => desc, :async => async }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -55,9 +55,8 @@ module Distem
       end
 
       # Same as pnode_init but in asynchronious mode
-      def pnode_init!(name, properties = {})
-        properties['async'] = true
-        return pnode_init(name,properties)
+      def pnode_init!(name, desc = {})
+        return pnode_init(name,desc,true)
       end
 
       # Quit distem on a physical machine
@@ -122,18 +121,16 @@ module Distem
       # Create a virtual node using a specific filesystem compressed image (if no physical node is specified, a random one is selected)
       # ==== Attributes
       # * +name+ The name of the virtual node which should be unique
-      # * +properties+ A Hash (or a JSON string) with the parameters used to set up the virtual node
-      # * * +image+ The URI to the (compressed) image file used to set up the file system
-      # * * +target+ (optional) The hostname/address of the physical node to set up the virtual one on
-      # * * +async+ Do not block waiting for the node to install
+      # * +desc+ A Hash (or a JSON string) with the parameters used to set up the virtual node
+      # >>> TODO: update doc
       # ==== Returns
       # The virtual node which have been created (Hash)
-      def vnode_create(name, properties)
+      def vnode_create(name, desc, async=false)
         check_net('/vnodes') do |req|
           ret = {}
-          properties = properties.to_json if properties.is_a?(Hash)
+          desc = desc.to_json if desc.is_a?(Hash)
           @resource[req].post(
-            { :name => name , :properties => properties }
+            { :name => name , :desc => desc, :async => async }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -142,9 +139,8 @@ module Distem
       end
 
       # Same as vnode_create but in asynchronious mode
-      def vnode_create!(name, properties)
-        properties['async'] = true
-        return vnode_create(name,properties)
+      def vnode_create!(name, desc)
+        return vnode_create(name,desc,true)
       end
 
       # Remove a vnode
@@ -179,17 +175,19 @@ module Distem
         end
       end
 
-      # Start a virtual node 
+      # Start a virtual node
       # ==== Attributes
       # * +vnodename+ The name of the virtual node
       # ==== Returns
       # The virtual node (Hash)
-      def vnode_start(vnode, properties = {})
+      def vnode_start(vnode, async=false)
         check_net("/vnodes/#{URI.escape(vnode)}") do |req|
           ret = {}
-          properties = properties.to_json if properties.is_a?(Hash)
+          desc = {}
+          desc[:status] = Resource::Status::RUNNING
+          desc = desc.to_json if desc.is_a?(Hash)
           @resource[req].put(
-            { :status => Resource::Status::RUNNING, :properties => properties }
+            { :desc => desc, :async => async }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -198,9 +196,8 @@ module Distem
       end
 
       # Same as vnode_start but in asynchronious mode
-      def vnode_start!(name, properties = {})
-        properties['async'] = true
-        return vnode_start(name,properties)
+      def vnode_start!(name)
+        return vnode_start(name,true)
       end
 
       # Stop a virtual node 
@@ -208,12 +205,14 @@ module Distem
       # * +vnodename+ The name of the virtual node
       # ==== Returns
       # The virtual node (Hash)
-      def vnode_stop(vnode, properties = {})
+      def vnode_stop(vnode, async=false)
         check_net("/vnodes/#{URI.escape(vnode)}") do |req|
           ret = {}
-          properties = properties.to_json if properties.is_a?(Hash)
+          desc = {}
+          desc[:status] = Resource::Status::READY
+          desc = desc.to_json if desc.is_a?(Hash)
           @resource[req].put(
-            { :status => Resource::Status::READY, :properties => properties }
+            { :desc => desc, :async => async }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -222,22 +221,24 @@ module Distem
       end
 
       # Same as vnode_stop but in asynchronious mode
-      def vnode_stop!(name, properties = {})
-        properties['async'] = true
-        return vnode_stop(name,properties)
+      def vnode_stop!(name, desc = {})
+        desc['async'] = true
+        return vnode_stop(name, desc)
       end
 
       # Create a virtual interface on the virtual node
       # ==== Attributes
       # * +vnodename+ The name of the virtual node
       # * +vifacename+ The name of the virtual interface to be created (have to be unique on that virtual node)
+      # >>> TODO: update doc
       # ==== Returns
       # The virtual interface which have been created (Hash)
-      def viface_create(vnode, name)
+      def viface_create(vnode, name, desc)
         check_net("/vnodes/#{URI.escape(vnode)}/vifaces") do |req|
           ret = {}
+          desc = desc.to_json if desc.is_a?(Hash)
           @resource[req].post(
-            { :name => name }
+            { :name => name, :desc => desc }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -252,11 +253,58 @@ module Distem
       # +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
       # ==== Returns
       # The virtual interface which have been created (Hash)
-      def vcpu_create(vnode, corenb=1, frequency=nil)
+      def vcpu_create(vnode, corenb, freq)
         check_net("/vnodes/#{URI.escape(vnode)}/vcpu") do |req|
           ret = {}
+          desc = {
+            :corenb => corenb,
+            :frequency => freq
+          }
+          desc = desc.to_json if desc.is_a?(Hash)
           @resource[req].post(
-            { :corenb => corenb, :frequency => frequency }
+            { :desc => desc }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          ret
+        end
+      end
+
+      # Set up a virtual CPU on the virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +corenb+ The number of cores to allocate (need to have enough free ones on the physical node)
+      # +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number
+      # ==== Returns
+      # The virtual interface which have been created (Hash)
+      def vcpu_update(vnode, freq)
+        check_net("/vnodes/#{URI.escape(vnode)}/vcpu") do |req|
+          ret = {}
+          desc = {
+            :frequency => freq
+          }
+          desc = desc.to_json if desc.is_a?(Hash)
+          @resource[req].put(
+            { :desc => desc }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          ret
+        end
+      end
+
+      # Set up a virtual CPU on the virtual node
+      # ==== Attributes
+      # * +vnodename+ The name of the virtual node
+      # * +corenb+ The number of cores to allocate (need to have enough free ones on the physical node)
+      # +frequency+ (optional) the frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number 
+      # ==== Returns
+      # The virtual interface which have been created (Hash)
+      def vcpu_remove(vnode)
+        check_net("/vnodes/#{URI.escape(vnode)}/vcpu") do |req|
+          ret = {}
+          @resource[req].delete(
+            {}
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -305,10 +353,13 @@ module Distem
       # ==== Returns
       # The virtual node (Hash)
       def vnode_gateway(vnode)
-        check_net("/vnodes/#{URI.escape(vnode)}/mode") do |req|
+        check_net("/vnodes/#{URI.escape(vnode)}") do |req|
+          ret = {}
+          desc[:mode] = Resource::VNode::MODE_GATEWAY
+          desc = desc.to_json if desc.is_a?(Hash)
           ret = {}
           @resource[req].put(
-            { :mode => Resource::VNode::MODE_GATEWAY }
+            { :desc => desc }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -321,8 +372,8 @@ module Distem
       # * +vnodename+ The name of the virtual node
       # ==== Returns
       # The virtual node filesystem informations (Hash)
-      def vnode_filesystem_info(vnode)
-        check_net("/vnodes/#{URI.escape(vnode)}/filesystem") do |req|
+      def vnode_vfilesys_info(vnode)
+        check_net("/vnodes/#{URI.escape(vnode)}/vfilesys") do |req|
           ret = {}
           @resource[req].get(
             {}
@@ -340,7 +391,7 @@ module Distem
       # ==== Returns
       # The path where the compressed image was retrieved
       def vnode_filesystem_get(vnode,target='.')
-        check_net("/vnodes/#{URI.escape(vnode)}/filesystem/image") do |req|
+        check_net("/vnodes/#{URI.escape(vnode)}/vfilesys/image") do |req|
           raise Lib::ResourceNotFoundError, File.dirname(target) unless File.exists?(File.dirname(target))
           if File.directory?(target)
             target = File.join(target,"#{vnode}-fsimage.tar.gz")
@@ -478,13 +529,13 @@ module Distem
       # * * +vtraffic+ ...
       # ==== Returns
       # The virtual interface (Hash)
-      def viface_attach(vnode, viface, properties)
+      def viface_modify(vnode, viface, desc)
         check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}") do |req|
-          properties = properties.to_json if properties.is_a?(Hash)
+          desc = desc.to_json if desc.is_a?(Hash)
           ret = {}
-          
+
           @resource[req].put(
-            { :properties => properties }
+            { :desc => desc }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
@@ -492,17 +543,25 @@ module Distem
         end
       end
 
-      # Disconnect a virtual interface from the network it's connected to
-      # ==== Attributes
-      # * +vnode+ The name of the virtual node
-      # * +viface+ The name of the virtual interface
-      # ==== Returns
-      # The virtual interface (Hash)
-      def viface_detach(vnode, viface)
-        check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}") do |req|
+      def vinput_update(vnode, viface, desc)
+        check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}/vinput") do |req|
+          desc = desc.to_json if desc.is_a?(Hash)
           ret = {}
           @resource[req].put(
-            {}
+            { :desc => desc }
+          ) { |response, request, result|
+            ret = JSON.parse(check_error(result,response))
+          }
+          ret
+        end
+      end
+
+      def voutput_update(vnode, viface, desc)
+        check_net("/vnodes/#{URI.escape(vnode)}/vifaces/#{URI.escape(viface)}/voutput") do |req|
+          desc = desc.to_json if desc.is_a?(Hash)
+          ret = {}
+          @resource[req].put(
+            { :desc => desc }
           ) { |response, request, result|
             ret = JSON.parse(check_error(result,response))
           }
