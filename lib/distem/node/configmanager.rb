@@ -9,25 +9,13 @@ module Distem
       attr_reader  :vplatform
       # The physical node to work on
       attr_accessor :pnode
-      # The default algorithm to use to limit CPU
-      attr_reader :cpu_algorithm
 
       # Create a new ConfigManager object
       def initialize
         @pnode = Distem::Resource::PNode.new(Lib::NetTools.get_default_addr())
         @vplatform = Distem::Resource::VPlatform.new
         @containers = {}
-        @cpu_algorithm = Algorithm::CPU::HOGS
         Container.clean()
-      end
-
-      # Set up the algorithm to be used to limit the physical node CPU performances
-      # ==== Attributes
-      # * +algo+ The algorithm to use (Constant, see Algorithm::CPU module)
-      #
-      def set_cpu_algorithm(algo)
-        raise Lib::AlreadyExistingResourceError "CPU Algorithm" unless containers.empty?
-        @cpu_algorithm = algo
       end
 
       # Gets a virtual node object specifying it's name
@@ -57,8 +45,6 @@ module Distem
       def vnode_add(vnode)
         # >>> TODO: Add the ability to modify a VNode
         @vplatform.add_vnode(vnode)
-
-        @containers[vnode.name] = Node::Container.new(vnode,@cpu_algorithm)
       end
 
       # Remove a virtual node and clean all it's associated resources on the physical node (remove it's filesystem files, remove it's container (cgroups,lxc, ...), ...)
@@ -67,8 +53,10 @@ module Distem
       #
       def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        @containers[vnode.name].destroy if @containers[vnode.name]
-        @containers.delete(vnode.name)
+        if @containers[vnode.name] 
+          @containers[vnode.name].destroy
+          @containers.delete(vnode.name)
+        end
         @vplatform.remove_vnode(vnode)
       end
 
@@ -83,6 +71,7 @@ module Distem
       # * +vnode+ The VNode object
       #
       def vnode_start(vnode)
+        @containers[vnode.name] = Node::Container.new(vnode)
         @containers[vnode.name].configure()
         @containers[vnode.name].start()
 =begin
@@ -119,16 +108,11 @@ module Distem
       # * +vnode+ The VNode object
       #
       def vnode_stop(vnode)
-        @containers[vnode.name].stop()
-      end
-
-      # Add a new virtual network interface (deal with ifb id affectation)
-      # ==== Attributes
-      # * +viface+ The VIface object
-      #
-      def viface_add(viface)
-        raise Lib::DistemError, "Maximum ifaces number of #{Admin.vifaces_max} reached" if viface.id >= Admin.vifaces_max
-        Lib::Shell.run("ip link set dev ifb#{viface.id} up")
+        if @containers[vnode.name] 
+          @containers[vnode.name].stop()
+          @containers[vnode.name].destroy
+          @containers.delete(vnode.name)
+        end
       end
 
       # Remove a virtual network interface (deprecated)
@@ -138,15 +122,6 @@ module Distem
       #def viface_remove(viface)
       #  viface.detach()
       #end
-
-      # Attach the virtual CPU of a virtual node to a physical CPU (VCore/Core associations, ...)
-      # ==== Attributes
-      # * +vnode+ The VNode object
-      # * +linkedcores+ Specify if the physical cores to attach to should be cache linked or not
-      #
-      def vcpu_attach(vnode)
-        vnode.attach_vcpu(@cpu_algorith.is_a?(Algorithm::CPU::Gov))
-      end
 
       # Add a virtual network
       # ==== Attributes
