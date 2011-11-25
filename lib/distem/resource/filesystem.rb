@@ -18,8 +18,8 @@ module Distem
       attr_accessor :sharedpath
 
       # Create a new FileSystem
-      def initialize(image,shared = false)
-        @vnode = nil
+      def initialize(vnode,image,shared = false)
+        @vnode = vnode
         @image = URI.encode(image)
         @shared = shared
         @path = nil

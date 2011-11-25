@@ -166,44 +166,6 @@ module Distem
         return (vnetwork ? vnetwork.address.include?(@address) : false)
       end
 
-      # Set the virtual traffic of this virtual network interface
-      # ==== Attributes
-      # * +hash+ The Hash describing the virtual traffic in the form { Direction1 => { "propertyname" => { prop1 => val, prop2 => val } }, Direction2 => {...} }, e.g. { "INPUT" => {"Bandwidth" => { "rate" => "100mbps" } } }. Available directions are "INPUT", "OUTPUT" and "FULLDUPLEX".
-      # ==== Exceptions
-      # * +AlreadyExistingResourceError+ if there is already a virtual traffic set on this virtual network interface
-      # * +InvalidParameterError+ if the hash parameter is not in the right form
-      #
-      def set_vtraffic(hash)
-        vinput = nil
-        voutput = nil
-
-        if hash.is_a?(Hash)
-          if hash['FULLDUPLEX']
-            hash['INPUT'] = hash['FULLDUPLEX']
-            hash['OUTPUT'] = hash['FULLDUPLEX']
-          end
-
-          vinput = VTraffic.new(self,VTraffic::Direction::INPUT,hash['INPUT']) \
-            if hash['INPUT']
-          
-          voutput = VTraffic.new(self,VTraffic::Direction::OUTPUT,hash['OUTPUT']) \
-            if hash['OUTPUT']
-        else
-          raise Lib::InvalidParameterError, hash.to_s
-        end
-
-        raise Lib::InvalidParameterError, hash.to_s \
-          if !vinput and !voutput and !hash.empty?
-
-        raise Lib::AlreadyExistingResourceError, hash['INPUT'] \
-          if vinput and @vinput
-        @vinput = vinput
-
-        raise Lib::AlreadyExistingResourceError, hash['OUTPUT'] \
-          if voutput and @voutput
-        @voutput = voutput
-      end
-
       # Reset the virtual traffic of this virtual network interface
       def reset_vtraffic()
         @vinput = nil
