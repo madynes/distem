@@ -6,6 +6,8 @@ require 'optparse'
 require 'pp'
 require 'pathname'
 
+DEFAULT_COPY_PATH="/tmp"
+
 USAGE="Usage: #{$0} --cordinator host=HOSTNAME,[port=PORT]] option"
 
 def sub_opts_to_hash(sub_opts)
