@@ -16,6 +16,8 @@ module Distem
       attr_reader  :vnodes
       # An Hash of the VRoutes associated to this virtual network (key: VRoute.destnet, val: VRoute object)
       attr_reader  :vroutes
+      # An Arrayy of physical nodes this virtual network is visible on
+      attr_accessor :visibility
 
       # Create a new VNetwork
       # ==== Attributes
@@ -23,8 +25,7 @@ module Distem
       # * +name+ (optional) The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
       def initialize(address,name=nil)
         @id = @@ids
-        name = "vnetwork#{@id}" unless name
-        @name = name
+        @name = name || "_vnetwork#{@id}"
         if address.is_a?(IPAddress)
           @address = address.network.clone
         else
@@ -36,10 +37,11 @@ module Distem
         end
         @vnodes = {}
         @vroutes = {}
+        @visibility = []
 
         @curaddress = @address.first
         @@ids += 1
-      end 
+      end
 
       # Connect a VNode to this vitual network
       # ==== Attributes
@@ -62,7 +64,7 @@ module Distem
           rescue ArgumentError
             raise Lib::InvalidParameterError, address
           end
-          raise Lib::InvalidParameterError, address.to_s \
+          raise Lib::InvalidParameterError, "#{address.to_s}->#{@address.to_string}" \
             unless @address.include?(address)
 
           raise Lib::UnavailableResourceError, address.to_s \
@@ -80,18 +82,6 @@ module Distem
         viface.attach(self,addr)
       end
 
-      # deprecated
-      def get_vnode(vnodename)
-        ret = nil
-        @vnodes.each_pair do |vnode,viface|
-          if vnode.name == vnodename and viface
-            ret = vnode
-            break
-          end
-        end
-        return ret
-      end
-
       # Get the VIface a VNode is using to connect to this virtual network
       # ==== Attributes
       # * +vnode+ The VNode object
@@ -103,6 +93,42 @@ module Distem
         return @vnodes[vnode]
       end
 
+      # Get the VNode using a specified address on this virtual network
+      # ==== Attributes
+      # * +address+ The address String
+      # ==== Returns
+      # VNode object
+      #
+      def get_vnode_by_address(address)
+        begin
+          IPAddress.parse(address) unless address.is_a?(IPAddress)
+        rescue ArgumentError
+          raise Lib::InvalidParameterError, address
+        end
+        ret = nil
+        @vnodes.each do |vnode,viface|
+          if viface.address.to_s.strip == address.to_s.strip
+            ret = vnode
+            break
+          end
+        end
+        return ret
+      end
+
+      # Get the list of physical nodes this virtual network is visible on
+      # ==== Returns
+      # Array of PNode objects
+      #
+=begin
+      def visibility
+        ret = []
+        @vnodes.keys.each do |vnode|
+          ret << vnode.host if vnode.host and !ret.include?(vnode.host)
+        end
+        return ret
+      end
+=end
+
       # Disconnect a VNode from this virtual network
       # ==== Attributes
       # * +vnode+ The VNode object
@@ -110,9 +136,11 @@ module Distem
       #
       def remove_vnode(vnode,detach = true)
         #Atm one VNode can only be attached one time to a VNetwork
-        @@alreadyusedaddr.delete(@vnodes[vnode].address.to_s)
-        @vnodes[vnode].detach() if @vnodes[vnode] and detach
-        @vnodes.delete(vnode)
+        if @vnodes[vnode]
+          @@alreadyusedaddr.delete(@vnodes[vnode].address.to_s)
+          @vnodes[vnode].detach() if detach
+          @vnodes.delete(vnode)
+        end
       end
 
       # Add a new virtual route to this virtual network
@@ -142,15 +170,6 @@ module Distem
       def get_vroute(dstnet)
         raise unless dstnet.is_a?(VNetwork)
         return @vroutes[dstnet.address.to_string]
-      end
-
-      # deprecated
-      def get_list
-        ret = ""
-        @vnodes.each do |vnode,viface|
-          ret = "#{vnode.name}(#{viface.name}) #{viface.address.to_s}\n"
-        end
-        return ret
       end
 
       # Get the virtual node which make the link with another virtual network

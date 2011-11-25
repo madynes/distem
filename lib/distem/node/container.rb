@@ -38,16 +38,17 @@ module Distem
       # ==== Attributes
       # * +vnode+ The VNode object
       #
-      def initialize(vnode,cpu_algorithm=nil)
+      def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
+        raise Lib::UninitializedResourceError, "vfilesysem/image" unless vnode.filesystem
 
         @vnode = vnode
-        @cpuforge = CPUForge.new(@vnode,cpu_algorithm)
+
         @fsforge = FileSystemForge.new(@vnode)
-        raise Lib::ResourceNotFoundError, @vnode.filesystem.path unless \
-          File.exists?(@vnode.filesystem.path)
-        raise Lib::InvalidParameterError, @vnode.filesystem.path unless \
-          File.directory?(@vnode.filesystem.path)
+        raise Lib::ResourceNotFoundError, @vnode.filesystem.path if \
+          !File.exists?(@vnode.filesystem.path) and
+          !File.exists?(@vnode.filesystem.sharedpath)
+        @cpuforge = CPUForge.new(@vnode,@vnode.host.algorithms[:cpu])
         @networkforges = {}
         @vnode.vifaces.each do |viface|
           @networkforges[viface] = NetworkForge.new(viface)
@@ -111,19 +112,6 @@ module Distem
 
       end
 
-      # Create new resource limitation objects if the virtual node resource has changed
-      def update()
-        iftocreate = @vnode.vifaces - @networkforges.keys
-        iftocreate.each do |viface|
-          @networkforges[viface] = NetworkForge.new(viface)
-        end
-        iftoremove = @networkforges.keys - @vnode.vifaces
-        iftoremove.each do |viface|
-          @networkforges[viface].undo
-          @networkforges.delete(viface)
-        end
-      end
-      
       # Clean every previously created containers (previous distem run, lxc, ...)
       def self.clean
         unless @@cleaned
@@ -140,8 +128,6 @@ module Distem
 
       # Start all the resources associated to a virtual node (Run the virtual node)
       def start
-        update()
-
         @@contsem.synchronize do
           LXCWrapper::Command.start(@vnode.name)
           @cpuforge.apply
@@ -154,7 +140,6 @@ module Distem
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
-        #update()
         @@contsem.synchronize do
           @cpuforge.undo
           @networkforges.each_value { |netforge| netforge.undo }
@@ -177,7 +162,6 @@ module Distem
 
       # Update and reconfigure a virtual node (if the was some changes in the virtual resources description)
       def reconfigure
-          update()
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
       end
@@ -193,7 +177,7 @@ module Distem
           end
 
           @curname = "#{@vnode.name}-#{@id}"
-          
+
           # Generate lxc configfile
           configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
           LXCWrapper::ConfigFile.generate(@vnode,configfile)
@@ -202,7 +186,7 @@ module Distem
           etcpath = File.join(rootfspath,'etc')
 
           Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
-          
+
           # Make hostname local
           unless @vnode.filesystem.shared
             File.open(File.join(etcpath,'hosts'),'a') do |f|
@@ -220,7 +204,7 @@ module Distem
                 end
               end
             end
-            
+
             # Load config in rc.local
             filename = File.join(etcpath,'rc.local')
             cmd = '. /etc/rc.local-`hostname`'

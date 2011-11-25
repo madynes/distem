@@ -19,13 +19,13 @@ module Distem
       # The (unique) name of the virtual node
       attr_reader :name
       # The PNode object describing the machine that hosts this virtual node
-      attr_reader  :host
+      attr_accessor  :host
       # The Array of VIface representing this node virtual network interfaces resources
       attr_reader  :vifaces
       # The VCPU resource object associated to this virtual node
       attr_reader  :vcpu
       # The FileSystem resource object associated to this virtual node
-      attr_reader :filesystem
+      attr_accessor :filesystem
       # The status of the Virtual node (see Status)
       attr_accessor :status
       # Boolean describing if this node is in gateway mode or not
@@ -33,17 +33,16 @@ module Distem
       # SSH key pair to be used on the virtual node (Hash)
       attr_accessor :sshkey
 
-      
+
       # Create a new Virtual Node specifying it's filesystem
       # ==== Attributes
-      # * +host+ The Physical Node that will host the Virtual one
       # * +name+ The name of that Virtual Node
       # * +filesystem+ The FileSystem object
+      # * +host+ The Physical Node that will host the Virtual one
+      # * +ssh_key+ SSH key to be used on the virtual node (Hash with key 'public' and 'private')
       #
-      def initialize(host, name, filesystem, ssh_key = nil)
-        raise unless host.is_a?(PNode)
+      def initialize(name, ssh_key = nil)
         raise unless name.is_a?(String)
-        raise unless filesystem.is_a?(FileSystem)
 
         @id = @@ids
 
@@ -53,11 +52,11 @@ module Distem
           @name = name
         end
 
-        @host = host
-        @filesystem = filesystem 
-        @filesystem.vnode = self
+        @host = nil
+        @filesystem = nil
+
         if ssh_key.is_a?(Hash) and !ssh_key.empty?
-          @sshkey = ssh_key 
+          @sshkey = ssh_key
         else
           @sshkey = nil
         end
@@ -114,8 +113,20 @@ module Distem
       def get_viface_by_network(network)
         network = network.address if network.is_a?(VNetwork)
         raise network.class.to_s unless network.is_a?(IPAddress)
-        
+
         return @vifaces.select{|viface| network.include?(viface.address)}[0]
+      end
+
+      # Get the list of every virtual networks a virtual node is connected to
+      # ==== Returns
+      # Array of VNetwork objects
+      #
+      def get_vnetworks
+        ret = []
+        @vifaces.each do |viface|
+          ret << viface.vnetwork if viface.attached? and !ret.include?(viface.vnetwork)
+        end
+        return ret
       end
 
       # Check if this virtual node is connected to a specified virtual network
@@ -137,7 +148,7 @@ module Distem
       #
       def add_vcpu(corenb,freq=nil)
         raise Lib::AlreadyExistingResourceError, 'VCPU' if @vcpu
-        @vcpu = VCPU.new(@host.cpu)
+        @vcpu = VCPU.new(self)
         frequency = 0.0
         if freq and freq.to_f > 0.0
           frequency = freq.to_f
@@ -147,23 +158,9 @@ module Distem
         corenb.times { @vcpu.add_vcore(frequency) }
       end
 
-      # Attach this virtual CPU to the physical one of the virtual node host (associating each virtual core to a physical one)
-      # ==== Attributes
-      # * +linked_cores+ Specify if the physical cores chosen to be associated with the virtual ones of the VCPU should be cache linked or not (See Core)
-      #
-      def attach_vcpu(linked_cores=false)
-        raise Lib::UninitializedResourceError unless @vcpu
-        cores = @host.cpu.alloc_cores(self,@vcpu.vcores.size,linked_cores)
-        i = 0
-        @vcpu.vcores.each_value do |vcore|
-          vcore.attach(cores[i])
-          i += 1
-        end
-      end
-
       # Removes the virtual CPU associated to this virtual node, detach each virtual core from the physical core it was associated with 
       def remove_vcpu()
-        @host.cpu.free_cores(self)
+        @vcpu.detach if @vcpu.attached?
         @vcpu = nil
       end
 
