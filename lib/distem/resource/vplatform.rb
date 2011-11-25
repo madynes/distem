@@ -71,16 +71,24 @@ module Distem
         return (@vnodes[name] ? @vnodes[name].host : nil)
       end
 
-      # Gets a random physical node from the list of available ones
+      # Gets a physical node which is available to host a virtual node considering VCPU and VNetwork constraints
+      # ==== Attributes
+      # * +vnode+ The virtual node
       # ==== Returns
       # PNode object or nil if not found
       # ==== Exceptions
       # * +UnavailableResourceError+ if no physical nodes are available (no PNode in this VPlatform)
       #
-      def get_pnode_randomly()
-        raise Lib::UnavailableResourceError, 'PNODE' if @pnodes.empty?
-        tmp = @pnodes.keys
-        return @pnodes[tmp[rand(tmp.size)]]
+      def get_pnode_available(vnode)
+        availables = []
+        @pnodes.each_value do |pnode|
+          next if vnode.vcpu and pnode.cpu.get_free_cores.size < vnode.vcpu.vcores.size
+          availables << pnode
+        end
+
+        raise Lib::UnavailableResourceError, 'pnode/cpu' if availables.empty?
+
+        return availables[rand(availables.size)]
       end
 
       # Add a new virtual node to the platform
@@ -91,7 +99,6 @@ module Distem
       #
       def add_vnode(vnode)
         raise unless vnode.is_a?(VNode)
-        raise unless vnode.host.is_a?(PNode)
         raise Lib::AlreadyExistingResourceError, vnode.name \
           if @vnodes[vnode.name]
 
@@ -106,7 +113,7 @@ module Distem
         raise unless vnode.is_a?(VNode)
         # Remove the vnode on each vnetwork it's connected
         @vnetworks.each_value do |vnetwork|
-          if vnetwork.get_vnode(vnode.name)
+          if vnetwork.vnodes.keys.include?(vnode)
             # Remove every vroute vnode have a role on
             vnetwork.vroutes.each_value do |vroute|
                 viface = vnetwork.get_vnode_viface(vnode)
@@ -138,13 +145,13 @@ module Distem
       #
       def add_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
-        raise Lib::AlreadyExistingResourceError, vnetwork.address.to_string \
+        raise Lib::AlreadyExistingResourceError, "#{vnetwork.address.to_string}(#{vnetwork.name})" \
           if @vnetworks[vnetwork.address.to_string]
 
         raise Lib::AlreadyExistingResourceError, vnetwork.name \
           if @vnetworks.values.select{ |vnet| vnetwork.name == vnet.name }[0]
 
-        @vnetworks[vnetwork.address.to_string] = vnetwork 
+        @vnetworks[vnetwork.address.to_string] = vnetwork
       end
 
       # Remove a virtual network from the platform. Also remove all virtual routes this virtual network is playing a role in.
@@ -182,6 +189,7 @@ module Distem
       #
       def get_vnetwork_by_address(address)
         raise unless (address.is_a?(String) or address.is_a?(IPAddress))
+        raise if address.empty?
         ret = nil
         begin
           address = IPAddress.parse(address) if address.is_a?(String)

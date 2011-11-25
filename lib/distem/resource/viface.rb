@@ -99,25 +99,19 @@ module Distem
       # The VNetwork this interface is attached to (nil if none)
       attr_reader :vnetwork
       # The output VTraffic description
-      attr_reader :voutput
+      attr_accessor :voutput
       # The input VTraffic description
-      attr_reader :vinput
+      attr_accessor :vinput
 
       # Create a new VIface
       # ==== Attributes
       # * +name+ The name of the virtual network interface
       # * +vnode+ The VNode object describing the virtual node associated to this virtual network interface
-      # * +localid+ Give this virtuel network interface a unique id
       #
-      def initialize(name,vnode,localid=true)
+      def initialize(name,vnode)
         raise if name.empty? or not name.is_a?(String)
 
-        if localid
-          @id = @@ids
-          @@ids += 1
-        else
-          @id = -1
-        end
+        @id = @@ids
         @name = name
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
@@ -125,6 +119,7 @@ module Distem
         @vinput = nil
         @voutput = nil
         @vroutes = []
+        @@ids += 1
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address
@@ -164,44 +159,6 @@ module Distem
       def connected_to?(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
         return (vnetwork ? vnetwork.address.include?(@address) : false)
-      end
-
-      # Set the virtual traffic of this virtual network interface
-      # ==== Attributes
-      # * +hash+ The Hash describing the virtual traffic in the form { Direction1 => { "propertyname" => { prop1 => val, prop2 => val } }, Direction2 => {...} }, e.g. { "INPUT" => {"Bandwidth" => { "rate" => "100mbps" } } }. Available directions are "INPUT", "OUTPUT" and "FULLDUPLEX".
-      # ==== Exceptions
-      # * +AlreadyExistingResourceError+ if there is already a virtual traffic set on this virtual network interface
-      # * +InvalidParameterError+ if the hash parameter is not in the right form
-      #
-      def set_vtraffic(hash)
-        vinput = nil
-        voutput = nil
-
-        if hash.is_a?(Hash)
-          if hash['FULLDUPLEX']
-            hash['INPUT'] = hash['FULLDUPLEX']
-            hash['OUTPUT'] = hash['FULLDUPLEX']
-          end
-
-          vinput = VTraffic.new(self,VTraffic::Direction::INPUT,hash['INPUT']) \
-            if hash['INPUT']
-          
-          voutput = VTraffic.new(self,VTraffic::Direction::OUTPUT,hash['OUTPUT']) \
-            if hash['OUTPUT']
-        else
-          raise Lib::InvalidParameterError, hash.to_s
-        end
-
-        raise Lib::InvalidParameterError, hash.to_s \
-          if !vinput and !voutput and !hash.empty?
-
-        raise Lib::AlreadyExistingResourceError, hash['INPUT'] \
-          if vinput and @vinput
-        @vinput = vinput
-
-        raise Lib::AlreadyExistingResourceError, hash['OUTPUT'] \
-          if voutput and @voutput
-        @voutput = voutput
       end
 
       # Reset the virtual traffic of this virtual network interface

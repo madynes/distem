@@ -30,9 +30,9 @@ module Distem
       @@extractlock = {} # :nodoc:
       @@archivecachelock = {} # :nodoc:
       @@hashcachelock = {} # :nodoc:
-      @@hashcache = {} # :nodoc:
+      @@hashcache = {}
       @@archivecache = [] # :nodoc:
-      
+
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
       # * +uri_str+ The URI of the file to download
@@ -52,7 +52,7 @@ module Distem
         end
 
         ret = ""
-        
+
         case uri.scheme
           when "file"
             ret = uri.path
@@ -77,24 +77,25 @@ module Distem
       def self.extract(archivefile,targetdir="",override=true)
         raise Lib::ResourceNotFoundError, archivefile \
           unless File.exists?(archivefile)
-        
+
         if targetdir.empty?
           targetdir = File.dirname(archivefile)
         end
 
         targethash = targetdir + file_hash(archivefile)
-        @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash] 
+        @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
 
         cachedir,new = cache_archive(archivefile)
 
-        exists = File.exists?(targetdir) 
-        if !exists or override or new
-          if @@extractlock[targethash].locked?
-            @@extractlock[targethash].synchronize {}
-          else
-            @@extractlock[targethash].synchronize do
+        if @@extractlock[targethash].locked?
+          @@extractlock[targethash].synchronize {}
+        else
+          @@extractlock[targethash].synchronize do
+            exists = File.exists?(targetdir)
+            if !exists or override or new
               @@extractsem.synchronize do
-                Lib::Shell.run("mkdir -p #{targetdir}") unless exists
+                Lib::Shell.run("rm -Rf #{targetdir}") if exists
+                Lib::Shell.run("mkdir -p #{targetdir}")
                 Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
               end
             end
@@ -134,19 +135,19 @@ module Distem
       # * +archivefile+ The path to the archive file (String)
       # ==== Returns
       # String value describing the path to the directory (on the local machine) the file was cached to
-      # 
+      #
       def self.cache_archive(archivefile)
         filehash = file_hash(archivefile)
-        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash] 
+        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash]
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
 
         newcache = false
-        unless @@archivecache.include?(filehash)
-          @@archivecache << filehash unless @@archivecache.include?(filehash)
-          if @@archivecachelock[filehash].locked?
-            @@archivecachelock[filehash].synchronize {}
-          else
-            @@archivecachelock[filehash].synchronize do
+        if @@archivecachelock[filehash].locked?
+          @@archivecachelock[filehash].synchronize {}
+        else
+          @@archivecachelock[filehash].synchronize do
+            unless @@archivecache.include?(filehash)
+              @@archivecache << filehash
               @@cachesem.synchronize do
                 if File.exists?(cachedir)
                   Lib::Shell.run("rm -R #{cachedir}")
@@ -166,7 +167,7 @@ module Distem
       # * +filepath+ The path to the file (String)
       # ==== Returns
       # String value describing the path to the directory (on the local machine) the generated archive file is store to
-      # 
+      #
       def self.compress(filepath)
         raise Lib::ResourceNotFoundError, filepath \
           unless File.exists?(filepath)
@@ -177,7 +178,7 @@ module Distem
         basename = File.basename(filepath)
         respath = "#{File.join(PATH_DEFAULT_COMPRESS,basename)}.tar.gz"
         Lib::Shell.run("#{BIN_TAR} czf #{respath} -C #{filepath} .")
-        
+
         return respath
       end
 
@@ -190,11 +191,11 @@ module Distem
       def self.file_hash(filename)
         @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
 
-        unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
-          if @@hashcachelock[filename].locked?
-            @@hashcachelock[filename].synchronize{}
-          else
-            @@hashcachelock[filename].synchronize do
+        if @@hashcachelock[filename].locked?
+          @@hashcachelock[filename].synchronize{}
+        else
+          @@hashcachelock[filename].synchronize do
+            unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
               @@hashsem.synchronize do
                 mtime = File.mtime(filename) unless mtime
                 @@hashcache[filename] = {
@@ -205,6 +206,7 @@ module Distem
             end
           end
         end
+
         return @@hashcache[filename][:hash]
       end
     end
