@@ -99,25 +99,19 @@ module Distem
       # The VNetwork this interface is attached to (nil if none)
       attr_reader :vnetwork
       # The output VTraffic description
-      attr_reader :voutput
+      attr_accessor :voutput
       # The input VTraffic description
-      attr_reader :vinput
+      attr_accessor :vinput
 
       # Create a new VIface
       # ==== Attributes
       # * +name+ The name of the virtual network interface
       # * +vnode+ The VNode object describing the virtual node associated to this virtual network interface
-      # * +localid+ Give this virtuel network interface a unique id
       #
-      def initialize(name,vnode,localid=true)
+      def initialize(name,vnode)
         raise if name.empty? or not name.is_a?(String)
 
-        if localid
-          @id = @@ids
-          @@ids += 1
-        else
-          @id = -1
-        end
+        @id = @@ids
         @name = name
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
@@ -125,6 +119,7 @@ module Distem
         @vinput = nil
         @voutput = nil
         @vroutes = []
+        @@ids += 1
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address

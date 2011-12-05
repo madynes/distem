@@ -68,8 +68,8 @@ module Distem
           'vnode' => viface.vnode.name,
           'address' => viface.address.to_string,
           'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
-          'vinput' => (viface.vinput ? visit(viface.vinput) : nil),
-          'voutput' => (viface.voutput ? visit(viface.voutput) : nil),
+          'input' => (viface.vinput ? visit(viface.vinput) : nil),
+          'output' => (viface.voutput ? visit(viface.voutput) : nil),
         }
       end
 

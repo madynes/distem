@@ -21,7 +21,11 @@ module Distem
       def initialize(vnode,image,shared = false)
         @vnode = vnode
         @image = URI.encode(image)
-        @shared = shared
+        if shared
+          @shared = true
+        else
+          @shared = false
+        end
         @path = nil
         @sharedpath = nil
       end

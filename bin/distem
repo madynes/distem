@@ -45,7 +45,7 @@ options['viface'] = nil
 options['address'] = nil
 options['latency'] = nil
 options['bw'] = nil
-options['direction'] = 'OUTPUT'
+options['direction'] = nil
 options['corenb'] = nil
 options['cpu_speed'] = 1
 options['rootfs' ] = nil
@@ -199,7 +199,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'complete_vroutes'
   end
   opts.on(
-    '--set-bandwidth vnode=VNODE,iface=IFACE,bw=VALUE|unlimited[,direction=INPUT|OUTPUT|FULLDUPLEX]',
+    '--set-bandwidth vnode=VNODE,iface=IFACE,bw=VALUE|unlimited[,direction=INPUT|OUTPUT]',
     'Set a bandwidth limitation on IFACE with a given value and eventually a given direction'
   ) do |str|
     options['f_options'] << 'set_bandwidth'
@@ -295,8 +295,9 @@ options['f_options'].each { |option|
     pp cl.pnode_init(options['pnode'])
   when 'create_vnode'
     props = {}
-    props['image'] = options['rootfs']
-    props['target'] = options['pnode'] if options['pnode']
+    props['vfilesystem'] = {}
+    props['vfilesystem']['image'] = options['rootfs']
+    props['host'] = options['pnode'] if options['pnode']
     pp cl.vnode_create(options['vnode'], props)
   when 'start_vnode'
     pp cl.vnode_start(options['vnode'])
@@ -316,8 +317,8 @@ options['f_options'].each { |option|
   when 'copy_to','copy_from'
     vnode = cl.vnode_info(options['vnode'])
     pnode = vnode['host']
-    rootfs = vnode['filesystem']['shared'] ? 
-      vnode['filesystem']['sharedpath'] : vnode['filesystem']['path']
+    rootfs = vnode['vfilesystem']['shared'] ? 
+      vnode['vfilesystem']['sharedpath'] : vnode['vfilesystem']['path']
     vfile = (option == 'copy_to') ? vfile = options['dest'] : vfile = options['src']
     path = Pathname.new(vfile)
     path = File.join(rootfs,(path.absolute? ? "" : DEFAULT_COPY_PATH),path.to_s)
@@ -346,7 +347,7 @@ options['f_options'].each { |option|
     elsif options['address']
       params['address'] = options['address']
     end
-    pp cl.viface_attach(options['vnode'], options['iface'],params)
+    pp cl.viface_create(options['vnode'], options['iface'],params)
   when 'remove_viface'
     pp cl.viface_remove(options['vnode'], options['iface'])
   when 'create_vroute'
@@ -363,18 +364,23 @@ options['f_options'].each { |option|
       puts 'The address of the virtual interface cannot be found'
       exit 1
     end
-    direction = options['direction'] ? options['direction'] : 'FULLDUPLEX'
     plimit = {}
-    plimit[direction] = {}
+    tmplimit = {}
     if option == 'set_bandwidth'
-      plimit[direction]['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
+      tmplimit['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
     else
-      plimit[direction]['latency'] = (options['latency'] != 'unlimited') ? { "delay" => options['latency'] } : {}
+      tmplimit['latency'] = (options['latency'] != 'unlimited') ? { "delay" => options['latency'] } : {}
     end
     params = {}
-    params['vtraffic'] = plimit
-    params['address'] = viface_addr
-    pp cl.viface_attach(options['vnode'], options['iface'], params)
+    if options['direction']
+      params[options['direction']] = tmplimit
+    else
+      params['input'] = tmplimit
+      params['output'] = tmplimit
+    end
+    pp params
+    #params['address'] = viface_addr
+    pp cl.viface_update(options['vnode'], options['iface'], params)
   when 'set_vcpu'
     pp cl.vcpu_create(options['vnode'], options['corenb'], options['cpu_speed'])
   when 'get_pnode_info'

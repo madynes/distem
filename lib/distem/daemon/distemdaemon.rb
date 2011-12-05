@@ -61,7 +61,7 @@ module Distem
       #
       def pnode_create(target,desc={},async=false)
         begin
-          async = parse_async(async)
+          async = parse_bool(async)
           pnode = nil
 
           nodemodeblock = Proc.new {
@@ -244,6 +244,20 @@ module Distem
         return vplatform.pnodes
       end
 
+      # Get the description of the cpu of a physical node
+      def pcpu_get(hostname, raising = true) 
+        pnode = pnode_get(hostname)
+
+        return pnode.cpu
+      end
+
+      # Get the description of the memory of a physical node
+      def pmemory_get(hostname, raising = true) 
+        pnode = pnode_get(hostname)
+
+        return pnode.memory
+      end
+
       # Create a virtual node using a compressed file system image.
       #
       # ==== Attributes
@@ -253,9 +267,9 @@ module Distem
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_create(name,desc,async=false)
+      def vnode_create(name,desc,ssh_key={},async=false)
         begin
-          async = parse_async(async)
+          async = parse_bool(async)
           if name
             name = name.gsub(' ','_')
           else
@@ -264,7 +278,7 @@ module Distem
 
           downkeys(desc)
 
-          vnode = Resource::VNode.new(name,desc['ssh_key'])
+          vnode = Resource::VNode.new(name,ssh_key)
 
           if daemon?
             @daemon_resources.add_vnode(vnode)
@@ -287,7 +301,7 @@ module Distem
 
       # Update the vnode resource
       def vnode_update(name,desc,async=false)
-        async = parse_async(async)
+        async = parse_bool(async)
         vnode = vnode_get(name)
 
         downkeys(desc)
@@ -408,7 +422,7 @@ module Distem
       # ==== Exceptions
       #
       def vnode_status_update(name,status,async=false)
-        async = parse_async(async)
+        async = parse_bool(async)
         vnode = nil
         raise Lib::InvalidParameterError, status unless \
           Resource::Status.valid?(status)
@@ -425,7 +439,7 @@ module Distem
 
       # Same as vnode_set_status(name,Resource::Status::RUNNING,properties)
       def vnode_start(name,async=false)
-        async = parse_async(async)
+        async = parse_bool(async)
         vnode = vnode_get(name)
 
         raise Lib::BusyResourceError, vnode.name if \
@@ -494,7 +508,7 @@ module Distem
 
       # Same as vnode_set_status(name,Resource::Status::READY,properties)
       def vnode_stop(name, async=false)
-        async = parse_async(async)
+        async = parse_bool(async)
         vnode = vnode_get(name)
         raise Lib::BusyResourceError, vnode.name if \
           vnode.status == Resource::Status::CONFIGURING
@@ -520,6 +534,7 @@ module Distem
               cl.vnode_remove(vnode.name)
               vnode.status = Resource::Status::READY
             end
+            vnode.host = nil
           }
 
           if async
@@ -608,7 +623,7 @@ module Distem
           vifacename = vifacename.gsub(' ','_')
           vnode = vnode_get(vnodename)
 
-          viface = Resource::VIface.new(vifacename,vnode,target?(vnode))
+          viface = Resource::VIface.new(vifacename,vnode)
 
           if target?(vnode)
             raise Lib::DistemError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached" if viface.id >= Node::Admin.vifaces_max
@@ -647,12 +662,13 @@ module Distem
 
       def viface_update(vnodename,vifacename,desc)
         ret = nil
+        downkeys(desc)
         if !desc or desc.empty?
           ret = viface_detach(vnodename,vifacename)
         else
-          if (desc.keys - ['vtraffic']).size == 0
+          if (desc.keys - ['input'] - ['output']).size == 0
             #only vtraffic change
-            ret = vtraffic_update(vnodename,vifacename,desc['vtraffic'])
+            ret = vtraffic_update(vnodename,vifacename,desc)
           else
             ret = viface_attach(vnodename,vifacename,desc)
           end
@@ -663,11 +679,11 @@ module Distem
       # Connect a virtual node on a virtual network specifying which of it's virtual interface to use
       # The IP address is auto assigned to the virtual interface
       # Dettach the virtual interface if properties is empty
-      # You can change the traffic specification on the fly, only specifying the vtraffic property
+      # You can change the traffic specification on the fly, only specifying a vtraffic property
       # ==== Attributes
       # * +vnodename+ The VNode name (String)
       # * +vifacename+ The VIface name (String)
-      # * +properties+ the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT/FULLDUPLEX)
+      # * +properties+ the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT)
       # == Usage
       # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       # ==== Returns
@@ -719,7 +735,9 @@ module Distem
             vnetwork.add_vnode(vnode,viface)
           end
 
-          vtraffic_update(vnode.name,viface.name,desc['vtraffic']) if desc['vtraffic']
+          desc.delete('address')
+          desc.delete('vnetwork')
+          vtraffic_update(vnode.name,viface.name,desc) unless desc.empty?
 
           return viface
         rescue Lib::AlreadyExistingResourceError
@@ -778,12 +796,17 @@ module Distem
 
         vinput_update(vnode.name,viface.name,desc['input']) if desc['input']
         voutput_update(vnode.name,viface.name,desc['output']) if desc['output']
-        if desc['fullduplex']
-          vinput_update(vnode.name,viface.name,desc['fullduplex'])
-          voutput_update(vnode.name,viface.name,desc['fullduplex'])
-        end
 
         return viface
+      end
+
+      def vinput_get(vnodename,vifacename, raising = true)
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
+
+        raise Lib::UninitializedResourceError, 'input' if raising and !viface.vinput
+
+        return viface.vinput
       end
 
       def vinput_update(vnodename,vifacename,desc)
@@ -793,9 +816,10 @@ module Distem
         downkeys(desc)
 
         if desc and !desc.empty?
-          viface.vinput = VTraffic.new(self,VTraffic::Direction::INPUT,desc)
+          viface.vinput = Resource::VIface::VTraffic.new(viface,
+            Resource::VIface::VTraffic::Direction::INPUT,desc)
         else
-          viface.input = nil
+          viface.vinput = nil
         end
 
         if vnode.status == Resource::Status::RUNNING
@@ -804,12 +828,21 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vtraffic_update(vnode.name,viface.name,desc)
+            cl.vinput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
 
         return viface.vinput
+      end
+
+      def voutput_get(vnodename,vifacename, raising = true)
+        vnode = vnode_get(vnodename)
+        viface = viface_get(vnodename,vifacename)
+
+        raise Lib::UninitializedResourceError, 'voutput' if raising and !viface.voutput
+
+        return viface.voutput
       end
 
       def voutput_update(vnodename,vifacename,desc)
@@ -819,9 +852,10 @@ module Distem
         downkeys(desc)
 
         if desc and !desc.empty?
-          viface.voutput = VTraffic.new(self,VTraffic::Direction::OUTPUT,desc)
+          viface.voutput = Resource::VIface::VTraffic.new(viface,
+            Resource::VIface::VTraffic::Direction::OUTPUT,desc)
         else
-          viface.output = nil
+          viface.voutput = nil
         end
 
         if vnode.status == Resource::Status::RUNNING
@@ -830,7 +864,7 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vtraffic_update(vnode.name,viface.name,desc)
+            cl.voutput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
@@ -872,6 +906,17 @@ module Distem
 
           vnode.vcpu.attach if vnode.host
 
+          if vnode.status == Resource::Status::RUNNING
+            vnode.status = Resource::Status::CONFIGURING
+            if target?(vnode)
+              @node_config.vnode_reconfigure(vnode)
+            elsif daemon?
+              cl = NetAPI::Client.new(vnode.host.address)
+              cl.cpu_update(vnode.name,desc)
+            end
+            vnode.status = Resource::Status::RUNNING
+          end
+
           return vnode.vcpu
 
         rescue Lib::AlreadyExistingResourceError
@@ -896,7 +941,6 @@ module Distem
           vcpu = vcpu_get(vnode.name)
 
           downkeys(desc)
-
 
           if desc['vcores']
             raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
@@ -949,10 +993,24 @@ module Distem
         raise Lib::MissingParameterError, "filesystem/image" unless \
           desc['image']
 
-        vfs = Resource::FileSystem.new(vnode,desc['image'],desc['shared'])
-        vnode.filesystem = vfs
+        desc['shared'] = parse_bool(desc['shared'])
 
-        return vfs
+        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'])
+
+        return vnode.filesystem
+      end
+
+      def vfilesystem_update(vnodename,desc)
+        vnode = vnode_get(vnodename)
+
+        raise Lib::UninitializedResourceError, "filesystem" unless \
+          vnode.filesystem
+
+        vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
+
+        vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
+
+        return vnode.filesystem
       end
 
       # Retrieve informations about the virtual node filesystem
@@ -1407,12 +1465,14 @@ module Distem
       # ==== Returns
       # New Hash object
       def downkeys(hash)
-        ret = {}
-        hash.each do |k,v|
-          ret[k.downcase] = v
-          hash.delete(k) unless k.downcase == k
+        if hash.is_a?(Hash)
+          hash.each do |k,v|
+            hash[k.downcase] = downkeys(v)
+            hash.delete(k) unless k.downcase == k
+          end
         end
-        return ret
+
+        return hash
       end
 
       def updateobj_pnode(pnode,hash)
@@ -1450,17 +1510,17 @@ module Distem
         end
       end
 
-      def parse_async(param)
-        if param.is_a?(String)
-          if ['','false','no','0'].include?(param.strip.downcase)
-            ret = false
-          else
-            ret = true
-          end
-        elsif !param.nil?
+      def parse_bool(param)
+        ret = false
+
+        if param.is_a?(TrueClass) or param.is_a?(FalseClass)
           ret = param
-        else
+        elsif param.nil? or param.empty?
           ret = false
+        elsif ['no','false','disable','0'].include?(param.to_s.strip.downcase)
+          ret = false
+        else
+          ret = true
         end
 
         return ret
