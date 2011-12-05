@@ -536,7 +536,10 @@ module Distem
               end
               vnode.status = Resource::Status::READY
             end
+<<<<<<< HEAD
             vnode.vcpu.detach if vnode.vcpu
+=======
+>>>>>>> d917563... Update routes in REST API
             vnode.host = nil
           }
 
@@ -1519,9 +1522,15 @@ module Distem
         if param.is_a?(TrueClass) or param.is_a?(FalseClass)
           ret = param
         elsif param.nil? or param.empty?
+<<<<<<< HEAD
           ret = false
         elsif ['no','false','disable','0'].include?(param.to_s.strip.downcase)
           ret = false
+=======
+          ret = false
+        elsif ['no','false','disable','0'].include?(param.to_s.strip.downcase)
+          ret = false
+>>>>>>> d917563... Update routes in REST API
         else
           ret = true
         end
