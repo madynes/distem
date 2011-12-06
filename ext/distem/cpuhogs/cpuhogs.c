@@ -50,6 +50,7 @@ static VALUE cpuhogs_run(VALUE self, VALUE hash)
 		rb_hash_foreach(hash,parse_hash,Qnil);
 
 		run(cmds);
+                exit(0);
 	}
 	else
 		rb_iv_set(self, "@pid", INT2NUM(pid));
@@ -62,6 +63,7 @@ static VALUE cpuhogs_stop(VALUE self)
 	int pid;
 	pid = NUM2INT(rb_iv_get(self, "@pid"));
 	kill(pid,SIGTERM);
+        waitpid(pid,NULL,NULL);
 	rb_iv_set(self, "@pid", INT2NUM(0));
 
 	return Qnil;

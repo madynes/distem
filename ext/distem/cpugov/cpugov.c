@@ -81,6 +81,7 @@ static VALUE cpugov_stop(VALUE self)
 
 	pid = NUM2INT(rb_iv_get(self, "@pid"));
 	kill(pid,SIGTERM);
+        waitpid(pid,NULL,NULL);
 
 	rb_iv_set(self, "@pid", INT2NUM(0));
 
