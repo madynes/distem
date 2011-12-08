@@ -797,8 +797,9 @@ module Distem
 
         downkeys(desc)
 
-        vinput_update(vnode.name,viface.name,desc['input']) if desc['input']
-        voutput_update(vnode.name,viface.name,desc['output']) if desc['output']
+          # Direction is switched because of the lxc-veth structure that cause the input and the output of the network interface to be switched inside of the container
+        vinput_update(vnode.name,viface.name,desc['output']) if desc['output']
+        voutput_update(vnode.name,viface.name,desc['input']) if desc['input']
 
         return viface
       end
