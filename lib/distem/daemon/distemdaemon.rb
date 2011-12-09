@@ -147,6 +147,7 @@ module Distem
       #
       def pnode_quit(target)
         pnode = pnode_get(target,false)
+        pnode.status = Resource::Status::CONFIGURING
         if daemon? and pnode
           @daemon_resources.vnodes.each_value do |vnode|
             if vnode.host == pnode
@@ -174,7 +175,7 @@ module Distem
             exit!
           end
         end
-
+        pnode.status = Resource::Status::READY
         return pnode
       end
 
@@ -353,7 +354,7 @@ module Distem
 
         if daemon?
           @daemon_resources.remove_vnode(vnode)
-          if !target?(vnode) and vnode.host
+          if !target?(vnode) and vnode.host and (pnode.status == Resource::Status::RUNNING)
             cl = NetAPI::Client.new(vnode.host.address)
             cl.vnode_remove(vnode.name)
           end
@@ -1153,8 +1154,10 @@ module Distem
           @daemon_resources.remove_vnetwork(vnetwork)
 
           vnetwork.visibility.each do |pnode|
-            cl = NetAPI::Client.new(pnode.address.to_s)
-            cl.vnetwork_remove(vnetwork.name)
+            if (pnode.status == Resource::Status::RUNNING)
+              cl = NetAPI::Client.new(pnode.address.to_s)
+              cl.vnetwork_remove(vnetwork.name)
+            end
           end
         end
 
@@ -1264,9 +1267,11 @@ module Distem
               gw.gateway
 
             srcnet.visibility.each do |pnode|
-              cl = NetAPI::Client.new(pnode.address.to_s)
-              vnetwork_sync(dstnet,pnode)
-              cl.vroute_create(srcnet.name,destnet.name,gwaddr.to_s)
+              if (pnode.status == Resource::Status::RUNNING)
+                cl = NetAPI::Client.new(pnode.address.to_s)
+                vnetwork_sync(dstnet,pnode)
+                cl.vroute_create(srcnet.name,destnet.name,gwaddr.to_s)
+              end
             end
           end
 
