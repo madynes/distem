@@ -619,7 +619,7 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem}.
       # @return [Hash] The virtual Filesystem description (see {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem})
-      def vfilesystem_update(vnodename)
+      def vfilesystem_update(vnodename,desc)
         check_net("/vnodes/#{URI.escape(vnodename)}/filesystem") do |req|
           ret = {}
           desc = desc.to_json if desc.is_a?(Hash)
