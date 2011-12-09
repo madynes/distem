@@ -337,7 +337,6 @@ options['f_options'].each { |option|
       pp cl.vnetworks_remove()
     end
   when 'create_viface'
-    pp cl.viface_create(options['vnode'], options['iface'])
     params = {}
     if options['vnetwork']
       params['vnetwork'] = options['vnetwork']
