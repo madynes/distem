@@ -34,17 +34,20 @@ module Distem
         end
       end
 
+      # The physical node this CPU is associated to
+      attr_reader :pnode
       # The CPU cores list
       attr_reader :cores
       # The CPU cores allocation list (each core can be allocated to a VNode)
       attr_reader :cores_alloc
-      # Cores critical cache links list 
+      # Cores critical cache links list
       attr_reader :critical_cache_links
       # The size of a cached linked core "group"
       attr_reader :cache_links_size
 
       # Create a new CPU
-      def initialize()
+      def initialize(pnode)
+        @pnode = pnode
         @cores = {}
         @cores_alloc = {}
         @critical_cache_links = []
