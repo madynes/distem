@@ -285,7 +285,7 @@ optparse = OptionParser.new do |opts|
   	options[:debug] = true
 	end
 	
-	opts.on( '-D', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+	opts.on( '', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
   	options[:debug_distem] = true
 	end
 
