@@ -58,6 +58,8 @@ module Distem
         end
       end
 
+      # The virtual node associated to this virtual CPU
+      attr_reader :vnode
       # The physical CPU associated to this virtual one
       attr_accessor :pcpu
       # Hash describing the associated virtual cores (key: VCore.id, val: VCore)

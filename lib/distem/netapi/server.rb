@@ -5,6 +5,7 @@ require 'ipaddress'
 require 'json'
 require 'cgi'
 require 'webrick'
+require 'uri'
 
 # @private
 module WEBrick
@@ -40,6 +41,12 @@ module Distem
       HTTP_STATUS_INTERN_SERV_ERROR = 500 # @private
       HTTP_STATUS_NOT_IMPLEMENTED = 501 # @private
 
+      HTTP_METHOD_GET = 'GET' # @private
+      HTTP_METHOD_POST = 'POST' # @private
+      HTTP_METHOD_DELETE = 'DELETE' # @private
+      HTTP_METHOD_PUT = 'PUT' # @private
+      HTTP_METHOD_HEAD = 'HEAD' # @private
+
       set :environment, :development
       set :show_exceptions, false
       set :raise_errors, true
@@ -66,7 +73,6 @@ module Distem
         @headers = {}
         @body = {}
         @result = []
-        content_type 'application/json', :charset => 'utf-8'
       end
 
       # Return server resource error
@@ -589,15 +595,7 @@ module Distem
       end
 
       # Get the description file of the current platform in a specified format (JSON if not specified)
-      get '/vplatform/?:format?/?' do
-      end
-
-      # (see GET /vplatform/:format)
       get '/:format?/?' do
-      end
-
-      ['/vplatform/?:format?/?', '/:format?/?'].each do |path|
-      get path do
         check do
           @body = @daemon.vplatform_get(params['format'])
           # >>> TODO: put the right format
@@ -605,7 +603,6 @@ module Distem
         end
 
         return result!
-      end
       end
 
       # Load a configuration
@@ -616,47 +613,60 @@ module Distem
       # ==== Return Content-Type:
       # +application/file+ -- The file in the requested format
       #
-      post '/vplatform/?' do
-      end
-
-      # (see POST /vplatform)
       post '/' do
-      end
-
-      ['/vplatform/?', '/'].each do |path|
-      post path do
         check do
           @body = @daemon.vplatform_create(params['format'],params['data'])
         end
 
         return result!
       end
-      end
 
       protected
+
+      # Set HTTP Header Location to the content
+      def set_header_location
+        @headers['Location'] = URI.join(request.url, RESTServer.get_route(@body)).to_s
+      end
+
+      # Set HTTP Header Allow to the content
+      def set_header_allow
+        tmp = [ HTTP_METHOD_HEAD, HTTP_METHOD_GET ]
+        @headers['Allow'] = tmp
+      end
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})
       # @return [Array] An array of the format [@status,@headers,@body]
       # @private
       def result!
+        set_header_location if \
+          request.request_method.to_s.upcase == HTTP_METHOD_POST.upcase
+        set_header_allow if \
+          request.request_method.to_s.upcase == HTTP_METHOD_GET.upcase
+
         classname = @body.class.name.split('::').last
         if Distem::Resource.constants.include?(classname) \
           or @body.is_a?(Resource::VIface::VTraffic) \
           or @body.is_a?(Array) or @body.is_a?(Hash)
+
+          #@body = TopologyStore::RESTHashWriter.new.visit(@body,false)
           @body = TopologyStore::HashWriter.new.visit(@body)
         end
 
         if @body.is_a?(Array) or @body.is_a?(Hash)
           tmpbody = @body
           begin
+            content_type RESTServer::CONTENT_TYPE, :charset => 'utf-8'
             @body = JSON.pretty_generate(@body)
           rescue JSON::GeneratorError
             @body = tmpbody.to_s
+            content_type 'plain/text', :charset => 'utf-8'
           end
         elsif @body.is_a?(String)
         else
           raise Lib::InvalidParameterError, "INTERNAL #{@body.class.name}"
         end
+
+        puts @body
 
         @result = [@status,@headers,@body]
 

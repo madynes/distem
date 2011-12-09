@@ -37,8 +37,8 @@ module Distem
         rescue Resolv::ResolvError
           raise Lib::InvalidParameterError, hostname
         end
-        @cpu = CPU.new
-        @memory = Memory.new
+        @cpu = CPU.new(self)
+        @memory = Memory.new(self)
 
         @ssh_user = ssh_user
         @ssh_password = ssh_password
