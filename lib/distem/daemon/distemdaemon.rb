@@ -1410,27 +1410,22 @@ module Distem
       # ==== Exceptions
       #
       def vplatform_get(format)
-        if daemon?
-          vplatform = @daemon_resources
-        else
-          vplatform = @node_config.vplatform
-        end
-
         format = '' unless format
         visitor = nil
-        ret = nil
+        ret = ''
 
         case format.upcase
         when 'XML'
           visitor = TopologyStore::XMLWriter.new
         when 'JSON', ''
-          ret = vplatform
+          visitor = TopologyStore::HashWriter.new
+          ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
         else
-          raise Lib::InvalidParameterError, format
+          raise Lib::InvalidParameterError, format 
         end
 
-        if ret.nil?
-          return visitor.visit(vplatform)
+        if ret.empty?
+          return visitor.visit(@daemon_resources)
         else
           return ret
         end

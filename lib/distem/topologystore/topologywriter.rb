@@ -14,8 +14,8 @@ module Distem
       # * +object+ The Resource object
       # ==== Returns
       # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
-      def visit( object, *args )
-        self.send( "visit_#{object.class.name.split('::').last.downcase}".to_sym, object, *args )
+      def visit( object )
+        self.send( "visit_#{object.class.name.split('::').last.downcase}".to_sym, object )
       end
 
       # Visit a virtual platform object. All the other "visit_" methods are working the same way.
@@ -64,7 +64,7 @@ module Distem
         raise unless limitlat.is_a?(Resource::Latency)
       end
 
-      def visit_nilclass(obj, *args) # :nodoc:
+      def visit_nilclass(obj) # :nodoc:
         return nil
       end
       #
@@ -73,7 +73,7 @@ module Distem
       # * +str+ The String object
       # ==== Returns
       # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
-      def visit_string(str, *args)
+      def visit_string(str)
         return str
       end
 
@@ -83,8 +83,8 @@ module Distem
       # * +hash+ The Hash object
       # ==== Returns
       # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
-      def visit_hash(hash, *args)
-        ret = hash.values.collect { |val| visit(val, *args) }
+      def visit_hash(hash)
+        ret = hash.values.collect { |val| visit(val) }
         return ret
       end
 
@@ -93,8 +93,8 @@ module Distem
       # * +array+ The Array object
       # ==== Returns
       # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
-      def visit_array(array, *args)
-        ret = array.collect { |val| visit(val, *args) }
+      def visit_array(array)
+        ret = array.collect { |val| visit(val) }
         return ret
       end
     end

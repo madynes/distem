@@ -22,6 +22,7 @@ module Distem
       # See the visit_vplatform documentation
       def visit_pnode(pnode)
         return {
+          'id' => pnode.id.to_s,
           'address' => pnode.address,
           'cpu' => visit(pnode.cpu),
           'memory' => visit(pnode.memory),
@@ -33,6 +34,7 @@ module Distem
       # See the visit_vplatform documentation
       def visit_vnode(vnode)
         ret = {
+          'id' => vnode.id.to_s,
           'name' => vnode.name,
           'status' => vnode.status,
           'vfilesystem' => visit(vnode.filesystem),
@@ -62,6 +64,7 @@ module Distem
       def visit_viface(viface)
           # Direction input/output is switched because of the lxc-veth structure that cause the input and the output of the network interface to be switched inside of the container
         return {
+          'id' => viface.id.to_s,
           'name' => viface.name,
           'vnode' => viface.vnode.name,
           'address' => viface.address.to_string,
