@@ -55,6 +55,8 @@ options['vnetsrc' ] = nil
 options['vnetdest' ] = nil
 options['gateway' ] = nil
 options['configfile'] = nil
+options['sshprivkey'] = nil
+options['sshpubkey'] = nil
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on('-h', '--help', 'Display this screen' ) do
@@ -83,12 +85,12 @@ optparse = OptionParser.new(USAGE) do |opts|
   end
   opts.separator "Virtual node management:"
   opts.on(
-    '--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE]',
+    '--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE,sshprivkey=FILE,sshpubkey=FILE]',
     'Create the virtual node VNODE deploying FILE'
   ) do |str|
     options['f_options'] << 'create_vnode'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('create-vnode', h, ['vnode','rootfs'], ['pnode'])
+    exit 1 if not check_opts('create-vnode', h, ['vnode','rootfs'], ['pnode','sshprivkey','sshpubkey'])
     options.update(h)
   end
   opts.on(
@@ -309,7 +311,10 @@ options['f_options'].each { |option|
     props['vfilesystem'] = {}
     props['vfilesystem']['image'] = options['rootfs']
     props['host'] = options['pnode'] if options['pnode']
-    pp cl.vnode_create(options['vnode'], props)
+    ssh_key = {}
+    ssh_key['private'] = IO.readlines(options['sshprivkey']).join() if options['sshprivkey']
+    ssh_key['public'] = IO.readlines(options['sshpubkey']).join() if options['sshpubkey']                               
+    pp cl.vnode_create(options['vnode'], props, ssh_key)
   when 'start_vnode'
     pp cl.vnode_start(options['vnode'])
   when 'stop_vnode'
