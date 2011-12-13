@@ -307,6 +307,9 @@ module Distem
 
         downkeys(desc)
 
+        vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
+          (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
+
         vnode_attach(vnode.name,desc['host']) if desc['host']
 
         vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']

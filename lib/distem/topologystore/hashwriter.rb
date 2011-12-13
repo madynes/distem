@@ -50,11 +50,11 @@ module Distem
         end
 
         if vnode.sshkey
-          ret['sshkey'] = {}
-          ret['sshkey']['public'] = vnode.sshkey['public'] if vnode.sshkey['public']
-          ret['sshkey']['private'] = vnode.sshkey['private'] if vnode.sshkey['private']
+          ret['ssh_key'] = {}
+          ret['ssh_key']['public'] = vnode.sshkey['public'] if vnode.sshkey['public']
+          ret['ssh_key']['private'] = vnode.sshkey['private'] if vnode.sshkey['private']
         else
-          ret['sshkey'] = nil
+          ret['ssh_key'] = nil
         end
 
         return ret

@@ -10,7 +10,7 @@ module Distem
       MAX_SIMULTANEOUS_ACTIONS = 32
       MAX_SIMULTANEOUS_CONFIG = 32
       # The prefix to set to the SSH key whick are copied on the virtual nodes
-      SSH_KEY_PREFIX = 'distemkey-'
+      SSH_KEY_PREFIX = ''
       # The default file to save virtual node specific ssh key pair (see Distem::Resource::VNode::sshkey)
       SSH_KEY_FILENAME = 'identity'
 
@@ -94,8 +94,21 @@ module Distem
           f.puts @vnode.sshkey['public']
         end if @vnode.sshkey and @vnode.sshkey['public']
 
-        # Adding public keys to SSH authorized_keys file
+        # Copying authorized_keys file of the host
+        hostauthfile = File.join(Daemon::Admin::PATH_SSH,'authorized_keys')
         authfile = File.join(sshpath,'authorized_keys')
+        authkeys = IO.readlines(authfile).collect{|v| v.chomp}
+        if File.exists?(authfile)
+          hostauthkeys = IO.readlines(authfile).collect{|v| v.chomp}
+          hostauthkeys.each do |key|
+            File.open(authfile,'a') { |f| f.puts key } unless \
+              authkeys.include?(key)
+          end
+        else
+          Lib::Shell.run("cp -f #{hostauthfile} #{authfile}") if File.exists?(hostauthfile)
+        end
+
+        # Adding public keys to SSH authorized_keys file
         pubkeys = Daemon::Admin.ssh_keys_pub.collect{ |v| IO.read(v).chomp }
         pubkeys << @vnode.sshkey['public'] if @vnode.sshkey and @vnode.sshkey['public']
         if File.exists?(authfile)
