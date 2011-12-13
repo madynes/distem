@@ -69,6 +69,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('coordinator', h, ['host'], ['port'])
     options.update(h)
   end
+  opts.separator "Physical node management:"
   opts.on(
     '--init-pnode PNODE',
     'Init the physical node PNODE'
@@ -76,6 +77,11 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'init_pnode'
     options['pnode'] = str
   end
+  opts.on('--quit [PNODE]', 'Close the given PNODE or all the physical nodes' ) do |str|
+    options['f_options'] << 'quit'
+    options['pnode'] = str if str
+  end
+  opts.separator "Virtual node management:"
   opts.on(
     '--create-vnode vnode=VNODE,rootfs=FILE[,pnode=PNODE]',
     'Create the virtual node VNODE deploying FILE'
@@ -106,24 +112,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'remove_vnode'
     options['vnode'] = str
   end
-  opts.on(
-    '--shell vnode=VNODE[,user=USER]',
-    'Open a shell on VNODE'
-  ) do |str|
-    options['f_options'] << 'shell'
-    h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('shell', h, ['vnode'], ['user'])
-    options.update(h)
-  end
-  opts.on(
-    '--execute vnode=VNODE,command=COMMAND[,user=USER]',
-    'Execute a command COMMAND on VNODE'
-  ) do |str|
-    options['f_options'] << 'execute'
-    h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('execute', h, ['vnode','command'], ['user'])
-    options.update(h)
-  end
+  opts.separator "File system management:"
   opts.on(
     '--copy-to vnode=VNODE,src=SRC,dest=DEST[,user=USER]', \
     'Copy the file SRC on host to DEST on VNODE'
@@ -143,14 +132,31 @@ optparse = OptionParser.new(USAGE) do |opts|
     options.update(h)
   end
   opts.on(
-    '--get-image vnode=VNODE,dest=FILE',
+    '--get-image vnode=VNODE[,dest=DIRECTORY]',
     'Get a compressed image file of the filesystem of VNODE'
   ) do |str|
     options['f_options'] << 'get_image'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('get-image', h, ['vnode','dest'], [])
+    exit 1 if not check_opts('get-image', h, ['vnode'],['dest'])
     options.update(h)
   end
+  opts.on(
+    '--shell VNODE',
+    'Open a shell on VNODE'
+  ) do |str|
+    options['f_options'] << 'shell'
+    options['vnode'] = str
+  end
+  opts.on(
+    '--execute vnode=VNODE,command=COMMAND[,user=USER]',
+    'Execute a command COMMAND on VNODE'
+  ) do |str|
+    options['f_options'] << 'execute'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('execute', h, ['vnode','command'], ['user'])
+    options.update(h)
+  end
+  opts.separator "Network management:"
   opts.on(
     '--create-vnetwork vnetwork=VNET,address=ADDRESS',
     'Create VNET with ADDRESS (ip/mask or ip/prefix)'
@@ -209,6 +215,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('config-viface', h, ['vnode','iface'], ['bw','latency','direction'])
     options.update(h)
   end
+  opts.separator "CPU management:"
   opts.on(
     '--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited',
     'Set a virtual CPU on VNODE with NB cores clocked at SPEED percent'
@@ -218,6 +225,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], [])
     options.update(h)
   end
+  opts.separator "Getting some information:"
   opts.on(
     '--get-pnode-info [PNODE]',
     'Show information about PNODE if specified, or about all the physical nodes'
@@ -239,6 +247,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'get_vnetwork_info'
     options['vnetwork'] = str if str
   end
+  opts.separator "Global platform management:"
   opts.on(
     '--save-config format=JSON|XML[,configfile=FILE]',
     'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
@@ -256,10 +265,6 @@ optparse = OptionParser.new(USAGE) do |opts|
     h = sub_opts_to_hash(str)
     exit 1 if not check_opts('load_config', h, ['format'], ['configfile'])
     options.update(h)
-  end
-  opts.on('--quit [PNODE]', 'Close the given PNODE or all the physical nodes' ) do |str|
-    options['f_options'] << 'quit'
-    options['pnode'] = str if str
   end
 end
 
@@ -327,7 +332,7 @@ options['f_options'].each { |option|
   when 'get_image'
     vnode = cl.vnode_info(options['vnode'])
     cl2 = Distem::NetAPI::Client.new(vnode['host'])
-    cl2.vnode_filesystem_get(vnode['name'],options['dest'])
+    cl2.vfilesystem_image(vnode['name'],options['dest'])
   when 'create_vnetwork'
     pp cl.vnetwork_create(options['vnetwork'],options['address'])
   when 'remove_vnetwork'
