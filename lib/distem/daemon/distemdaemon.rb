@@ -799,8 +799,8 @@ module Distem
         downkeys(desc)
 
           # Direction is switched because of the lxc-veth structure that cause the input and the output of the network interface to be switched inside of the container
-        vinput_update(vnode.name,viface.name,desc['output']) if desc['output']
-        voutput_update(vnode.name,viface.name,desc['input']) if desc['input']
+        voutput_update(vnode.name,viface.name,desc['output']) if desc['output']
+        vinput_update(vnode.name,viface.name,desc['input']) if desc['input']
 
         return viface
       end
@@ -814,7 +814,7 @@ module Distem
         return viface.vinput
       end
 
-      def vinput_update(vnodename,vifacename,desc)
+      def voutput_update(vnodename,vifacename,desc)
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
@@ -850,7 +850,7 @@ module Distem
         return viface.voutput
       end
 
-      def voutput_update(vnodename,vifacename,desc)
+      def vinput_update(vnodename,vifacename,desc)
         vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
