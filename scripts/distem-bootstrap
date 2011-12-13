@@ -179,6 +179,7 @@ options[:debug]       = false
 options[:version]     = nil
 options[:debug_distem] = false
 options[:stats]       = true
+options[:git_url]     = GIT_REPOSITORY
 
 args = ARGV.dup
 
@@ -220,6 +221,9 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
     options[:git] = n || :git_last
+  end
+  opts.on( '-U', '--git-url <git_repository>', "Overwrite the default distem git repository" ) do |repo|
+    options[:git_url] = repo
   end
   opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
     options[:gerrit] = n
@@ -396,8 +400,8 @@ Net::SSH::Multi.start do |session|
     exec(session,"mkdir -p #{TMP_DIR}")
     exec(session,"rm -Rf #{gitdir}",:coord, false, false)
     if options[:git]
-      msg("Retrieving '#{GIT_REPOSITORY}' repository on #{coordinator}",MSG_INFO)
-      exec(session,"git clone #{GIT_REPOSITORY} #{gitdir}",:coord)
+      msg("Retrieving '#{options[:git_url]}' repository on #{coordinator}",MSG_INFO)
+      exec(session,"git clone #{options[:git_url]} #{gitdir}",:coord)
       unless options[:git] == :git_last
         msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
           MSG_INFO)
