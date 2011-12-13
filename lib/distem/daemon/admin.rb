@@ -11,33 +11,33 @@ module Distem
       # Default SSH user
       SSH_USER=ENV['USER']
       # Paths to the SSH key files
-      PATH_SSH_KEYS=File.join(File.expand_path("~#{SSH_USER}"),'.ssh')
+      PATH_SSH=File.join(File.expand_path("~#{SSH_USER}"),'.ssh')
 
-      # Get current user SSH public keys paths (looking in PATH_SSH_KEYS directory)
+      # Get current user SSH public keys paths (looking in PATH_SSH directory)
       # ==== Returns
       # Array of String object
       def self.ssh_keys_pub
         ret = []
-        begin 
-          ret = Dir.entries(PATH_SSH_KEYS).select {|v| v =~ /^id.*\.pub$/} \
-            if File.directory?(PATH_SSH_KEYS)
+        begin
+          ret = Dir.entries(PATH_SSH).select {|v| v =~ /^id.*\.pub$/} \
+            if File.directory?(PATH_SSH)
         rescue ArgumentError
         end
-        return ret.collect!{|v| File.join(PATH_SSH_KEYS,v)}
+        return ret.collect!{|v| File.join(PATH_SSH,v)}
       end
 
-      # Get current user SSH private keys paths (looking in PATH_SSH_KEYS directory)
+      # Get current user SSH private keys paths (looking in PATH_SSH directory)
       # ==== Returns
       # Array of String object
       def self.ssh_keys_priv
         ret = []
-        begin 
-          ret = Dir.entries(PATH_SSH_KEYS).select do |v|
+        begin
+          ret = Dir.entries(PATH_SSH).select do |v|
             v =~ /^id.*$/ and File.extname(v) =~  /^(?!\.pub)$/
-          end if File.directory?(PATH_SSH_KEYS)
+          end if File.directory?(PATH_SSH)
         rescue ArgumentError
         end
-        return ret.collect!{|v| File.join(PATH_SSH_KEYS,v)}
+        return ret.collect!{|v| File.join(PATH_SSH,v)}
       end
 
       # Run a daemon on a distant server (physical node)
