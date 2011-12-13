@@ -225,6 +225,15 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], [])
     options.update(h)
   end
+  opts.on(
+    '--config-vcpu vnode=VNODE,cpu_speed=SPEED|unlimited',
+    'Update the clock of the virtual CPU on VNODE'
+  ) do |str|
+    options['f_options'] << 'update_vcpu'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('update_vcpu', h, ['vnode','cpu_speed'], [])
+    options.update(h)
+  end
   opts.separator "Getting some information:"
   opts.on(
     '--get-pnode-info [PNODE]',
@@ -389,7 +398,11 @@ options['f_options'].each { |option|
       exit 1
     end
   when 'set_vcpu'
-    pp cl.vcpu_create(options['vnode'], options['corenb'], options['cpu_speed'])
+    speed = (options['cpu_speed'] == 'unlimited') ? 1.0 : options['cpu_speed'].to_f
+    pp cl.vcpu_create(options['vnode'], options['corenb'], speed)
+  when 'update_vcpu'
+    speed = (options['cpu_speed'] == 'unlimited') ? 1.0 : options['cpu_speed'].to_f
+    pp cl.vcpu_update(options['vnode'], speed)
   when 'get_pnode_info'
     if options['pnode']
       pp cl.pnode_info(options['pnode'])
