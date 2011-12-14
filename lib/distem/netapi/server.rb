@@ -118,7 +118,7 @@ module Distem
       #
       # ==== Query parameters:
       # * *target* -- _mandatory_ -- The name/address of the physical machine
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#pnode Resource Description - PNode}.
       # * *async* -- Asynchronious mode, check the physical node status to know when the configuration is done (see GET /pnodes/:pnode)
       post '/pnodes/?' do
         check do
@@ -142,7 +142,7 @@ module Distem
       # Update a physical machine configuration
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#pnode Resource Description - PNode}.
       put '/pnodes/:pnode/?' do
         check do
           desc = {}
@@ -202,17 +202,8 @@ module Distem
       #
       # ==== Query parameters:
       # * *name* -- _mandatory_, _unique_ -- The unique name of the virtual node to create (it will be used in a lot of methods)
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes}.
-      # * *ssh_key* -- SSH key pair to be copied on the virtual node (also adding the public key to .ssh/authorized_keys). Note that every SSH keys located on the physical node which hosts this virtual node are also copied in .ssh/ directory of the node (copied key have a specific filename prefix). The key are copied in .ssh/ directory of SSH user (see {Distem::Daemon::Admin#SSH_USER} and {Distem::Node::Container#SSH_KEY_FILENAME})
-      #
-      #     _Format_: JSON Hash.
-      #
-      #     _Structure_:
-      #       {
-      #         "public" : "KEYHASH",
-      #         "private" : "KEYHASH"
-      #       }
-      #     Both of +public+ and +private+ parameters are optional
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
+      # * *ssh_key* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_sshkey Resource Description - SSH Key}.
       # * *async* -- Asynchronious mode, check virtual node status to know when node is configured (see GET /vnodes/:vnode)
       post '/vnodes/?' do
         check do
@@ -266,7 +257,7 @@ module Distem
       # Update the virtual node following a new description
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
       # * *async* -- Asynchronious mode, check the physical node status to know when the configuration is done (see GET /vnodes/:vnodename)
       put '/vnodes/:vnodename/?' do
         check do
@@ -281,7 +272,7 @@ module Distem
       # Set up the virtual node filesystem
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_filesystem Resource Description - VFilesystem}.
       post '/vnodes/:vnodename/filesystem/?' do
         check do
           desc = {}
@@ -295,7 +286,7 @@ module Distem
       # Update the virtual node filesystem
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_filesystem Resource Description - VFilesystem}.
       put '/vnodes/:vnodename/filesystem/?' do
         check do
           desc = {}
@@ -346,7 +337,7 @@ module Distem
       #
       # ==== Query parameters:
       # * *name* -- the name of the virtual interface (need to be unique on this virtual node)
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Network_interface Resource Description - VIface}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_iface Resource Description - VIface}.
       post '/vnodes/:vnodename/ifaces/?' do
         check do
           desc = {}
@@ -382,7 +373,7 @@ module Distem
       # *Important*: If specified in the description, the vtraffic description is updated on-the-fly
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Network_interface Resource Description - VIface}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_iface Resource Description - VIface}.
       #
       # *Note*: Dettach/Disconnect the virtual interface if properties is empty
       put '/vnodes/:vnodename/ifaces/:ifacename/?' do
@@ -414,7 +405,7 @@ module Distem
       # *Important*: The vtraffic description is updated on-the-fly
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Virtual_Traffic Resource Description - VTraffic}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_traffic Resource Description - VTraffic}.
       put '/vnodes/:vnodename/ifaces/:ifacename/input/?' do
         check do
           vnodename = URI.unescape(params['vnodename'])
@@ -444,7 +435,7 @@ module Distem
       # *Important*: The vtraffic description is updated on-the-fly
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#Virtual_Traffic Resource Description - VTraffic}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_traffic Resource Description - VTraffic}.
       put '/vnodes/:vnodename/ifaces/:ifacename/output/?' do
         check do
           vnodename = URI.unescape(params['vnodename'])
@@ -461,7 +452,7 @@ module Distem
       # By default all the virtual nodes on a same physical one are sharing available CPU resources, using this method you can allocate some cores to a virtual node and apply some limitations on them
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#CPU Resource Description - VCPU}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_cpu Resource Description - VCPU}.
       post '/vnodes/:vnodename/cpu/?' do
         check do
           desc = {}
@@ -486,7 +477,7 @@ module Distem
       # *Important*: The frequency description is updated on-the-fly
       #
       # ==== Query parameters:
-      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#CPU Resource Description - VCPU}.
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_cpu Resource Description - VCPU}.
       put '/vnodes/:vnodename/cpu/?' do
         check do
           desc = {}
@@ -611,7 +602,7 @@ module Distem
       # Load a configuration
       #
       # ==== Query parameters:
-      # * *data* --  Data structured as described in {file:files/resources_desc.md#Virtual_Node}.
+      # * *data* --  Data structured as described in {file:files/resources_desc.md#vplatform}.
       # * *format* -- the format of the data
       # ==== Return Content-Type:
       # +application/file+ -- The file in the requested format

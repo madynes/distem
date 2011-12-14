@@ -692,7 +692,6 @@ module Distem
       # * +vifacename+ The VIface name (String)
       # * +properties+ the address or the vnetwork to connect the virtual interface with (JSON, 'address' or 'vnetwork'), the traffic the interface will have to emulate (not mandatory, JSON, 'vtraffic', INPUT/OUTPUT)
       # == Usage
-      # properties['vtraffic'] sample: { "OUTPUT" : { "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} } }
       # ==== Returns
       # Resource::VIface object
       # ==== Exceptions
