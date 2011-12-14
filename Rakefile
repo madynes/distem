@@ -64,7 +64,7 @@ begin
   require 'nokogiri'
   desc "Generate the YARD documentation"
   task :yard do
-    system("yard -e 'yard-sinatra' doc --title \"YARD documentation for distem #{DISTEM_VERSION}\" --list-undoc")
+    system("yard -e 'yard-sinatra' doc --title \"YARD documentation for distem #{DISTEM_VERSION}\" --files files/resources_desc.md --list-undoc")
     if File::directory?('../distem-private/www/doc/')
       # edit *.html and remove footer to avoid the date that will change on each
       # generation of the docs.

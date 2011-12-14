@@ -168,7 +168,7 @@ module Distem
       # Create a new virtual node
       # @param [String] name The name of the virtual node which should be unique
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes}.
-      # @param [Hash] ssh_key SSH key pair to be copied on the virtual node (also adding the public key to .ssh/authorized_keys). Note that every SSH keys located on the physical node which hosts this virtual node are also copied in .ssh/ directory of the node (copied key have a specific filename prefix). The key are copied in .ssh/ directory of SSH user (see {Distem::Daemon::Admin#SSH_USER} and {Distem::Node::Container#SSH_KEY_FILENAME})
+      # @param [Hash] ssh_key SSH key pair to be copied on the virtual node (also adding the public key to .ssh/authorized_keys). Note that every SSH keys located on the physical node which hosts this virtual node are also copied in .ssh/ directory of the node (copied key have a specific filename prefix). The key are copied in .ssh/ directory of SSH user (see {Distem::Daemon::Admin#SSH_USER} and Distem::Node::Container::SSH_KEY_FILENAME)
       #
       #     _Format_: Hash.
       #
