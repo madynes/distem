@@ -3,7 +3,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 
-DISTEM_VERSION='0.5'
+DISTEM_VERSION='0.5.1'
 
 begin
   require 'rake/extensiontask'
@@ -56,7 +56,7 @@ Rake::PackageTask::new("distem",DISTEM_VERSION) do |p|
   p.package_files.include('ext/**/*')
   p.package_files.include('bin/**/*')
   p.package_files.include('test/**/*')
-  p.package_files.include('Rakefile', 'COPYING','README','TODO')
+  p.package_files.include('Rakefile', 'COPYING','README')
 end
 
 begin

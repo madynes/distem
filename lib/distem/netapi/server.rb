@@ -44,7 +44,7 @@ module Distem
       set :show_exceptions, false
       set :raise_errors, true
       set :run, true
-      set :verbose, true
+      set :verbose, false
 
       # @private
       def initialize()
