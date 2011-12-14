@@ -8,7 +8,7 @@ require 'pathname'
 
 DEFAULT_COPY_PATH="/tmp"
 
-USAGE="Usage: #{$0} --cordinator [host=HOSTNAME,[port=PORT]] option"
+USAGE="Usage: #{$0} --coordinator [host=HOSTNAME,[port=PORT]] option"
 
 def sub_opts_to_hash(sub_opts)
   return Hash[*sub_opts.split(',').collect { |sub| sub.scan(/(.*)=(.*)/) }.flatten]
