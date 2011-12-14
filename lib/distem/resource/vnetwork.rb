@@ -39,6 +39,9 @@ module Distem
         @vroutes = {}
         @visibility = []
 
+        # Address used by the coordinator
+        @@alreadyusedaddr << @address.last
+
         @curaddress = @address.first
         @@ids += 1
       end
