@@ -97,8 +97,8 @@ module Distem
         # Copying authorized_keys file of the host
         hostauthfile = File.join(Daemon::Admin::PATH_SSH,'authorized_keys')
         authfile = File.join(sshpath,'authorized_keys')
-        authkeys = IO.readlines(authfile).collect{|v| v.chomp}
         if File.exists?(authfile)
+          authkeys = IO.readlines(authfile).collect{|v| v.chomp}
           hostauthkeys = IO.readlines(authfile).collect{|v| v.chomp}
           hostauthkeys.each do |key|
             File.open(authfile,'a') { |f| f.puts key } unless \
