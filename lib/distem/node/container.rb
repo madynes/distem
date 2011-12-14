@@ -99,7 +99,7 @@ module Distem
         authfile = File.join(sshpath,'authorized_keys')
         if File.exists?(authfile)
           authkeys = IO.readlines(authfile).collect{|v| v.chomp}
-          hostauthkeys = IO.readlines(authfile).collect{|v| v.chomp}
+          hostauthkeys = IO.readlines(hostauthfile).collect{|v| v.chomp}
           hostauthkeys.each do |key|
             File.open(authfile,'a') { |f| f.puts key } unless \
               authkeys.include?(key)
@@ -112,7 +112,7 @@ module Distem
         pubkeys = Daemon::Admin.ssh_keys_pub.collect{ |v| IO.read(v).chomp }
         pubkeys << @vnode.sshkey['public'] if @vnode.sshkey and @vnode.sshkey['public']
         if File.exists?(authfile)
-          authkeys = IO.readlines(authfile).collect{|v| v.chomp}
+          authkeys = IO.readlines(authfile).collect{|v| v.chomp} unless authkeys
           pubkeys.each do |key|
             File.open(authfile,'a') { |f| f.puts key } unless \
               authkeys.include?(key)
