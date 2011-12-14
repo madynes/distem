@@ -60,7 +60,7 @@ module Distem
       # See the visit_pnode method documentation
       def visit_memory(memory)
         ret = REXML::Element.new("memory")
-        ret << REXML::Comment.new('Sizes in Mo') 
+        ret << REXML::Comment.new('Sizes in MB') 
         ret.add_attribute('capacity',memory.capacity.to_s)
         ret.add_attribute('swap',memory.swap.to_s)
         return ret
