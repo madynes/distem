@@ -1,0 +1,8 @@
+Change-Id: I44f5b3d6b471302bf0aef9377260fd22d663c4cc
+Code-Review+2: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Verified+1: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-by: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-at: Wed, 14 Dec 2011 16:34:30 +0100
+Reviewed-on: http://localhost:8081/169
+Project: distem
+Branch: refs/heads/master
