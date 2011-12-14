@@ -40,7 +40,7 @@ module Distem
         @visibility = []
 
         # Address used by the coordinator
-        @@alreadyusedaddr << @address.last
+        @@alreadyusedaddr << @address.last.to_s
 
         @curaddress = @address.first
         @@ids += 1
@@ -214,6 +214,7 @@ module Distem
         @vnodes.each_key do |vnode|
           remove_vnode(vnode)
         end
+        @@alreadyusedaddr.delete(@address.last.to_s)
       end
 
       # Compare two virtual networks
