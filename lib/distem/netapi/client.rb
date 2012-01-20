@@ -547,7 +547,9 @@ module Distem
         check_net(route) do
           @resource[route].send(method, data) { |response, request, result|
             ret = check_error(result, response)
-            ret = JSON.parse(ret) if json
+            if json then
+              ret = (ret == "") ? nil : JSON.parse(ret)
+            end
           }
         end
         ret
