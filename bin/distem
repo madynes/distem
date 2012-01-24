@@ -385,10 +385,18 @@ options['f_options'].each { |option|
 
       tmplimit = {}
       if options['bw'] then
+        if (options['bw'] != 'unlimited') && !Distem::Resource::Bandwidth.is_valid(options['bw'])
+          puts "Could not parse bandwidth units: #{options['bw']}"
+          exit 1
+        end
         tmplimit['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
       end
       if options['latency'] then
-        tmplimit['latency'] = (options['latency'] != 'unlimited') ? { "delay" => options['latency'] } : {}
+        if (options['latency'] != 'none') && !Distem::Resource::Latency.is_valid(options['latency'])
+          puts "Could not parse latency units: #{options['latency']}"
+          exit 1
+        end
+        tmplimit['latency'] = (options['latency'] != 'none') ? { "delay" => options['latency'] } : {}
       end
       params = {}
       if options['direction']
