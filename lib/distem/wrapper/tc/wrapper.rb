@@ -11,7 +11,7 @@ module TCWrapper # :nodoc: all
       @type = type
 
       unless (params.kind_of? Hash)
-        raise "Params must be an Hash"
+        raise "Params must be a Hash"
       end
 
       @params = params
