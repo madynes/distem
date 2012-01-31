@@ -1,7 +1,7 @@
 require 'distem'
 
 module Distem
-  module Algorithm 
+  module Algorithm
     module Network
 
       # An algorithm that's using TC Token Bucket Filter (see http://en.wikipedia.org/wiki/Token_bucket) to limit network traffic
@@ -51,11 +51,14 @@ module Distem
 
 
           primroot = nil
+          bandwidth = nil
           bwlim = vtraffic.get_property(Resource::Bandwidth.name)
           if bwlim
+            bandwidth = bwlim.to_bytes()
             tmproot = TCWrapper::QdiscTBF.new(
               iface,tmproot,
-              { 'rate' => "#{bwlim.rate}", 'buffer' => 1800,
+              { 'rate' => "#{bwlim.rate}",
+                'buffer' => 1800,
                 'latency' => '50ms'}
             )
             primroot = tmproot unless primroot
@@ -65,8 +68,8 @@ module Distem
           latlim = vtraffic.get_property(Resource::Latency.name)
           if latlim
             tmproot = TCWrapper::QdiscNetem.new(
-              iface,tmproot,
-              {'delay' => "#{latlim.delay}"}
+              iface, tmproot,
+              latlim.tc_params(bandwidth)
             )
             primroot = tmproot unless primroot
             Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
