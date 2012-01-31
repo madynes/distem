@@ -11,7 +11,7 @@ DEFAULT_COPY_PATH="/tmp"
 USAGE="Usage: #{$0} --coordinator [host=HOSTNAME,[port=PORT]] option"
 
 def sub_opts_to_hash(sub_opts)
-  return Hash[*sub_opts.split(',').collect { |sub| sub.scan(/(.*)=(.*)/) }.flatten]
+  return Hash[*sub_opts.split(',').collect { |sub| sub.scan(/(.*?)=(.*)/) }.flatten]
 end
 
 def check_opts(opt, subopts, required, optional)
