@@ -502,15 +502,18 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
         File.open(ARGV[0], 'r') do |f|
           filename = exec(session,'tempfile',:coord)[coordinator][0]
           msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
-          exec(session,"cat <<EOF > #{filename} \n#{f.read}\nEOF",:coord)
+          `scp #{ARGV[0]} root@#{coordinator}:#{filename}`
           exec(session,"chmod +x #{filename}",:coord)
           msg("Executing script file '#{filename}' on #{coordinator}",
             MSG_INFO)
   
+          ARGV_dup = ARGV.dup
+          ARGV_dup.shift
+          script_args = (ARGV_dup.length > 0 ? ARGV_dup.join(" ") : "")
           exec(session,
             "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}';" \
             "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
-            "#{filename}",:coord,true,true,true)
+            "#{filename} #{script_args}",:coord,true,true,true)
           exec(session,"rm #{filename}",:coord)
   			end
         msg('Script execution done',MSG_INFO)
