@@ -73,11 +73,11 @@ optparse = OptionParser.new(USAGE) do |opts|
   end
   opts.separator "Physical node management:"
   opts.on(
-    '--init-pnode PNODE',
-    'Init the physical node PNODE'
+    '--init-pnode PNODE1[,PNODE2,...,PNODEN]',
+    'Init the physical node(s)'
   ) do |str|
     options['f_options'] << 'init_pnode'
-    options['pnode'] = str
+    options['pnode'] = str.split(',')
   end
   opts.on('--quit [PNODE]', 'Close the given PNODE or all the physical nodes' ) do |str|
     options['f_options'] << 'quit'

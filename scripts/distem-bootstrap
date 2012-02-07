@@ -56,7 +56,6 @@ end
 
 ULIMIT_OPEN_FILES = 65535 # to be removed
 
-
 pkg_utils=[
   'htop'
 ]
@@ -500,11 +499,9 @@ Net::SSH::Multi.start do |session|
       msg("Initializing node #{coordinator}",MSG_INFO)
       exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,
         options[:debug_distem],options[:debug_distem])
-      nodelist.each do |node|
-        msg("Initializing node #{node}",MSG_INFO)
-        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{node}",:coord,true,
-          options[:debug_distem],options[:debug_distem])
-      end
+      msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
+      exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,
+        options[:debug_distem],options[:debug_distem])
     end
 
   end

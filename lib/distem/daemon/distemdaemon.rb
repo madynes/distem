@@ -59,61 +59,82 @@ module Distem
       # Resource::PNode object
       # ==== Exceptions
       #
-      def pnode_create(target,desc={},async=false)
-        begin
-          async = parse_bool(async)
-          pnode = nil
-
-          nodemodeblock = Proc.new {
-            pnode = @node_config.pnode
-            Node::Admin.init_node(pnode,desc)
-
-            @node_config.vplatform.add_pnode(pnode)
-            pnode.status = Resource::Status::RUNNING
-          }
-
-          if daemon?
-            if target?(target)
+      def pnode_create(targets,desc={},async=false)
+        l = lambda { |target|
+          begin
+            async = parse_bool(async)
+            pnode = nil
+            
+            nodemodeblock = Proc.new {
               pnode = @node_config.pnode
-            else
-              pnode = @daemon_resources.get_pnode_by_address(target)
-              pnode = Resource::PNode.new(target) unless pnode
-            end
-
-            @daemon_resources.add_pnode(pnode)
-
-            block = Proc.new {
-              unless target?(target)
-                Admin.pnode_run_server(pnode)
-                cl = NetAPI::Client.new(target)
-                ret = cl.pnode_init(nil,desc,async)
-                updateobj_pnode(pnode,ret)
-              end
+              Node::Admin.init_node(pnode,desc)
+              
+              @node_config.vplatform.add_pnode(pnode)
               pnode.status = Resource::Status::RUNNING
             }
 
-            if async
-              thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
-                block.call
+            if daemon?
+              if target?(target)
+                pnode = @node_config.pnode
+              else
+                pnode = @daemon_resources.get_pnode_by_address(target)
+                pnode = Resource::PNode.new(target) unless pnode
+              end
+
+              @daemon_resources.add_pnode(pnode)
+              
+              block = Proc.new {
+                unless target?(target)
+                  Admin.pnode_run_server(pnode)
+                  cl = NetAPI::Client.new(target)
+                  ret = cl.pnode_init(nil,desc,async)
+                  # here ret should always contains one element
+                  updateobj_pnode(pnode,ret.first)
+                end
+                pnode.status = Resource::Status::RUNNING
               }
-              #thr.abort_on_exception = true
-            else
-              block.call
+
+              if async
+                thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
+                  block.call
+                }
+                #thr.abort_on_exception = true
+              else
+                block.call
+              end
             end
+
+            if target?(target)
+              nodemodeblock.call
+            end
+
+            pnode_update(pnode.address.to_s,desc)
+
+            return pnode
+          rescue Lib::AlreadyExistingResourceError
+            raise
+          rescue Exception
+            destroy(pnode) if pnode
+            raise
           end
-
-          if target?(target)
-            nodemodeblock.call
-          end
-
-          pnode_update(pnode.address.to_s,desc)
-
-          return pnode
-        rescue Lib::AlreadyExistingResourceError
-          raise
-        rescue Exception
-          destroy(pnode) if pnode
-          raise
+        }
+        
+        if targets.is_a?(Array) then
+          threads_info = {}
+          targets.each { |target|
+            threads_info[target] = {}
+            threads_info[target]['tid'] = Thread.new {
+              threads_info[target]['ret'] = l.call(target)
+            }
+          }
+          ret = []
+          threads_info.each_value { |host| 
+            host['tid'].join
+            ret << host['ret']
+          }
+          return ret
+        else
+          return [l.call(targets)]
         end
       end
 
@@ -1496,9 +1517,9 @@ module Distem
           core['frequency'] = core['frequency'].split[0].to_i * 1000
 
           pnode.cpu.add_core(
-            core['physicalid'],core['coreid'],
-            core['frequency'], core['frequencies']
-          )
+                             core['physicalid'],core['coreid'],
+                             core['frequency'], core['frequencies']
+                             )
         end
 
         hash['cpu']['critical_cache_links'].each do |link|
