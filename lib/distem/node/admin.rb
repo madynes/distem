@@ -12,7 +12,7 @@ module Distem
       # The cgroups directory to use
       PATH_CGROUP='/dev/cgroup'
       # The default maximum number of virual network interfaces (used with ifb)
-      MAX_VIFACES=64
+      MAX_VIFACES=800
       # The default maximum number of PTY creatable on the physical machine
       MAX_PTY=8192
 

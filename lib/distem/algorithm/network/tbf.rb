@@ -58,8 +58,8 @@ module Distem
             tmproot = TCWrapper::QdiscTBF.new(
               iface,tmproot,
               { 'rate' => "#{bwlim.rate}",
-                'buffer' => 1800,
-                'latency' => '50ms'}
+                'buffer' => 3600,
+                'latency' => '50ms' }
             )
             primroot = tmproot unless primroot
             Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))

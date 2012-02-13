@@ -980,7 +980,7 @@ module Distem
             freq = desc['frequency'].to_f || 1.0
           end
 
-          freq = frequency * 1000 if frequency > 1
+          freq = freq * 1000 if freq > 1
 
           vcpu.update_vcores(freq)
 

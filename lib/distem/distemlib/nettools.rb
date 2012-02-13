@@ -91,9 +91,12 @@ module Distem
       
       # Set up the ARP cache 
       def self.set_arp_cache()
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1=1024")
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2=4096")
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3=16384")
+        # http://www.clusterresources.com/torquedocs/a.flargeclusters.shtml
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1=1024000")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2=2048000")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3=4096000")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_interval=3600")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_stale_time=3600")
       end
 
       # Clean the IFB module
