@@ -477,23 +477,11 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       
       if options[:init_pnodes]
         msg("Initializing nodes",MSG_INFO)
-        #ths = []
-        #th = Thread.new {
-          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
-          msg("Node #{coordinator} initialized",MSG_INFO)
-        #}
-        #th.abort_on_exception = true
-        #ths << th
-        nodelist.each do |node|
-          #th = Thread.new {
-            exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{node}",:coord,true,
-              options[:debug_distem],options[:debug_distem])
-            msg("Node #{node} initialized",MSG_INFO)
-          #}
-          #th.abort_on_exception = true
-          #ths << th
-        end
-        #ths.each { |th| th.join }
+        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
+        msg("Node #{coordinator} initialized",MSG_INFO)
+        msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
+        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,options[:debug_distem],options[:debug_distem])
+        msg("Nodes #{nodelist.join(',')} initialized",MSG_INFO)
       end
     end
   

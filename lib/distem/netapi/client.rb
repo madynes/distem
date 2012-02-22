@@ -10,6 +10,7 @@ module Distem
 
     CLASSMAP = {
         Hash => lambda { |x| x.to_json },
+        Array => lambda { |x| x.to_json },
         String => lambda { |x| x },
         TrueClass => lambda { |x| x },
         FalseClass => lambda { |x| x },
@@ -48,7 +49,7 @@ module Distem
       # Initialize a physical machine (launching daemon, creating cgroups, ...).
       # This step have to be performed to be able to create virtual nodes on a machine.
       #
-      # @param [String] target The hostname/address of the physical node
+      # @param [String|Array] target The hostname(s)/address(es) of the physical node(n)
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}.
       # @param [Boolean] async Asynchronious mode, check the physical node status to know when the configuration is done (see {#pnode_info})
       # @return [Hash] The physical node description (see {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}).
