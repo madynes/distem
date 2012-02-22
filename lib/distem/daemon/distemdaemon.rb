@@ -32,6 +32,8 @@ module Distem
         :vnode_stop => {},
       }
 
+      @@nb_local_vifaces = 0
+
       # Create a new Daemon
       # ==== Attribute
       # * +mode+ The mode the daemon should be executed in (0 for Coordinator, 1 for Normal)
@@ -40,7 +42,6 @@ module Distem
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @mode = mode
-
 
         @node_config = Node::ConfigManager.new
 
@@ -652,9 +653,10 @@ module Distem
           vnode = vnode_get(vnodename)
 
           viface = Resource::VIface.new(vifacename,vnode)
-
+          
           if target?(vnode)
-            raise Lib::DistemError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached" if viface.id >= Node::Admin.vifaces_max
+            @@nb_local_vifaces += 1
+            raise Lib::DistemError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached" if @@nb_local_vifaces > Node::Admin.vifaces_max
             Lib::Shell.run("ip link set dev ifb#{viface.id} up")
           end
 
@@ -681,6 +683,7 @@ module Distem
       #
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
+        @@nb_local_vifaces -= 1 if target?(vnode)
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnode.name,viface.name)
         vnode.remove_viface(viface)
