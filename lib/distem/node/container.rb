@@ -1,5 +1,6 @@
 require 'distem'
 require 'thread'
+require 'ipaddr'
 
 module Distem
   module Node
@@ -247,7 +248,10 @@ module Distem
             @vnode.vifaces.each do |viface|
               f.puts("ip route flush dev #{viface.name}")
               if viface.vnetwork
-                f.puts("ifconfig #{viface.name} #{viface.address.address.to_s} netmask #{viface.address.netmask.to_s}")
+                netmask = IPAddr.new(viface.address.netmask)
+                address = IPAddr.new(viface.address.address)
+                broadcast = (address | ~netmask).to_s
+                f.puts("ifconfig #{viface.name} #{viface.address.address.to_s} netmask #{viface.address.netmask.to_s} broadcast #{broadcast}")
                 f.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
                 #compute all routes
                 viface.vnetwork.vroutes.each_value do |vroute|
