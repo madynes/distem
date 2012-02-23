@@ -40,7 +40,7 @@ module Distem
           'vfilesystem' => visit(vnode.filesystem),
           'vifaces' => visit(vnode.vifaces),
           'vcpu' => visit(vnode.vcpu),
-          'gateway' => vnode.gateway,
+          'mode' => (vnode.gateway ? Resource::VNode::MODE_GATEWAY : Resource::VNode::MODE_NORMAL),
         }
 
         if vnode.host

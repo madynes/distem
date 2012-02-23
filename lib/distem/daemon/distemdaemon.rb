@@ -1289,7 +1289,7 @@ module Distem
           if daemon?
             raise Lib::InvalidParameterError, "#{gw.name}->#{srcnet}" unless \
               gw.connected_to?(srcnet)
-            vnode_set_mode(gw.name,Resource::VNode::MODE_GATEWAY) unless \
+            vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless \
               gw.gateway
 
             srcnet.visibility.each do |pnode|
