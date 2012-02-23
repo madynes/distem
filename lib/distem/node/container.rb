@@ -247,7 +247,8 @@ module Distem
             @vnode.vifaces.each do |viface|
               f.puts("ip route flush dev #{viface.name}")
               if viface.vnetwork
-                f.puts("ifconfig #{viface.name} #{viface.address.address.to_s} netmask #{viface.address.netmask.to_s}")
+                addr = viface.address
+                f.puts("ifconfig #{viface.name} #{addr.address.to_s} netmask #{addr.netmask.to_s} broadcast #{addr.broadcast.to_s}")
                 f.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
                 #compute all routes
                 viface.vnetwork.vroutes.each_value do |vroute|
