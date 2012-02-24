@@ -219,12 +219,13 @@ module Distem
             end
 
             # Load config in rc.local
+            Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
             filename = File.join(etcpath,'rc.local')
             cmd = '. /etc/rc.local-`hostname`'
             ret = Lib::Shell.run("grep '#{cmd}' #{filename}; true",true)
             if ret.empty?
               File.open(filename,'w') do |f|
-                f.puts("#!/bin/sh -e\n")
+                f.puts("#!/bin/sh -ex\n")
                 f.puts(cmd)
                 f.puts("exit 0")
               end
@@ -238,17 +239,16 @@ module Distem
             block.call
           end
 
-
           # Node specific rc.local
           filename = File.join(etcpath,"rc.local-#{@vnode.name}")
           File.open(filename, "w") do |f|
-            f.puts("#!/bin/sh -e\n")
+            f.puts("#!/bin/sh -ex\n")
             f.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if @vnode.gateway?
             @vnode.vifaces.each do |viface|
-              f.puts("ip route flush dev #{viface.name}")
               if viface.vnetwork
                 addr = viface.address
                 f.puts("ifconfig #{viface.name} #{addr.address.to_s} netmask #{addr.netmask.to_s} broadcast #{addr.broadcast.to_s}")
+                f.puts("ip route flush dev #{viface.name}")
                 f.puts("ip route add #{viface.vnetwork.address.to_string} dev #{viface.name}")
                 #compute all routes
                 viface.vnetwork.vroutes.each_value do |vroute|
