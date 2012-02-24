@@ -144,7 +144,8 @@ module Distem
         @@contsem.synchronize do
           LXCWrapper::Command.start(@vnode.name)
           @vnode.vifaces.each do |viface|
-            Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off")
+            Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} gso off; true")
+            Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(@vnode,viface)} tso off; true")
           end
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
