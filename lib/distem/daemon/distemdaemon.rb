@@ -973,6 +973,8 @@ module Distem
 
           downkeys(desc)
 
+		  raise Lib::AlreadyExistingResourceError, desc.inspect.to_s
+
           if desc['vcores']
             raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
             freq = desc['vcores'][0]['frequency'].split(0).to_f || 1.0
