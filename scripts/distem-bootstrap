@@ -499,9 +499,11 @@ Net::SSH::Multi.start do |session|
       msg("Initializing node #{coordinator}",MSG_INFO)
       exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,
         options[:debug_distem],options[:debug_distem])
-      msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
-      exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,
-        options[:debug_distem],options[:debug_distem])
+      if nodelist.length > 0
+        msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
+        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,
+          options[:debug_distem],options[:debug_distem])
+      end
     end
 
   end
