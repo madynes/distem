@@ -5,7 +5,7 @@ module Distem
   module Lib
 
     class Shell
-
+      @@count = 0
       # The file to save log of the executed commands
       PATH_DISTEMD_LOG_CMD=File.join(Distem::Node::Admin::PATH_DISTEM_LOGS,"distemd.cmd")
       # Execute the specified command on the physical node (log the resuls in PATH_DISTEMD_LOG_CMD)
@@ -13,7 +13,8 @@ module Distem
       # * +cmd+ The command (String)
       # * +simple+ Execute the command in simple mode (no logs of stderr)
       def self.run(cmd, simple=false)
-        cmdlog = "(#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}) #{cmd}"
+        @@count = @@count + 1
+        cmdlog = "(#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}-#{@@count}) #{cmd}"
 
         ret = ""
         log = ""
