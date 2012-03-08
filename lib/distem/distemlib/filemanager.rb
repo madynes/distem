@@ -75,9 +75,8 @@ module Distem
       # * +NotImplementedError+ if the archive file format is not supported (available: tar, gzip, bzip, zip, (tgz,...))
       #
       def self.extract(archivefile,targetdir="",override=true)
-        raise Lib::ResourceNotFoundError, archivefile \
-          unless File.exists?(archivefile)
-
+        raise Lib::ResourceNotFoundError, archivefile unless File.exists?(archivefile)
+        
         if targetdir.empty?
           targetdir = File.dirname(archivefile)
         end
@@ -85,23 +84,17 @@ module Distem
         targethash = targetdir + file_hash(archivefile)
         @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
 
-        cachedir,new = cache_archive(archivefile)
-
-        if @@extractlock[targethash].locked?
-          @@extractlock[targethash].synchronize {}
-        else
-          @@extractlock[targethash].synchronize do
-            exists = File.exists?(targetdir)
-            if !exists or override or new
-              @@extractsem.synchronize do
-                Lib::Shell.run("rm -Rf #{targetdir}") if exists
-                Lib::Shell.run("mkdir -p #{targetdir}")
-                Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
-              end
+        @@extractlock[targethash].synchronize {
+          cachedir,new = cache_archive(archivefile)
+          exists = File.exists?(targetdir)
+          if !exists or override or new
+            @@extractsem.synchronize do
+              Lib::Shell.run("rm -Rf #{targetdir}") if exists
+              Lib::Shell.run("mkdir -p #{targetdir}")
+              Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
             end
           end
-        end
-
+        }
         return targetdir
       end
 
@@ -138,24 +131,17 @@ module Distem
       #
       def self.cache_archive(archivefile)
         filehash = file_hash(archivefile)
-        @@archivecachelock[filehash] = Mutex.new unless @@archivecachelock[filehash]
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
-
         newcache = false
-        if @@archivecachelock[filehash].locked?
-          @@archivecachelock[filehash].synchronize {}
-        else
-          @@archivecachelock[filehash].synchronize do
-            unless @@archivecache.include?(filehash)
-              @@archivecache << filehash
-              @@cachesem.synchronize do
-                if File.exists?(cachedir)
-                  Lib::Shell.run("rm -R #{cachedir}")
-                end
-                extract!(archivefile,cachedir)
-                newcache = true
-              end
+
+        unless @@archivecache.include?(filehash)
+          @@archivecache << filehash
+          @@cachesem.synchronize do
+            if File.exists?(cachedir)
+              Lib::Shell.run("rm -R #{cachedir}")
             end
+            extract!(archivefile,cachedir)
+            newcache = true
           end
         end
 
@@ -210,6 +196,6 @@ module Distem
         return @@hashcache[filename][:hash]
       end
     end
-
+    
   end
 end

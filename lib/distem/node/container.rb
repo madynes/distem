@@ -1,5 +1,6 @@
 require 'distem'
 require 'thread'
+require 'fileutils'
 
 module Distem
   module Node
@@ -196,10 +197,7 @@ module Distem
           configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
           LXCWrapper::ConfigFile.generate(@vnode,configfile)
 
-
           etcpath = File.join(rootfspath,'etc')
-
-          Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
 
           # Make hostname local
           unless @vnode.filesystem.shared
@@ -218,31 +216,28 @@ module Distem
                 end
               end
             end
-
+              
             # Load config in rc.local
-            Lib::Shell.run("mkdir -p #{etcpath}") unless File.exists?(etcpath)
             filename = File.join(etcpath,'rc.local')
             cmd = '. /etc/rc.local-`hostname`'
             ret = Lib::Shell.run("grep '#{cmd}' #{filename}; true",true)
             if ret.empty?
-              File.open(filename,'w') do |f|
+              File.open(filename,File::WRONLY|File::TRUNC|File::CREAT, 0755) { |f|
                 f.puts("#!/bin/sh -ex\n")
                 f.puts(cmd)
                 f.puts("exit 0")
-              end
-              File.chmod(0755,filename)
+              }
             end
           }
-
+          
           if @vnode.filesystem.shared
             @@filelock.synchronize { block.call }
           else
             block.call
           end
-
           # Node specific rc.local
           filename = File.join(etcpath,"rc.local-#{@vnode.name}")
-          File.open(filename, "w") do |f|
+          File.open(filename,File::WRONLY|File::TRUNC|File::CREAT, 0755) { |f|
             f.puts("#!/bin/sh -ex\n")
             f.puts("echo 1 > /proc/sys/net/ipv4/ip_forward") if @vnode.gateway?
             @vnode.vifaces.each do |viface|
@@ -259,15 +254,12 @@ module Distem
               f.puts("#iptables -t nat -A POSTROUTING -o #{viface.name} -j MASQUERADE") if vnode.gateway?
             end
             f.puts("exit 0")
-          end
-          File.chmod(0755,filename)
-
+          }
           LXCWrapper::Command.create(@vnode.name,configfile)
-
+          
           @id += 1
         end
       end
-    end
-
+    end    
   end
 end
