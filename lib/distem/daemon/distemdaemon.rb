@@ -859,7 +859,7 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vinput_update(vnode.name,viface.name,desc)
+            cl.voutput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
@@ -895,7 +895,7 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.voutput_update(vnode.name,viface.name,desc)
+            cl.vinput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
