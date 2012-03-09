@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'distem'
 require 'thread'
 require 'uri'
@@ -28,11 +29,13 @@ module Distem
       @@cachesem = Semaphore.new(MAX_SIMULTANEOUS_CACHE) # :nodoc:
       @@hashsem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
       @@extractlock = {} # :nodoc:
-      @@archivecachelock = {} # :nodoc:
+      @@extractlocklock = Mutex.new # :nodoc:
+      @@archivecachelock = Mutex.new # :nodoc:
       @@hashcachelock = {} # :nodoc:
+      @@hashcachelocklock = Mutex.new # :nodoc:
       @@hashcache = {}
       @@archivecache = [] # :nodoc:
-
+      
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
       # * +uri_str+ The URI of the file to download
@@ -81,11 +84,14 @@ module Distem
           targetdir = File.dirname(archivefile)
         end
 
-        targethash = targetdir + file_hash(archivefile)
-        @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
-
+        filehash = file_hash(archivefile)
+        targethash = targetdir + filehash
+        @@extractlocklock.synchronize {
+          @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
+        }
+        
         @@extractlock[targethash].synchronize {
-          cachedir,new = cache_archive(archivefile)
+          cachedir,new = cache_archive(archivefile,filehash)
           exists = File.exists?(targetdir)
           if !exists or override or new
             @@extractsem.synchronize do
@@ -126,16 +132,23 @@ module Distem
       # Cache an archive fine in the cache. Only one file can be cached at the same time (mutex).
       # ==== Attributes
       # * +archivefile+ The path to the archive file (String)
+      # * +filehash+ The hash of the archive file (String)
       # ==== Returns
       # String value describing the path to the directory (on the local machine) the file was cached to
       #
-      def self.cache_archive(archivefile)
-        filehash = file_hash(archivefile)
+      def self.cache_archive(archivefile,filehash)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
         newcache = false
+        do_extract = false
 
-        unless @@archivecache.include?(filehash)
-          @@archivecache << filehash
+        @@archivecachelock.synchronize {
+          unless @@archivecache.include?(filehash)
+            @@archivecache << filehash 
+            do_extract = true
+          end
+        }
+
+        if do_extract
           @@cachesem.synchronize do
             if File.exists?(cachedir)
               Lib::Shell.run("rm -R #{cachedir}")
@@ -175,20 +188,18 @@ module Distem
       # String value describing the "unique" hash
       #
       def self.file_hash(filename)
-        @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
+        @@hashcachelocklock.synchronize {
+          @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
+        }
 
-        if @@hashcachelock[filename].locked?
-          @@hashcachelock[filename].synchronize{}
-        else
-          @@hashcachelock[filename].synchronize do
-            unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
-              @@hashsem.synchronize do
-                mtime = File.mtime(filename) unless mtime
-                @@hashcache[filename] = {
-                  :mtime => mtime,
-                  :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{Digest::SHA256.file(filename).hexdigest}"
-                } unless @@hashcache[filename]
-              end
+        @@hashcachelock[filename].synchronize do
+          unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
+            @@hashsem.synchronize do
+              mtime = File.mtime(filename) unless mtime
+              @@hashcache[filename] = {
+                :mtime => mtime,
+                :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{Digest::SHA256.file(filename).hexdigest}"
+              } unless @@hashcache[filename]
             end
           end
         end
