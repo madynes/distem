@@ -37,10 +37,10 @@ module Distem
           baseiface = iface
 
           case vtraffic.direction
-          when Resource::VIface::VTraffic::Direction::OUTPUT
+          when Resource::VIface::VTraffic::Direction::INPUT
             tcroot = TCWrapper::QdiscRoot.new(iface)
             tmproot = tcroot
-          when Resource::VIface::VTraffic::Direction::INPUT
+          when Resource::VIface::VTraffic::Direction::OUTPUT
             tcroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
             iface = "ifb#{vtraffic.viface.id}"
@@ -75,7 +75,7 @@ module Distem
             Lib::Shell.run(tmproot.get_cmd(TCWrapper::Action::ADD))
           end
 
-          if vtraffic.direction == Resource::VIface::VTraffic::Direction::INPUT
+          if vtraffic.direction == Resource::VIface::VTraffic::Direction::OUTPUT
             filter = TCWrapper::FilterU32.new(baseiface,tcroot,primroot)
             filter.add_match_u32('0','0')
             filter.add_param("action","mirred egress")
@@ -93,18 +93,18 @@ module Distem
           super(viface)
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
 
-          if @limited_input
-            inputroot = TCWrapper::QdiscRoot.new("ifb#{viface.id}")
-            Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
-            inputroot = TCWrapper::QdiscIngress.new(iface)
-            Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
-            @limited_input = false
-          end
-
           if @limited_output
-            outputroot = TCWrapper::QdiscRoot.new(iface)
+            outputroot = TCWrapper::QdiscRoot.new("ifb#{viface.id}")
+            Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
+            outputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
             @limited_output = false
+          end
+
+          if @limited_input
+            inputroot = TCWrapper::QdiscRoot.new(iface)
+            Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
+            @limited_intput = false
           end
         end
       end

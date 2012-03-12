@@ -413,7 +413,7 @@ module Distem
           vifacename = URI.unescape(params['ifacename'])
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.voutput_update(vnodename,vifacename,desc)
+          @body = @daemon.vinput_update(vnodename,vifacename,desc)
         end
 
         return result!
@@ -443,7 +443,7 @@ module Distem
           vifacename = URI.unescape(params['ifacename'])
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vinput_update(vnodename,vifacename,desc)
+          @body = @daemon.voutput_update(vnodename,vifacename,desc)
         end
 
         return result!
