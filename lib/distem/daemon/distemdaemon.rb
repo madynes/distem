@@ -859,7 +859,11 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.vinput_update(vnode.name,viface.name,desc)
+            # Since the calls of vinput_update()/voutput_update() are reversed in the
+            # Rest server (lib/netapi/server.rb), it is required to also reverse the 
+            # way of the viface updates when the query is forwarded to a node that 
+            # is not the coordinator. This fixes the bug #13830 on the Gforge project.
+            cl.voutput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
@@ -895,7 +899,11 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
           elsif daemon?
             cl = NetAPI::Client.new(vnode.host.address)
-            cl.voutput_update(vnode.name,viface.name,desc)
+            # Since the calls of vinput_update()/voutput_update() are reversed in the
+            # Rest server (lib/netapi/server.rb), it is required to also reverse the 
+            # way of the viface updates when the query is forwarded to a node that 
+            # is not the coordinator. This fixes the bug #13830 on the Gforge project.
+            cl.vinput_update(vnode.name,viface.name,desc)
           end
           vnode.status = Resource::Status::RUNNING
         end
