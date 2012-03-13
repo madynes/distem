@@ -44,7 +44,6 @@ module Distem
       set :show_exceptions, false
       set :raise_errors, true
       set :run, true
-      set :verbose, false
 
       # @private
       def initialize()
@@ -664,6 +663,7 @@ module Distem
     # @private
     class ServerDaemon < Server
       set :mode, Daemon::DistemDaemon::MODE_DAEMON
+      set :verbose, false
 
       def initialize
         super()
@@ -676,11 +676,37 @@ module Distem
     end
 
     # @private
+    class ServerDaemonDebug < Server
+      set :mode, Daemon::DistemDaemon::MODE_DAEMON
+      set :verbose, true
+
+      def initialize
+        super()
+        Lib::NetTools.set_bridge()
+      end
+
+      def run
+        ServerDaemonDebug.run!
+      end
+    end
+
+    # @private
     class ServerNode < Server
       set :mode, Daemon::DistemDaemon::MODE_NODE
+      set :verbose, false
 
       def run
         ServerNode.run!
+      end
+    end
+
+    # @private
+    class ServerNodeDebug < Server
+      set :mode, Daemon::DistemDaemon::MODE_NODE
+      set :verbose, true
+
+      def run
+        ServerNodeDebug.run!
       end
     end
 

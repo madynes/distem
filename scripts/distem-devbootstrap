@@ -229,6 +229,7 @@ options[:debug]       = false
 options[:logs_daemon] = []
 options[:logs_commands] = []
 options[:list] = false
+options[:verbose] = false
 
 
 args = ARGV.dup
@@ -288,6 +289,10 @@ optparse = OptionParser.new do |opts|
 	opts.on( '', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
   	options[:debug_distem] = true
 	end
+
+        opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
+        options[:verbose] = true
+        end
 
 	opts.on( '-h', '--help', 'Display this screen' ) do
   		puts opts
@@ -464,7 +469,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       
   	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
   	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-  	  exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
+  	  exec(session,"distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
         :coord)
   	  
       launched = []
