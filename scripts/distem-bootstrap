@@ -136,7 +136,7 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
   channel.on_extended_data do |chtmp,type,data|
     errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
     errs[chtmp.connection.host] << data.strip
-    msg("[#{chtmp.connection.host} E] #{data.strip}") \
+    msg("[#{chtmp.connection.host}] #{data.strip}") \
       if @options[:debug] or showout
   end
 
@@ -179,6 +179,7 @@ options[:version]     = nil
 options[:debug_distem] = false
 options[:stats]       = true
 options[:git_url]     = GIT_REPOSITORY
+options[:verbose]     = false
 
 args = ARGV.dup
 
@@ -229,6 +230,9 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
     options[:stats] = false
+  end
+  opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
+    options[:verbose] = true
   end
   opts.on( '-h', '--help', 'Display this screen' ) do
     puts opts
@@ -484,7 +488,7 @@ Net::SSH::Multi.start do |session|
     end
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-    exec(session,"distemd -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
+    exec(session,"distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
       :coord)
 
     launched = []

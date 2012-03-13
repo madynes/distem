@@ -43,7 +43,6 @@ module Distem
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
         @resource = RestClient::Resource.new(@serverurl, :timeout => TIMEOUT, :open_timeout => (TIMEOUT/2))
         @@semreq = Lib::Semaphore.new(semsize) if semsize and @@semreq.size != semsize
-        @resource
       end
 
       # Initialize a physical machine (launching daemon, creating cgroups, ...).

@@ -9,6 +9,7 @@ USAGE="Usage: #{$0} [options]"
 options = {}
 
 options['f_daemon'] = false
+options['f_verbose'] = false
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -18,16 +19,26 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-d', '--daemon', 'Execute the server as a coordinator' ) do
     options['f_daemon'] = true
   end
+  opts.on( '--verbose', 'Execute the server in verbose mode' ) do
+    options['f_verbose'] = true
+  end
 end
 optparse.parse!
 
 str = Distem::Lib::Shell.run('pidof lxc-wait')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
-
 if (options['f_daemon'])
   puts "Starting the server in Daemon mode"
-  Distem::NetAPI::ServerDaemon.run!
+  if (options['f_verbose'])
+    Distem::NetAPI::ServerDaemonDebug.run!
+  else
+    Distem::NetAPI::ServerDaemon.run!
+  end
 else
   puts "Starting the server in Node mode"
-  Distem::NetAPI::ServerNode.run!
+  if options['f_verbose']
+    Distem::NetAPI::ServerNodeDebug.run!
+  else
+    Distem::NetAPI::ServerNode.run!
+  end
 end
