@@ -175,7 +175,7 @@ options[:git]         = nil
 options[:gerrit]      = nil
 options[:ssh_key]     = nil
 options[:debug]       = false
-options[:version]     = nil
+options[:distem_version] = nil
 options[:debug_distem] = false
 options[:stats]       = true
 options[:git_url]     = GIT_REPOSITORY
@@ -216,8 +216,8 @@ optparse = OptionParser.new do |opts|
   opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
     options[:gempackages] = p
   end
-  opts.on( '-v', '--version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
-    options[:version] = v
+  opts.on( '--distem-version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
+    options[:distem_version] = v
   end
   opts.on( '-g', '--git [<git_hash|git_tag>]', "Install a git snapshot of distem (default: master). Additional packages are installed on the coordinator to rebuild the Debian package" ) do |n|
     options[:git] = n || :git_last
@@ -442,7 +442,7 @@ Net::SSH::Multi.start do |session|
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
-    distempkg = (options[:version]?"#{PKG_NAME}=#{options[:version]}":PKG_NAME)
+    distempkg = (options[:distem_version]?"#{PKG_NAME}=#{options[:distem_version]}":PKG_NAME)
     exec(session,"echo yes | apt-get install -q -y --force-yes " \
         "--allow-unauthenticated #{distempkg}")
   end
