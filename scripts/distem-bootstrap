@@ -180,6 +180,7 @@ options[:debug_distem] = false
 options[:stats]       = true
 options[:git_url]     = GIT_REPOSITORY
 options[:verbose]     = false
+options[:max_vifaces] = nil
 
 args = ARGV.dup
 
@@ -201,6 +202,9 @@ optparse = OptionParser.new do |opts|
   opts.on( '-x', '--no-init-pnodes', 'Do not initialize all pnodes' ) do |c|
     options[:init_pnodes] = false
   end
+  opts.on( '--max-vifaces <nb>', 'Set the maximum number of vifaces on a physical node (used only without --no-init-pnodes)' ) do |n|
+    options[:max_vifaces] = n
+  end        
   opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
     options[:debug] = true
   end
@@ -501,12 +505,18 @@ Net::SSH::Multi.start do |session|
 
     if options[:init_pnodes]
       msg("Initializing node #{coordinator}",MSG_INFO)
-      exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,
-        options[:debug_distem],options[:debug_distem])
+      if options[:max_vifaces]
+        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
+      else
+        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
+      end
       if nodelist.length > 0
         msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
-        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,
-          options[:debug_distem],options[:debug_distem])
+        if options[:max_vifaces]
+          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
+        else
+          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,options[:debug_distem],options[:debug_distem])
+        end
       end
     end
 
