@@ -44,6 +44,7 @@ options['src'] = nil
 options['dest'] = nil
 options['vnetwork'] = nil
 options['viface'] = nil
+options['max_vifaces'] = nil
 options['address'] = nil
 options['latency'] = nil
 options['bw'] = nil
@@ -78,6 +79,12 @@ optparse = OptionParser.new(USAGE) do |opts|
   ) do |str|
     options['f_options'] << 'init_pnode'
     options['pnode'] = str.split(',')
+  end
+  opts.on(
+    '--max-vifaces NB',
+    'Set the maximum number of vifaces on a physical node (used only with --init-pnode)'
+  ) do |str|
+    options['max_vifaces'] = str
   end
   opts.on('--quit [PNODE]', 'Close the given PNODE or all the physical nodes' ) do |str|
     options['f_options'] << 'quit'
@@ -305,7 +312,7 @@ plimit_latency = {}
 options['f_options'].each { |option|
   case option
   when 'init_pnode'
-    pp cl.pnode_init(options['pnode'])
+    pp cl.pnode_init(options['pnode'],options['max_vifaces'] ? {:max_vifaces =>options['max_vifaces']} : {})
   when 'create_vnode'
     props = {}
     props['vfilesystem'] = {}
