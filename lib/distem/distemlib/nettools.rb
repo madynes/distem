@@ -154,7 +154,7 @@ module Distem
 
         #Checking if the address is the loopback
         begin
-          ret = (Resolv.getname(target) == LOCALHOST)
+          ret = (Resolv.getnames(target).include?(LOCALHOST))
         rescue Resolv::ResolvError
           ret = false
         end
