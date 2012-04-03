@@ -94,6 +94,9 @@ module Distem
         Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1=1024")
         Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2=4096")
         Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3=16384")
+        Shell.run("sysctl -w net.ipv6.neigh.default.gc_thresh1=1024")
+        Shell.run("sysctl -w net.ipv6.neigh.default.gc_thresh2=4096")
+        Shell.run("sysctl -w net.ipv6.neigh.default.gc_thresh3=16384")
       end
 
       # Clean the IFB module
