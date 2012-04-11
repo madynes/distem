@@ -58,7 +58,10 @@ module Distem
             tmproot = TCWrapper::QdiscTBF.new(
               iface,tmproot,
               { 'rate' => "#{bwlim.rate}",
-                'buffer' => 1800,
+                # cf. http://www.juniper.net/techpubs/en_US/junos11.2/topics/reference/general/policer-guidelines-burst-size-calculating.html
+                # buffer size = rate * latency (here latency is 50ms)
+                # warning, the buffer size should be at least equal to the MTU (plus some bytes...)
+                'buffer' => [Integer(bwlim.to_bytes * 0.05), Lib::NetTools::get_iface_mtu(vtraffic.viface.vnode, vtraffic.viface) + 20].max,
                 'latency' => '50ms'}
             )
             primroot = tmproot unless primroot
