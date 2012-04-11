@@ -137,6 +137,19 @@ module Distem
         
       end
 
+      # Gets the current MTU of a virtual network interface
+      # ==== Attributes
+      # * +vnode+ The VNode object
+      # * +viface+ The VIface object
+      # ==== Returns
+      # Integer object
+      #
+      def self.get_iface_mtu(vnode,viface)
+        iface = "#{vnode.name}-#{viface.name}-#{viface.id}"
+        cmdret = Shell.run("/sbin/ifconfig #{iface}")
+        return cmdret.split("\n").grep(/.*MTU.*/)[0].gsub(/.*MTU:(\d+) .*/, '\1').to_i
+      end
+
       # Check if an IP address is local to this physical node
       # ==== Attributes
       # * +address+ The IP address (String)
