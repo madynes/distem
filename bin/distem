@@ -216,7 +216,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'complete_vroutes'
   end
   opts.on(
-    '--config-viface vnode=VNODE,iface=IFACE[,bw=VALUE|unlimited,latency=VALUE,direction=INPUT|OUTPUT]',
+    '--config-viface vnode=VNODE,iface=IFACE[,bw=VALUE|unlimited,latency=VALUE|none,direction=INPUT|OUTPUT]',
     'Set a bandwidth or a latency limitation on IFACE with a given value and eventually a given direction'
   ) do |str|
     options['f_options'] << 'config_viface'
