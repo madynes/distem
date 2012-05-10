@@ -23,7 +23,7 @@ module Distem
       # Try to acquire a a resource
       def acquire
         @lock.synchronize do
-          while @val == 0
+          if @val == 0
             @positive.wait(@lock)
           end
 
