@@ -22,6 +22,9 @@ module Distem
       # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
       attr_reader  :node_config
 
+      @@semvnodestart = Lib::Semaphore.new(50)
+
+      @@lockslock = Mutex.new
       @@locks = {
         :vnetsync => {},
       }
@@ -494,28 +497,30 @@ module Distem
 
 
           block = Proc.new {
-            if target?(vnode)
-              nodemodeblock.call
-            else
-              cl = NetAPI::Client.new(vnode.host.address.to_s)
+            @@semvnodestart.synchronize {
+              if target?(vnode)
+                nodemodeblock.call
+              else
+                cl = NetAPI::Client.new(vnode.host.address.to_s)
 
-              # Create VNetworks on remote PNode
-              vnode.get_vnetworks.each do |vnet|
-                vnetwork_sync(vnet,vnode.host)
+                # Create VNetworks on remote PNode
+                vnode.get_vnetworks.each do |vnet|
+                  vnetwork_sync(vnet,vnode.host)
+                end
+
+                desc = TopologyStore::HashWriter.new.visit(vnode)
+                # we want the node to be runned
+                desc['status'] = Resource::Status::RUNNING
+
+                ret = cl.vnode_create(vnode.name,desc)
+
+                #ret = cl.vnode_start(vnode.name,properties)
+
+                updateobj_vnode(vnode,ret)
+
+                vnode.status = Resource::Status::RUNNING
               end
-
-              desc = TopologyStore::HashWriter.new.visit(vnode)
-              # we want the node to be runned
-              desc['status'] = Resource::Status::RUNNING
-
-              ret = cl.vnode_create(vnode.name,desc)
-
-              #ret = cl.vnode_start(vnode.name,properties)
-
-              updateobj_vnode(vnode,ret)
-
-              vnode.status = Resource::Status::RUNNING
-            end
+            }
           }
 
           if async
@@ -1121,8 +1126,10 @@ module Distem
           end
 
           if lock
-            @@locks[:vnetsync][pnode] = Mutex.new unless \
+            @@lockslock.synchronize {
+              @@locks[:vnetsync][pnode] = Mutex.new unless \
               @@locks[:vnetsync][pnode]
+            }
 
             @@locks[:vnetsync][pnode].synchronize do
               block.call
