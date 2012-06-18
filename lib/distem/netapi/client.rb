@@ -23,7 +23,7 @@ module Distem
     # @note Most of changes you can perform on virtual nodes resources are taking effect after stopping then starting back the resource. Changes that are applied on-the-fly are documented as this.
     class Client
       # The maximum number of simultaneous requests
-      MAX_SIMULTANEOUS_REQ = 64
+      MAX_SIMULTANEOUS_REQ = 50
       # The HTTP OK status value
       # @private
       HTTP_STATUS_OK = 200
@@ -511,8 +511,8 @@ module Distem
         @@semreq.acquire
         begin
           yield
-        rescue RestClient::RequestFailed
-          raise Lib::InvalidParameterError, "#{@serverurl}#{route}"
+        rescue RestClient::RequestFailed => e
+          raise Lib::InvalidParameterError, "#{e.to_s} ... #{@serverurl}#{route}"
         rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
           RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
           raise Lib::UnavailableResourceError, @serverurl

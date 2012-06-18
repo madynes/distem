@@ -22,6 +22,13 @@ module Distem
       # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
       attr_reader  :node_config
 
+      MAX_VNODES_SIMULT_START_ON_PNODE = 40
+      @@semvnodestart_pnodelock = Mutex.new
+      @@semvnodestart_pnode = {}
+
+
+
+      @@lockslock = Mutex.new
       @@locks = {
         :vnetsync => {},
       }
@@ -73,7 +80,7 @@ module Distem
               @node_config.vplatform.add_pnode(pnode)
               pnode.status = Resource::Status::RUNNING
             }
-
+            
             if daemon?
               if target?(target)
                 pnode = @node_config.pnode
@@ -494,28 +501,36 @@ module Distem
 
 
           block = Proc.new {
-            if target?(vnode)
-              nodemodeblock.call
-            else
-              cl = NetAPI::Client.new(vnode.host.address.to_s)
-
-              # Create VNetworks on remote PNode
-              vnode.get_vnetworks.each do |vnet|
-                vnetwork_sync(vnet,vnode.host)
+            @@semvnodestart_pnodelock.synchronize {
+              if not @@semvnodestart_pnode[vnode.host.address.to_s]
+                @@semvnodestart_pnode[vnode.host.address.to_s] = Lib::Semaphore.new(MAX_VNODES_SIMULT_START_ON_PNODE)
               end
+            }
+            
+            @@semvnodestart_pnode[vnode.host.address.to_s].synchronize {
+              if target?(vnode)
+                nodemodeblock.call
+              else
+                cl = NetAPI::Client.new(vnode.host.address.to_s)
 
-              desc = TopologyStore::HashWriter.new.visit(vnode)
-              # we want the node to be runned
-              desc['status'] = Resource::Status::RUNNING
+                # Create VNetworks on remote PNode
+                vnode.get_vnetworks.each do |vnet|
+                  vnetwork_sync(vnet,vnode.host)
+                end
 
-              ret = cl.vnode_create(vnode.name,desc)
+                desc = TopologyStore::HashWriter.new.visit(vnode)
+                # we want the node to be runned
+                desc['status'] = Resource::Status::RUNNING
 
-              #ret = cl.vnode_start(vnode.name,properties)
+                ret = cl.vnode_create(vnode.name,desc)
 
-              updateobj_vnode(vnode,ret)
+                #ret = cl.vnode_start(vnode.name,properties)
 
-              vnode.status = Resource::Status::RUNNING
-            end
+                updateobj_vnode(vnode,ret)
+
+                vnode.status = Resource::Status::RUNNING
+              end
+            }
           }
 
           if async
@@ -1121,8 +1136,10 @@ module Distem
           end
 
           if lock
-            @@locks[:vnetsync][pnode] = Mutex.new unless \
+            @@lockslock.synchronize {
+              @@locks[:vnetsync][pnode] = Mutex.new unless \
               @@locks[:vnetsync][pnode]
+            }
 
             @@locks[:vnetsync][pnode].synchronize do
               block.call
