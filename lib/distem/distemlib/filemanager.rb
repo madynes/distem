@@ -195,11 +195,18 @@ module Distem
         @@hashcachelock[filename].synchronize do
           unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
             @@hashsem.synchronize do
-              mtime = File.mtime(filename) unless mtime
-              @@hashcache[filename] = {
-                :mtime => mtime,
-                :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{Digest::SHA256.file(filename).hexdigest}"
-              } unless @@hashcache[filename]
+              unless @@hashcache[filename]
+                mtime = File.mtime(filename) unless mtime
+                sha256 = `sha256sum #{filename}|cut -f1 -d' '`.chomp
+                # if sha256sum is not functional, we use the slower Ruby version
+                if (sha256 == '')
+                  sha256 = Digest::SHA256.file(filename).hexdigest
+                end
+                @@hashcache[filename] = {
+                  :mtime => mtime,
+                  :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{sha256}"
+                }
+              end
             end
           end
         end
