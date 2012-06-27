@@ -484,11 +484,13 @@ module Distem
         raise Lib::ResourceError, "#{vnode.name} already running" if \
           vnode.status == Resource::Status::RUNNING
 
+        vnode_down = (vnode.status ==  Resource::Status::DOWN)
+
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
           vnode.host = @node_config.pnode unless vnode.host
           vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-          @node_config.vnode_start(vnode)
+          @node_config.vnode_start(vnode, vnode_down)
           vnode.status = Resource::Status::RUNNING
         }
 
