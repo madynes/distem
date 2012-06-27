@@ -66,21 +66,26 @@ module Distem
       #  @containers[vnodename].configure()
       #end
 
-      # Start a virtual node (it have to be installed and in the status READY) to be able to use it
+      # Start a virtual node to be able to use it (it have to be installed and in the status READY)
       # ==== Attributes
       # * +vnode+ The VNode object
+      # * +already_set+ Set it to true if the VNode have been previously stopped but the associate VM not removed
       #
-      def vnode_start(vnode)
-        @containers[vnode.name] = Node::Container.new(vnode)
-        @containers[vnode.name].configure()
-        @containers[vnode.name].start()
+      def vnode_start(vnode, already_set = false)
+        if already_set
+          @containers[vnode.name].start()
+        else
+          @containers[vnode.name] = Node::Container.new(vnode)
+          @containers[vnode.name].configure()
+          @containers[vnode.name].start()
 =begin
-        vnode.vifaces.each do |viface|
-          if viface.vtraffic? and !viface.limited?
-            viface_configure(viface)
+          vnode.vifaces.each do |viface|
+            if viface.vtraffic? and !viface.limited?
+              viface_configure(viface)
+            end
           end
-        end
 =end
+        end
       end
 
       # Reconfigure a virtual node (apply changes to the abstract virtual resources to the physical node settings)
@@ -106,12 +111,17 @@ module Distem
       # Stop a virtual node (it have to be started and in the status RUNNING)
       # ==== Attributes
       # * +vnode+ The VNode object
+      # * +destroy+ if false, the associate virtual machine will not be entirely removed
       #
-      def vnode_stop(vnode)
+      def vnode_stop(vnode, destroy = true)
         if @containers[vnode.name]
-          #@containers[vnode.name].stop()
-          @containers[vnode.name].destroy
-          @containers.delete(vnode.name)
+          if destroy
+            #@containers[vnode.name].stop()
+            @containers[vnode.name].destroy
+            @containers.delete(vnode.name)
+          else
+            @containers[vnode.name].stop()
+          end
         end
       end
 
