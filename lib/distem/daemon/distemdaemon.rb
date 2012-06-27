@@ -449,7 +449,7 @@ module Distem
       # Change the status of the -previously created- virtual node.
       #
       # ==== Attributes
-      # * +status+ the status to set: "Running" or "Ready"
+      # * +status+ the status to set: "Running", "Ready", or "Down"
       # * +properties+ async
       # ==== Returns
       # Resource::VNode object
@@ -464,6 +464,8 @@ module Distem
           vnode = vnode_start(name,async)
         elsif status.upcase == Resource::Status::READY
           vnode = vnode_stop(name,async)
+        elsif status.upcase == Resource::Status::DOWN
+          vnode = vnode_shutdown(name,async)
         else
           raise Lib::InvalidParameterError, status
         end
@@ -604,6 +606,50 @@ module Distem
         return vnode
       end
 
+       # Same as vnode_set_status(name,Resource::Status::DOWN,properties)
+      def vnode_shutdown(name, async=false)
+        async = parse_bool(async)
+        vnode = vnode_get(name)
+        raise Lib::BusyResourceError, vnode.name if \
+          vnode.status == Resource::Status::CONFIGURING
+        raise Lib::UninitializedResourceError, vnode.name if \
+          vnode.status == Resource::Status::INIT
+
+        nodemodeblock = Proc.new {
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_stop(vnode, false)
+          vnode.status = Resource::Status::DOWN
+        }
+
+        if daemon?
+          block = Proc.new {
+            if target?(vnode)
+              nodemodeblock.call
+            else
+              vnode.status = Resource::Status::CONFIGURING
+              Distem.client(vnode.host.address) do |cl|
+                cl.vnode_shutdown(vnode.name)
+              end
+              vnode.status = Resource::Status::DOWN
+            end
+          }
+
+          if async
+            thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
+              block.call
+            }
+            thr.abort_on_exception = true
+          else
+            block.call
+          end
+        else
+          if target?(vnode)
+            nodemodeblock.call
+          end
+        end
+
+        return vnode
+      end
 
       # Change the mode of a virtual node (normal or gateway)
       # ==== Attributes
