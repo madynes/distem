@@ -53,10 +53,10 @@ module Distem
       #
       def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        #if @containers[vnode.name] 
-        #  @containers[vnode.name].destroy
-        #  @containers.delete(vnode.name)
-        #end
+        if @containers[vnode.name] 
+          @containers[vnode.name].destroy
+          @containers.delete(vnode.name)
+        end
         @vplatform.remove_vnode(vnode)
       end
 
