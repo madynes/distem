@@ -13,6 +13,8 @@ module Distem
       READY='READY'
       # The resource is currently running
       RUNNING="RUNNING"
+      # The resource is down
+      DOWN='DOWN'
 
       # Returns if a status name is valid or not
       # ==== Attributes
@@ -21,7 +23,7 @@ module Distem
       # Boolean value
       #
       def self.valid?(status)
-        return [INIT,CONFIGURING,READY,RUNNING].include?(status.upcase)
+        return [INIT,CONFIGURING,READY,RUNNING,DOWN].include?(status.upcase)
       end
     end
 
