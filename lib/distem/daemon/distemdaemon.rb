@@ -522,23 +522,25 @@ module Distem
                 nodemodeblock.call
               else
                 cl = NetAPI::Client.new(vnode.host.address.to_s)
+                if vnode_down
+                  # Just restart the node
+                  ret = cl.vnode_start(vnode.name,async)
+                else
+                  # Create VNetworks on remote PNode
+                  vnode.get_vnetworks.each do |vnet|
+                    vnetwork_sync(vnet,vnode.host)
+                  end
 
-                # Create VNetworks on remote PNode
-                vnode.get_vnetworks.each do |vnet|
-                  vnetwork_sync(vnet,vnode.host)
+                  desc = TopologyStore::HashWriter.new.visit(vnode)
+                  # we want the node to be runned
+                  desc['status'] = Resource::Status::RUNNING
+
+                  ret = cl.vnode_create(vnode.name,desc)
+
+                  updateobj_vnode(vnode,ret)
+
+                  vnode.status = Resource::Status::RUNNING
                 end
-
-                desc = TopologyStore::HashWriter.new.visit(vnode)
-                # we want the node to be runned
-                desc['status'] = Resource::Status::RUNNING
-
-                ret = cl.vnode_create(vnode.name,desc)
-
-                #ret = cl.vnode_start(vnode.name,properties)
-
-                updateobj_vnode(vnode,ret)
-
-                vnode.status = Resource::Status::RUNNING
               end
             }
           }
