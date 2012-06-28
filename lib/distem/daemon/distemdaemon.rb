@@ -522,6 +522,7 @@ module Distem
                 nodemodeblock.call
               else
                 cl = NetAPI::Client.new(vnode.host.address.to_s)
+
                 if vnode_down
                   # Just restart the node
                   ret = cl.vnode_start(vnode.name,async)
@@ -536,11 +537,11 @@ module Distem
                   desc['status'] = Resource::Status::RUNNING
 
                   ret = cl.vnode_create(vnode.name,desc)
-
-                  updateobj_vnode(vnode,ret)
-
-                  vnode.status = Resource::Status::RUNNING
                 end
+
+                updateobj_vnode(vnode,ret)
+
+                vnode.status = Resource::Status::RUNNING
               end
             }
           }
