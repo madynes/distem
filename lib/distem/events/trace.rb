@@ -14,8 +14,13 @@ module Distem
       end
 
       def add_event_list(event_list)
-        @event_list = @event_list + event_list
+        @event_list += event_list
         @event_list.sort!
+      end
+
+      def add_event(date, event)
+        raise unless (event.is_a?(Event) and date.is_a?(Numeric)
+        add_event_list([[date, event]])
       end
 
       def pop_next_event
