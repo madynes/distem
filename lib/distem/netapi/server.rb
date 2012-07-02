@@ -629,20 +629,27 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          @body = @daemon.vnode_churn(URI.unescape(params['vnodename']),trace)
+          @daemon.vnode_churn(URI.unescape(params['vnodename']),trace)
+          @body = ""
         end
 
-        #return result!
+        return result!
       end
 
-      # Start the churn
+      # Start an stop the churn
 
       post '/churn/?' do
         check do
-          @body = @daemon.churn_start
+          # state = JSON.parse(params['state'])
+          # if(state == 'up')
+            @daemon.churn_start
+          #else
+          #  raise "argument error : #{state}"
+          #end
+          @body = ""
         end
 
-        #return result!
+        return result!
       end
 
       protected

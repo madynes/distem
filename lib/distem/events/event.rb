@@ -24,13 +24,13 @@ module Distem
       # Event value : what will be done on the resource - churn : 'up' or 'down', a number otherwise
       attr_reader :event_value
 
-      def initialize(resource_type, change_type, event_value, vnode_name, viface_name = nil)
-        raise if resource_type=='viface' and not viface_name)
-        raise if change_type == 'power' and resource_type != 'vcpu'
-        raise if (change_type == 'bandwith' or  change_type == 'latency') and resource_type != 'viface'
-        raise if (change_type == 'churn' and resource_type == 'vcpu')
-        raise if (change_type == 'churn' and :event_value != 'up' and event_value != 'down')
-        raise if (change_type == 'bandwith' or  change_type == 'latency') and :viface_direction != 'up' and :viface_direction != 'down'
+      def initialize(resource_type, change_type, event_value, vnode_name, viface_name = nil, viface_direction = nil)
+        raise "No viface name given" if resource_type=='viface' and not viface_name
+        raise "Resource power change must be applied on a vcpu,not a #{resource_type}" if change_type == 'power' and resource_type != 'vcpu'
+        raise "Bandwith or latency power change must be applied on a viface,not a #{resource_type}" if (change_type == 'bandwith' or  change_type == 'latency') and resource_type != 'viface'
+        raise "Churn cannot be applied on a vcpu" if (change_type == 'churn' and resource_type == 'vcpu')
+        raise "A churn event must take an 'up' or 'down' value" if (change_type == 'churn' and event_value != 'up' and event_value != 'down')
+        raise "The direction of the viface must be 'up' or 'down'" if (change_type == 'bandwith' or  change_type == 'latency') and viface_direction != 'up' and viface_direction != 'down'
 
         @resource_type = resource_type
         @change_type = change_type
@@ -61,6 +61,10 @@ module Distem
         else
           raise "Not implemented : #{@change_type}"
         end
+      end
+
+      def <=>(other_event)
+        return 0
       end
 
     end

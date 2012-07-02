@@ -487,7 +487,7 @@ module Distem
 
       # Start the churn
       def churn_start
-        post_json("/churn")
+        post_json("/churn", {'state' => 'up'})
       end
 
       protected

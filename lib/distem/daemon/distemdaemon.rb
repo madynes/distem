@@ -1406,8 +1406,9 @@ module Distem
       def vnode_churn(vnodename, trace)
         if daemon?
           trace.to_a.each do |date, event_value|
-            @trace.add_event(date, Events::Event.new('vnode', 'churn', event_value, vnodename))
+            @event_trace.add_event(date.to_f, Events::Event.new('vnode', 'churn', event_value, vnodename))
           end
+          #return @event_trace.event_list
         else
           raise "You must contact the coordinator for that."
         end
