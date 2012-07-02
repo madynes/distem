@@ -52,6 +52,8 @@ module Distem
 
         if @mode == MODE_DAEMON
           @daemon_resources = Resource::VPlatform.new
+          @event_trace = Events::Trace.new
+          @event_manager = Events::EventManager.new(@event_trace)
         end
       end
 
@@ -1397,6 +1399,28 @@ module Distem
         end
 
         return ret
+      end
+
+
+      # Add a churn trace to a VNode
+      def vnode_churn(vnodename, trace)
+        if daemon?
+          trace.to_a.each do |date, event_value|
+            @trace.add_event(date, Events::Event.new('vnode', 'churn', event_value, vnodename))
+          end
+        else
+          raise "You must contact the coordinator for that."
+        end
+      end
+
+
+      # Start the churn
+      def churn_start
+        if daemon?
+          @event_manager.run
+        else
+          raise "You must contact the coordinator for that."
+        end
       end
 
       # Load a configuration

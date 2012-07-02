@@ -480,6 +480,16 @@ module Distem
         get_json("/vplatform/#{format}")
       end
 
+      # Add churn to a VNode
+      def vnode_churn_add(vnodename, trace)
+        post_json("/vnodes/#{vnodename}/churn", { 'trace' => trace})
+      end
+
+      # Start the churn
+      def churn_start
+        post_json("/churn")
+      end
+
       protected
 
       # Check if there was an error in the REST request

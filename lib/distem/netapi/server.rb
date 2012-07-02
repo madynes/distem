@@ -624,6 +624,27 @@ module Distem
       end
       end
 
+      # Set churn on a VNode
+      post '/vnodes/:vnodename/churn/?' do
+        check do
+          trace = {}
+          trace = JSON.parse(params['trace']) if params['trace']
+          @body = @daemon.vnode_churn(URI.unescape(params['vnodename']),trace)
+        end
+
+        #return result!
+      end
+
+      # Start the churn
+
+      post '/churn/?' do
+        check do
+          @body = @daemon.churn_start
+        end
+
+        #return result!
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})
