@@ -43,6 +43,7 @@ module Distem
       def trigger(event_list = nil)
 
         cl = NetAPI::Client.new
+        desc = {}
         if @change_type == 'churn'
           if @resource_type == 'vnode'
             if @event_value == 'up'
@@ -57,14 +58,12 @@ module Distem
         elsif @change_type == 'power'
           cl.vcpu_update(@vnode_name, @event_value)
 
-        elsif @change_type == 'bandwith'
-          desc = {}
-          desc = desc[@viface_direction]['bandwith']['rate'] =  @event_value
+        elsif @change_type == 'bandwidth'
+          desc[@viface_direction] = { 'bandwidth' => { 'rate' => @event_value } }
           cl.viface_update(@vnode_name, @viface_name, desc)
 
         elsif @change_type == 'latency'
-          desc = {}
-          desc = desc[@viface_direction]['latency']['delay'] = @event_value
+          desc[@viface_direction] = { 'latency' => { 'delay' => @event_value } }
           cl.viface_update(@vnode_name, @viface_name, desc)
 
         else

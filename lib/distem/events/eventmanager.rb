@@ -31,9 +31,9 @@ module Distem
           begin
             next_event.trigger(@event_trace) if next_event
             next_date, next_event = @event_trace.pop_next_event
-            if next_date and next_date > 0
+            if next_date
               sleep_time = init_time + next_date - Time.now
-              sleep sleep_time
+              sleep sleep_time if sleep_time > 0
             end
           end while next_event
         }
