@@ -490,6 +490,11 @@ module Distem
         post_json("/churn", {'state' => 'up'})
       end
 
+      # Stop the churn
+      def churn_stop
+        post_json("/churn", {'state' => 'down'})
+      end
+
       protected
 
       # Check if there was an error in the REST request

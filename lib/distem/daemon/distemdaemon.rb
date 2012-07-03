@@ -1424,6 +1424,15 @@ module Distem
         end
       end
 
+      # Stop the churn
+      def churn_stop
+        if daemon?
+          @event_manager.stop
+        else
+          raise "You must contact the coordinator for that."
+        end
+      end
+
       # Load a configuration
       # ==== Attributes
       # * +data+ data to be applied

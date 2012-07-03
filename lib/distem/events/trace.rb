@@ -29,6 +29,10 @@ module Distem
         return @event_list.delete_at(0)
       end
 
+      def clear
+        @event_list = []
+      end
+
     end
 
   end

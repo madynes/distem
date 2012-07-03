@@ -637,15 +637,13 @@ module Distem
       end
 
       # Start an stop the churn
-
       post '/churn/?' do
         check do
-          # state = JSON.parse(params['state'])
-          # if(state == 'up')
+          if(params['state'] == 'up')
             @daemon.churn_start
-          #else
-          #  raise "argument error : #{state}"
-          #end
+          else
+            @daemon.churn_stop
+          end
           @body = ""
         end
 
