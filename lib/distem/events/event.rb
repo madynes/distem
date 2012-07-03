@@ -30,12 +30,13 @@ module Distem
         raise "Bandwith or latency power change must be applied on a viface,not a #{resource_type}" if (change_type == 'bandwith' or  change_type == 'latency') and resource_type != 'viface'
         raise "Churn cannot be applied on a vcpu" if (change_type == 'churn' and resource_type == 'vcpu')
         raise "A churn event must take an 'up' or 'down' value" if (change_type == 'churn' and event_value != 'up' and event_value != 'down')
-        raise "The direction of the viface must be 'up' or 'down'" if (change_type == 'bandwith' or  change_type == 'latency') and viface_direction != 'up' and viface_direction != 'down'
+        raise "The direction of the viface must be 'input' or 'output'" if (change_type == 'bandwith' or  change_type == 'latency') and viface_direction != 'output' and viface_direction != 'input'
 
         @resource_type = resource_type
         @change_type = change_type
         @vnode_name = vnode_name
         @viface_name= viface_name
+        @viface_direction = viface_direction
         @event_value = event_value
       end
 
@@ -52,16 +53,19 @@ module Distem
           else
             raise "Not implemented (yet?) : #{@change_type} on #{@resource_type}"
           end
+
         elsif @change_type == 'power'
-          if @resource_type == 'vcpu'
-            new_power = @event_value.to_f
-            cl.vcpu_update(@vnode_name, new_power)
-          else
-            raise "Not implemented : #{@change_type} on #{@resource_type}"
-          end
+          cl.vcpu_update(@vnode_name, @event_value)
+
         elsif @change_type == 'bandwith'
+          desc = {}
+          desc = desc[@viface_direction]['bandwith']['rate'] =  @event_value
+          cl.viface_update(@vnode_name, @viface_name, desc)
 
         elsif @change_type == 'latency'
+          desc = {}
+          desc = desc[@viface_direction]['latency']['delay'] = @event_value
+          cl.viface_update(@vnode_name, @viface_name, desc)
 
         else
           raise "Not implemented : #{@change_type}"
