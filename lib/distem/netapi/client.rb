@@ -487,7 +487,12 @@ module Distem
 
       # Add an availability trace to a vnode vcpu
       def vcpu_availability_trace_add(vnodename, trace)
-        post_json("/vnodes/#{vnodename}/vcpu/availability", { 'trace' => trace})
+        post_json("/vnodes/#{vnodename}/cpu/availability", { 'trace' => trace})
+      end
+
+      # Add a bandwidth trace to a vnode viface
+      def viface_bandwidth_trace_add(vnodename, vifacename, viface_direction, trace)
+        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/bandwidth", { 'vifacename' => vifacename, 'viface_direction' => viface_direction, 'trace' => trace})
       end
 
       # Start the churn

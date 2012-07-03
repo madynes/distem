@@ -1426,6 +1426,18 @@ module Distem
         end
       end
 
+      # Add a bandwidth trace to a VNode Viface
+      def viface_bandwidth_trace(vnodename, viface, direction, trace)
+        if daemon?
+          trace.to_a.each do |date, event_value|
+            @event_trace.add_event(date.to_f, Events::Event.new('viface', 'bandwidth', event_value, vnodename, viface, direction))
+          end
+          #return @event_trace.event_list
+        else
+          raise "You must contact the coordinator for that."
+        end
+      end
+
       # Start the churn
       def churn_start
         if daemon?

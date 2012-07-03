@@ -637,11 +637,24 @@ module Distem
       end
 
       # Set an availability on a vnode vcpu
-      post '/vnodes/:vnodename/vcpu/availability/?' do
+      post '/vnodes/:vnodename/cpu/availability/?' do
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
           @daemon.vcpu_availability(URI.unescape(params['vnodename']),trace)
+          @body = ""
+        end
+
+        return result!
+      end
+
+      # Set a bandwidth trace on a vnode viface
+      post '/vnodes/:vnodename/viface/:vifacename/bandwidth' do
+        check do
+          trace = {}
+          trace = JSON.parse(params['trace']) if params['trace']
+          @daemon.vcpu_availability(URI.unescape(params['vnodename']),trace)
+          @daemon.viface_bandwidth_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), URI.unescape(params['viface_direction']), trace)
           @body = ""
         end
 
