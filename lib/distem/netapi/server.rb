@@ -636,6 +636,18 @@ module Distem
         return result!
       end
 
+      # Set an availability on a vnode vcpu
+      post '/vnodes/:vnodename/vcpu/availability/?' do
+        check do
+          trace = {}
+          trace = JSON.parse(params['trace']) if params['trace']
+          @daemon.vcpu_availability(URI.unescape(params['vnodename']),trace)
+          @body = ""
+        end
+
+        return result!
+      end
+
       # Start an stop the churn
       post '/churn/?' do
         check do

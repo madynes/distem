@@ -485,6 +485,11 @@ module Distem
         post_json("/vnodes/#{vnodename}/churn", { 'trace' => trace})
       end
 
+      # Add an availability trace to a vnode vcpu
+      def vcpu_availability_trace_add(vnodename, trace)
+        post_json("/vnodes/#{vnodename}/vcpu/availability", { 'trace' => trace})
+      end
+
       # Start the churn
       def churn_start
         post_json("/churn", {'state' => 'up'})

@@ -50,10 +50,15 @@ module Distem
               cl.vnode_shutdown(@vnode_name)
             end
           else
-            raise "Not implemented : #{@change_type} on #{@resource_type}"
+            raise "Not implemented (yet?) : #{@change_type} on #{@resource_type}"
           end
         elsif @change_type == 'power'
-
+          if @resource_type == 'vcpu'
+            new_power = @event_value.to_f
+            cl.vcpu_update(@vnode_name, new_power)
+          else
+            raise "Not implemented : #{@change_type} on #{@resource_type}"
+          end
         elsif @change_type == 'bandwith'
 
         elsif @change_type == 'latency'
