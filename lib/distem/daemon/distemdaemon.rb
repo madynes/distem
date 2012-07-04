@@ -994,7 +994,7 @@ module Distem
             freq = desc['frequency'].to_f || 1.0
           end
 
-          freq = frequency * 1000 if frequency > 1
+          freq = freq * 1000 if freq > 1
 
           vcpu.update_vcores(freq)
 
@@ -1004,7 +1004,7 @@ module Distem
               @node_config.vnode_reconfigure(vnode)
             elsif daemon?
               cl = NetAPI::Client.new(vnode.host.address)
-              cl.cpu_update(vnode.name,desc)
+              cl.vcpu_update(vnode.name,desc)
             end
             vnode.status = Resource::Status::RUNNING
           end
