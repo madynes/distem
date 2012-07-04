@@ -65,9 +65,13 @@ module Distem
         str = Shell.run("ifconfig")
 
         unless str.include?("#{NAME_BRIDGE}")
-          gw = self.get_default_gateway # needs to be done before we break eth0
+          # needs to be done before we break eth0
+          gw = self.get_default_gateway
+          Shell.run("ethtool -G #{self.get_default_iface()} rx 4096 tx 4096")
+
           Shell.run("brctl addbr #{NAME_BRIDGE}")
           Shell.run("brctl setfd #{NAME_BRIDGE} 0")
+          Shell.run("brctl setageing #{NAME_BRIDGE} 3000000")
           Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
           Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
           Shell.run("ifconfig #{iface} 0.0.0.0 up")
@@ -91,9 +95,11 @@ module Distem
       
       # Set up the ARP cache 
       def self.set_arp_cache()
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1=1024")
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2=4096")
-        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3=16384")
+        Shell.run("sysctl -w net.ipv4.neigh.default.base_reachable_time=86400")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_stale_time=86400")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh1=100000000")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh2=100000000")
+        Shell.run("sysctl -w net.ipv4.neigh.default.gc_thresh3=100000000")
       end
 
       # Clean the IFB module
