@@ -653,8 +653,21 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          @daemon.vcpu_availability(URI.unescape(params['vnodename']),trace)
-          @daemon.viface_bandwidth_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), URI.unescape(params['viface_direction']), trace)
+          direction = traceURI.unescape(params['viface_direction']) if params['viface_direction']
+          @daemon.viface_bandwidth_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), trace, direction)
+          @body = ""
+        end
+
+        return result!
+      end
+
+      # Set a latency trace on a vnode viface
+      post '/vnodes/:vnodename/viface/:vifacename/latency' do
+        check do
+          trace = {}
+          trace = JSON.parse(params['trace']) if params['trace']
+          direction = traceURI.unescape(params['viface_direction']) if params['viface_direction']
+          @daemon.viface_latency_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), trace, direction)
           @body = ""
         end
 

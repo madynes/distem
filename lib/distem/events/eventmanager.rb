@@ -46,6 +46,7 @@ module Distem
 
       def stop
         @running_thread.exit if @running_thread
+        @running_thread = nil
         @event_trace.clear
       end
     end

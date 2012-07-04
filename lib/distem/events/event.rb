@@ -30,7 +30,7 @@ module Distem
         raise "Bandwith or latency power change must be applied on a viface,not a #{resource_type}" if (change_type == 'bandwith' or  change_type == 'latency') and resource_type != 'viface'
         raise "Churn cannot be applied on a vcpu" if (change_type == 'churn' and resource_type == 'vcpu')
         raise "A churn event must take an 'up' or 'down' value" if (change_type == 'churn' and event_value != 'up' and event_value != 'down')
-        raise "The direction of the viface must be 'input' or 'output'" if (change_type == 'bandwith' or  change_type == 'latency') and viface_direction != 'output' and viface_direction != 'input'
+        raise "The direction of the viface must be 'input' or 'output'" if viface_direction and viface_direction != 'output' and viface_direction != 'input'
 
         @resource_type = resource_type
         @change_type = change_type
@@ -59,11 +59,21 @@ module Distem
           cl.vcpu_update(@vnode_name, @event_value)
 
         elsif @change_type == 'bandwidth'
-          desc[@viface_direction] = { 'bandwidth' => { 'rate' => @event_value } }
+          if @viface_direction
+            desc[@viface_direction] = { 'bandwidth' => { 'rate' => @event_value } }
+          else
+            desc['input'] = { 'bandwidth' => { 'rate' => @event_value } }
+            desc['output'] = { 'bandwidth' => { 'rate' => @event_value } }
+          end
           cl.viface_update(@vnode_name, @viface_name, desc)
 
         elsif @change_type == 'latency'
-          desc[@viface_direction] = { 'latency' => { 'delay' => @event_value } }
+          if @viface_direction
+            desc[@viface_direction] = { 'latency' => { 'delay' => @event_value } }
+          else
+            desc['input'] = { 'latency' => { 'delay' => @event_value } }
+            desc['output'] = { 'latency' => { 'delay' => @event_value } }
+          end
           cl.viface_update(@vnode_name, @viface_name, desc)
 
         else

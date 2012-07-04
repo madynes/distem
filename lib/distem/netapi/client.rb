@@ -491,8 +491,17 @@ module Distem
       end
 
       # Add a bandwidth trace to a vnode viface
-      def viface_bandwidth_trace_add(vnodename, vifacename, viface_direction, trace)
-        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/bandwidth", { 'vifacename' => vifacename, 'viface_direction' => viface_direction, 'trace' => trace})
+      def viface_bandwidth_trace_add(vnodename, vifacename, trace, viface_direction = nil )
+        desc = { 'vifacename' => vifacename, 'trace' => trace}
+        desc['viface_direction'] = viface_direction if viface_direction
+        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/bandwidth", desc)
+      end
+
+      # Add a latency trace to a vnode viface
+      def viface_latency_trace_add(vnodename, vifacename, trace, viface_direction = nil )
+        desc = { 'vifacename' => vifacename, 'trace' => trace}
+        desc['viface_direction'] = viface_direction if viface_direction
+        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/latency", desc)
       end
 
       # Start the churn
