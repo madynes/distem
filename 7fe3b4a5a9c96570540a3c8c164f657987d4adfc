@@ -1,0 +1,8 @@
+Change-Id: I7fe3b4a5a9c96570540a3c8c164f657987d4adfc
+Code-Review+2: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Verified+1: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Submitted-by: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Submitted-at: Wed, 04 Jul 2012 11:43:49 +0200
+Reviewed-on: http://localhost:8081/370
+Project: distem
+Branch: refs/heads/master
