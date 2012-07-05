@@ -1412,6 +1412,16 @@ module Distem
         end
       end
 
+      # Add an random generated event to a resource
+      def event_random_add(resource_desc, event_type, generator_desc, first_value = nil)
+        if daemon?
+          event = Events::EventGenerator.new(resource_desc, event_type, generator_desc, first_value)
+          @event_trace.add_event(event.get_next_date, event)
+        else
+          raise "You must contact the coordinator for that."
+        end
+      end
+
       # Start the churn
       def churn_start
         if daemon?
