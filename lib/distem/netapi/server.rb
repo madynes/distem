@@ -629,7 +629,10 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          @daemon.vnode_churn(URI.unescape(params['vnodename']),trace)
+          resource_desc = {}
+          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
+          resource_desc['type'] = 'vnode'
+          @daemon.event_trace_add(resource_desc, 'churn', trace)
           @body = ""
         end
 
@@ -641,7 +644,10 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          @daemon.vcpu_availability(URI.unescape(params['vnodename']),trace)
+          resource_desc = {}
+          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
+          resource_desc['type'] = 'vcpu'
+          @daemon.event_trace_add(resource_desc, 'power', trace)
           @body = ""
         end
 
@@ -653,8 +659,12 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          direction = traceURI.unescape(params['viface_direction']) if params['viface_direction']
-          @daemon.viface_bandwidth_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), trace, direction)
+          resource_desc = {}
+          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
+          resource_desc['type'] = 'viface'
+          resource_desc['vifacename'] = URI.unescape(params['vifacename'])
+          resource_desc['viface_direction'] = URI.unescape(params['viface_direction']) if params['viface_direction']
+          @daemon.event_trace_add(resource_desc, 'bandwidth', trace)
           @body = ""
         end
 
@@ -666,8 +676,12 @@ module Distem
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
-          direction = traceURI.unescape(params['viface_direction']) if params['viface_direction']
-          @daemon.viface_latency_trace(URI.unescape(params['vnodename']), URI.unescape(params['vifacename']), trace, direction)
+          resource_desc = {}
+          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
+          resource_desc['type'] = 'viface'
+          resource_desc['vifacename'] = URI.unescape(params['vifacename'])
+          resource_desc['viface_direction'] = URI.unescape(params['viface_direction']) if params['viface_direction']
+          @daemon.event_trace_add(resource_desc, 'latency', trace)
           @body = ""
         end
 
