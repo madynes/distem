@@ -480,28 +480,17 @@ module Distem
         get_json("/vplatform/#{format}")
       end
 
-      # Add churn to a VNode
-      def vnode_churn_add(vnodename, trace)
-        post_json("/vnodes/#{vnodename}/churn", { 'trace' => trace})
-      end
-
-      # Add an availability trace to a vnode vcpu
-      def vcpu_availability_trace_add(vnodename, trace)
-        post_json("/vnodes/#{vnodename}/cpu/availability", { 'trace' => trace})
-      end
-
-      # Add a bandwidth trace to a vnode viface
-      def viface_bandwidth_trace_add(vnodename, vifacename, trace, viface_direction = nil )
-        desc = { 'vifacename' => vifacename, 'trace' => trace}
-        desc['viface_direction'] = viface_direction if viface_direction
-        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/bandwidth", desc)
-      end
-
-      # Add a latency trace to a vnode viface
-      def viface_latency_trace_add(vnodename, vifacename, trace, viface_direction = nil )
-        desc = { 'vifacename' => vifacename, 'trace' => trace}
-        desc['viface_direction'] = viface_direction if viface_direction
-        post_json("/vnodes/#{vnodename}/viface/#{vifacename}/latency", desc)
+      # Add an event trace to a resource
+      #
+      # @param [Hash] resource_desc A descrition of the affected resource
+      # @param [String] event_type The type of event : 'churn', 'availability', 'bandwidth', 'latency'
+      # @param [Hash] trace The trace of events
+      def event_trace_add(resource_desc, event_type, trace)
+        params = {}
+        params['resource'] = resource_desc
+        params['event_type'] = event_type
+        params['trace'] = trace
+        post_json("/events/trace", params)
       end
 
       # Start the churn

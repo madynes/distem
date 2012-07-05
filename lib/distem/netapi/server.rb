@@ -624,68 +624,17 @@ module Distem
       end
       end
 
-      # Set churn on a VNode
-      post '/vnodes/:vnodename/churn/?' do
+      # Add a event trace to a resource
+      post '/events/trace/?' do
         check do
           trace = {}
           trace = JSON.parse(params['trace']) if params['trace']
           resource_desc = {}
-          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
-          resource_desc['type'] = 'vnode'
-          @daemon.event_trace_add(resource_desc, 'churn', trace)
+          resource_desc = JSON.parse(params['resource']) if params['resource']
+          event_type = URI.unescape(params['event_type'])
+          @daemon.event_trace_add(resource_desc, event_type, trace)
           @body = ""
         end
-
-        return result!
-      end
-
-      # Set an availability on a vnode vcpu
-      post '/vnodes/:vnodename/cpu/availability/?' do
-        check do
-          trace = {}
-          trace = JSON.parse(params['trace']) if params['trace']
-          resource_desc = {}
-          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
-          resource_desc['type'] = 'vcpu'
-          @daemon.event_trace_add(resource_desc, 'power', trace)
-          @body = ""
-        end
-
-        return result!
-      end
-
-      # Set a bandwidth trace on a vnode viface
-      post '/vnodes/:vnodename/viface/:vifacename/bandwidth' do
-        check do
-          trace = {}
-          trace = JSON.parse(params['trace']) if params['trace']
-          resource_desc = {}
-          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
-          resource_desc['type'] = 'viface'
-          resource_desc['vifacename'] = URI.unescape(params['vifacename'])
-          resource_desc['viface_direction'] = URI.unescape(params['viface_direction']) if params['viface_direction']
-          @daemon.event_trace_add(resource_desc, 'bandwidth', trace)
-          @body = ""
-        end
-
-        return result!
-      end
-
-      # Set a latency trace on a vnode viface
-      post '/vnodes/:vnodename/viface/:vifacename/latency' do
-        check do
-          trace = {}
-          trace = JSON.parse(params['trace']) if params['trace']
-          resource_desc = {}
-          resource_desc['vnodename'] = URI.unescape(params['vnodename'])
-          resource_desc['type'] = 'viface'
-          resource_desc['vifacename'] = URI.unescape(params['vifacename'])
-          resource_desc['viface_direction'] = URI.unescape(params['viface_direction']) if params['viface_direction']
-          @daemon.event_trace_add(resource_desc, 'latency', trace)
-          @body = ""
-        end
-
-        return result!
       end
 
       # Start an stop the churn
