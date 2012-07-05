@@ -7,14 +7,16 @@ module Distem
       # embedded in the Kernel module
       # This should not be used.
 
-      def initialize(seed)
-        # Set the seed for everyone uses this class (!)
-        if seed.is_a?(Array)
-          tmp_seed = 0
-          seed.each do |x| tmp_seed += x end
-          seed = tmp_seed
+      def initialize(seed = nil)
+        if seed
+          # Set the seed for everyone uses this class (!)
+          if seed.is_a?(Array)
+            tmp_seed = 0
+            seed.each do |x| tmp_seed += x end
+            seed = tmp_seed
+          end
+          srand(seed)
         end
-        srand(seed)
       end
 
       def rand_U01
