@@ -1405,8 +1405,9 @@ module Distem
       # Add a churn trace to a VNode
       def vnode_churn(vnodename, trace)
         if daemon?
+          resource_desc = { 'type' => 'vnode', 'vnodename' => vnodename}
           trace.to_a.each do |date, event_value|
-            @event_trace.add_event(date.to_f, Events::Event.new('vnode', 'churn', event_value, vnodename))
+            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, 'churn', event_value))
           end
           #return @event_trace.event_list
         else
@@ -1417,8 +1418,9 @@ module Distem
       # Add an availability trace to a VNode VCpu
       def vcpu_availability(vnodename, trace)
         if daemon?
+          resource_desc = { 'type' => 'vcpu', 'vnodename' => vnodename}
           trace.to_a.each do |date, event_value|
-            @event_trace.add_event(date.to_f, Events::Event.new('vcpu', 'power', event_value, vnodename))
+            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, 'power', event_value))
           end
           #return @event_trace.event_list
         else
@@ -1429,8 +1431,12 @@ module Distem
       # Add a bandwidth trace to a VNode Viface
       def viface_bandwidth_trace(vnodename, viface, trace, direction = nil)
         if daemon?
+          resource_desc = { 'type' => 'viface',
+                            'vnodename' => vnodename,
+                            'viface' => viface,
+                            'viface_direction' => direction}
           trace.to_a.each do |date, event_value|
-            @event_trace.add_event(date.to_f, Events::Event.new('viface', 'bandwidth', event_value, vnodename, viface, direction))
+            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, 'bandwidth', event_value))
           end
           #return @event_trace.event_list
         else
@@ -1441,8 +1447,12 @@ module Distem
       # Add a latency trace to a VNode Viface
       def viface_latency_trace(vnodename, viface, trace, direction = nil)
         if daemon?
+          resource_desc = { 'type' => 'viface',
+                            'vnodename' => vnodename,
+                            'viface' => viface,
+                            'viface_direction' => direction}
           trace.to_a.each do |date, event_value|
-            @event_trace.add_event(date.to_f, Events::Event.new('viface', 'latency', event_value, vnodename, viface, direction))
+            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, 'latency', event_value))
           end
           #return @event_trace.event_list
         else

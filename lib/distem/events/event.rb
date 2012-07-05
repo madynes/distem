@@ -24,20 +24,22 @@ module Distem
       # Event value : what will be done on the resource - churn : 'up' or 'down', a number otherwise
       attr_reader :event_value
 
-      def initialize(resource_type, change_type, event_value, vnode_name, viface_name = nil, viface_direction = nil)
-        raise "No viface name given" if resource_type=='viface' and not viface_name
-        raise "Resource power change must be applied on a vcpu,not a #{resource_type}" if change_type == 'power' and resource_type != 'vcpu'
-        raise "Bandwith or latency power change must be applied on a viface,not a #{resource_type}" if (change_type == 'bandwith' or  change_type == 'latency') and resource_type != 'viface'
-        raise "Churn cannot be applied on a vcpu" if (change_type == 'churn' and resource_type == 'vcpu')
-        raise "A churn event must take an 'up' or 'down' value" if (change_type == 'churn' and event_value != 'up' and event_value != 'down')
-        raise "The direction of the viface must be 'input' or 'output'" if viface_direction and viface_direction != 'output' and viface_direction != 'input'
+      def initialize(resource_desc, change_type, event_value)
 
-        @resource_type = resource_type
+        @resource_type = resource_desc['type']
         @change_type = change_type
-        @vnode_name = vnode_name
-        @viface_name= viface_name
-        @viface_direction = viface_direction
+        @vnode_name = resource_desc['vnodename']
+        @viface_name = resource_desc['vifacename'] if resource_desc['vifacename']
+        @viface_direction = resource_desc['viface_direction'] if resource_desc['viface_direction']
         @event_value = event_value
+
+        raise "No viface name given" if @resource_type=='viface' and not @viface_name
+        raise "Resource power change must be applied on a vcpu,not a #{@resource_type}" if @change_type == 'power' and @resource_type != 'vcpu'
+        raise "Bandwith or latency power change must be applied on a viface,not a #{@resource_type}" if (@change_type == 'bandwith' or  @change_type == 'latency') and @resource_type != 'viface'
+        raise "Churn cannot be applied on a vcpu" if (@change_type == 'churn' and @resource_type == 'vcpu')
+        raise "A churn event must take an 'up' or 'down' value" if (@change_type == 'churn' and @event_value != 'up' and @event_value != 'down')
+        raise "The direction of the viface must be 'input' or 'output'" if @viface_direction and @viface_direction != 'output' and @viface_direction != 'input'
+
       end
 
       def trigger(event_list = nil)
