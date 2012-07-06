@@ -65,6 +65,13 @@ module Distem
         if generator_parameters['distribution'] == 'uniform'
           return generator_parameters['min'].to_f +
               (generator_parameters['max'].to_f - generator_parameters['min'].to_f) * random_generator.rand_U01
+
+        elsif generator_parameters['distribution'] == 'exponential'
+          return -Math::log(random_generator.rand_U01) / generator_parameters['rate'].to_f
+
+        elsif generator_parameters['distribution'] == 'weibull'
+          return generator_parameters['scale'] * ( (-Math::log(random_generator.rand_U01)) ** (1.0 / generator_parameters['shape'].to_f) )
+
         else
           raise "Probabilist distribution not supported : #{generator_parameters['distribution']}"
         end
