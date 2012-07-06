@@ -23,25 +23,26 @@ module Distem
         raise "No event trace is set" unless @event_trace
         raise "The event manager is already started!" if (@running_thread and @running_thread.alive?)
 
-        next_event = nil
+        event = nil
+        date = 0
 
         runblock = Proc.new {
           init_time = Time.now
 
           begin
-            next_event.trigger(@event_trace) if next_event
-            next_date, next_event = @event_trace.pop_next_event
-            if next_date
-              sleep_time = init_time + next_date - Time.now
+            event.trigger(@event_trace, date) if event
+            date, event = @event_trace.pop_next_event
+            if date
+              sleep_time = init_time + date - Time.now
               sleep sleep_time if sleep_time > 0
             end
-          end while next_event
+          end while event
         }
-        
+
         @running_thread = Thread.new {
           runblock.call
         }
-        
+
       end
 
       def stop

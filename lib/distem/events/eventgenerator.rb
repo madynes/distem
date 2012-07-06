@@ -40,10 +40,10 @@ module Distem
         return get_random_value('date')
       end
 
-      def trigger(event_list)
+      def trigger(event_list, date)
         super
         next_event = get_next_event
-        next_date = get_next_date
+        next_date = get_next_date + date
         event_list.add_event(next_date, next_event)
       end
 

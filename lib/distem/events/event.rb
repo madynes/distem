@@ -21,7 +21,7 @@ module Distem
 
       end
 
-      def trigger(event_list = nil)
+      def trigger(event_list = nil, date = 0)
 
         cl = NetAPI::Client.new
         desc = {}
