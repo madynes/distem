@@ -637,6 +637,21 @@ module Distem
         end
       end
 
+      # Add a random generated event to a resource
+      post '/events/random/?' do
+        check do
+          generator_desc = {}
+          generator_desc = JSON.parse(params['generator']) if params['generator']
+          resource_desc = {}
+          resource_desc = JSON.parse(params['resource']) if params['resource']
+          event_type = URI.unescape(params['event_type'])
+          first_value = nil
+          first_value = URI.unescape(params['first_value']) if params['first_value']
+          @daemon.event_random_add(resource_desc, event_type, generator_desc, first_value)
+          @body = ""
+        end
+      end
+
       # Start an stop the churn
       post '/churn/?' do
         check do

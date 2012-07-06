@@ -493,6 +493,16 @@ module Distem
         post_json("/events/trace", params)
       end
 
+      # Add a random generated event to a resource
+      def event_random_add(resource_desc, event_type, generator_desc, first_value = nil)
+        params = {}
+        params['resource'] = resource_desc
+        params['event_type'] = event_type
+        params['generator'] = generator_desc
+        params['first_value'] = first_value if first_value
+        post_json("/events/random", params)
+      end
+
       # Start the churn
       def churn_start
         post_json("/churn", {'state' => 'up'})
