@@ -40,6 +40,8 @@ module Distem
           cl.vcpu_update(@resource_desc['vnodename'], @event_value)
 
         elsif @change_type == 'bandwidth'
+          # If no unit is given, we assume the value is in Mbps
+          @event_value = "#{@event_value}mbps" unless @event_value.is_a?(String) and @event_value.include?('s')
           if @resource_desc['viface_direction']
             desc[@resource_desc['viface_direction']] = { 'bandwidth' => { 'rate' => @event_value } }
           else
@@ -49,6 +51,8 @@ module Distem
           cl.viface_update(@resource_desc['vnodename'], @resource_desc['vifacename'], desc)
 
         elsif @change_type == 'latency'
+          # If no unit is given, we assume the value is in milliseconds
+          @event_value = "#{@event_value}ms" unless @event_value.is_a?(String) and @event_value.include?('s')
           if @resource_desc['viface_direction']
             desc[@resource_desc['viface_direction']] = { 'latency' => { 'delay' => @event_value } }
           else
