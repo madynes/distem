@@ -503,14 +503,14 @@ module Distem
         post_json("/events/random", params)
       end
 
-      # Start the churn
-      def churn_start
-        post_json("/churn", {'state' => 'up'})
+      # Start the event manager
+      def event_manager_start
+        post_json("/eventmanager", {'state' => 'up'})
       end
 
-      # Stop the churn
-      def churn_stop
-        post_json("/churn", {'state' => 'down'})
+      # Stop the event manager
+      def event_manager_stop
+        post_json("/eventmanager", {'state' => 'down'})
       end
 
       protected

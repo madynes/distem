@@ -1423,7 +1423,7 @@ module Distem
       end
 
       # Start the churn
-      def churn_start
+      def event_manager_start
         if daemon?
           @event_manager.run
         else
@@ -1432,7 +1432,7 @@ module Distem
       end
 
       # Stop the churn
-      def churn_stop
+      def event_manager_stop
         if daemon?
           @event_manager.stop
         else

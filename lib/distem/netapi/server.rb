@@ -652,13 +652,13 @@ module Distem
         end
       end
 
-      # Start an stop the churn
-      post '/churn/?' do
+      # Start an stop the event manager
+      post '/eventmanager/?' do
         check do
           if(params['state'] == 'up')
-            @daemon.churn_start
+            @daemon.event_manager_start
           else
-            @daemon.churn_stop
+            @daemon.event_manager_stop
           end
           @body = ""
         end
