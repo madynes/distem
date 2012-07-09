@@ -22,8 +22,14 @@ module Distem
             @random_generators['value'] = SimpleRandomGenerator.new
           end
           event_value = get_random_value('value')
-          # Non-integer values are accepted only if between 0 and 1
-          event_value = event_value.round if event_value > 1
+          if change_type == 'power'
+            # For this event,  non-integer values are accepted only if between 0 and 1
+            event_value = event_value.round if event_value > 1
+          else
+            #No integer value allowed - As 0 means infinity in some cases, we only start from 1
+            event_value = event_value.round
+            event_value = 1 if event_value == 0
+          end
         end
 
         super(resource_desc, change_type, event_value)
