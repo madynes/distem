@@ -1412,6 +1412,18 @@ module Distem
         end
       end
 
+      # Add an event trace to a resource, from a string
+      def event_trace_string_add(resource_desc, event_type, trace)
+        if daemon?
+          trace.strip.split(/\n+/).each do |trace_line|
+            date, event_value = trace_line.split
+            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, event_type, event_value))
+          end
+        else
+          raise "You must contact the coordinator for that."
+        end
+      end
+
       # Add an random generated event to a resource
       def event_random_add(resource_desc, event_type, generator_desc, first_value = nil)
         if daemon?
