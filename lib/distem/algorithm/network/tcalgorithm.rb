@@ -6,18 +6,43 @@ module Distem
 
       # A common interface for TC based algorithms
       class TCAlgorithm < Algorithm
+
+        @@lock = Mutex.new
+        @@store = {}
+
         def initialize()
-          @limited_output = false
-          @limited_input = false
+          @limited_bw_output = false
+          @limited_lat_output = false
+          @limited_bw_input = false
+          @limited_lat_input = false
         end
 
         # :nodoc:
         def apply(viface)
-          clean(viface)
+          @@lock.synchronize {
+            @@store[viface] = {} if !@@store[viface]
+          }
+
+          bw_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Bandwidth.name) != nil)
+          lat_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Latency.name) != nil)
+          bw_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Bandwidth.name) != nil)
+          lat_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Latency.name) != nil)
+          clean(viface) if (bw_output != @limited_bw_output) ||
+            (lat_output != @limited_lat_output) ||
+            (bw_input != @limited_bw_input) ||
+            (lat_input != @limited_lat_input)
         end
 
         # Clean every previous run config
         def clean(viface)
+          @limited_bw_output = false
+          @limited_lat_output = false
+          @limited_bw_input = false
+          @limited_lat_input = false
+          @@lock.synchronize {
+            @@store[viface] = {}
+          }
+
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
           ifb = "ifb#{viface.id}"
 
