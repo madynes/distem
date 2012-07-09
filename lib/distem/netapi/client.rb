@@ -493,6 +493,15 @@ module Distem
         post_json("/events/trace", params)
       end
 
+      # Add an event trace to a resource, but the source is a string
+      def event_trace_string_add(resource_desc, event_type, trace_string)
+        params = {}
+        params['resource'] = resource_desc
+        params['event_type'] = event_type
+        params['trace_string'] = trace_string
+        post_json("/events/trace_string", params)
+      end
+
       # Add a random generated event to a resource
       def event_random_add(resource_desc, event_type, generator_desc, first_value = nil)
         params = {}

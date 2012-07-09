@@ -637,6 +637,17 @@ module Distem
         end
       end
 
+      # Add a event trace to a resource, but the source is a string
+      post '/events/trace_string/?' do
+        check do
+          trace_string = URI.unescape(params['trace_string'])
+          resource_desc = JSON.parse(params['resource']) if params['resource']
+          event_type = URI.unescape(params['event_type'])
+          @daemon.event_trace_string_add(resource_desc, event_type, trace_string)
+          @body = ""
+        end
+      end
+
       # Add a random generated event to a resource
       post '/events/random/?' do
         check do
