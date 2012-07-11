@@ -19,7 +19,7 @@ module Distem
           if value_generator
             @random_generators['value'] = value_generator
           else
-            @random_generators['value'] = SimpleRandomGenerator.new
+            @random_generators['value'] = RngStreamRandomGenerator.new
           end
           event_value = get_random_value('value')
           if change_type == 'power'
@@ -37,7 +37,7 @@ module Distem
         if date_generator
           @random_generators['date'] = date_generator
         else
-          @random_generators['date'] = SimpleRandomGenerator.new
+          @random_generators['date'] = RngStreamRandomGenerator.new
         end
 
       end
