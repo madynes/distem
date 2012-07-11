@@ -19,6 +19,13 @@ begin
     ext.ext_dir = 'ext/distem/cpugov'
     ext.lib_dir = 'lib/ext'
   end
+
+  Rake::ExtensionTask.new do |ext|
+    ext.name = 'rngstream'
+    ext.ext_dir = 'ext/distem/rngstream'
+    ext.lib_dir = 'lib/ext'
+  end
+  
 rescue LoadError
   puts "You need the 'rake-compiler' to build extensions from the Rakefile"
 end
