@@ -18,6 +18,8 @@ module Distem
       attr_accessor :status
       # The emulation algorithms that are used on this physical node (Hash)
       attr_accessor :algorithms
+      # The number of local vifaces
+      attr_accessor :local_vifaces
 
       # Deprecated, used to contact the physical node if the SSH key file is not set
       attr_reader :ssh_user, :ssh_password
@@ -47,6 +49,7 @@ module Distem
         @algorithms[:cpu] = Algorithm::CPU::HOGS
 
         @@ids += 1
+        @local_vifaces = 0
       end
 
       # Compare two PNodes (based on the host address)
