@@ -44,13 +44,13 @@ module Distem
         # * +freq+ The new frequemcy
         def update(freq)
           if attached?
-            raise Lib::InvalidParameterError, @frequency if \
-              @frequency > @pcore.frequency or @frequency <= 0
+            raise Lib::InvalidParameterError, freq if \
+              freq > @pcore.frequency or freq <= 0
 
-            if @frequency > 0 and @frequency <= 1
-              @frequency = (@pcore.frequency * @frequency).to_i
+            if freq > 0 and freq <= 1
+              @frequency = (@pcore.frequency * freq).to_i
             else
-              @frequency = @frequency.to_i
+              @frequency = freq.to_i
             end
           else
             @frequency = freq
