@@ -82,13 +82,16 @@ module Distem
       def get_pnode_available(vnode)
         availables = []
         @pnodes.each_value do |pnode|
-          next if vnode.vcpu and pnode.cpu.get_free_cores.size < vnode.vcpu.vcores.size
+          next if (vnode.vcpu and pnode.cpu.get_free_cores.size < vnode.vcpu.vcores.size) ||
+            ((pnode.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
           availables << pnode
         end
 
-        raise Lib::UnavailableResourceError, 'pnode/cpu' if availables.empty?
+        raise Lib::UnavailableResourceError, 'pnode/cpu or pnode/iface' if availables.empty?
 
-        return availables[rand(availables.size)]
+        pnode = availables[rand(availables.size)]
+        pnode.local_vifaces += vnode.vifaces.length
+        return pnode
       end
 
       # Add a new virtual node to the platform

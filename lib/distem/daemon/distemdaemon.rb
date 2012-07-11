@@ -39,8 +39,6 @@ module Distem
         :vnode_stop => {},
       }
 
-      @@nb_local_vifaces = 0
-
       # Create a new Daemon
       # ==== Attribute
       # * +mode+ The mode the daemon should be executed in (0 for Coordinator, 1 for Normal)
@@ -487,6 +485,10 @@ module Distem
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
           vnode.host = @node_config.pnode unless vnode.host
+          # The IFBs have to be mounted now since the host pnode can be unknown before vnode_start()
+          vnode.vifaces.each { |viface|
+            Lib::Shell.run("ip link set dev ifb#{viface.id} up")
+          }
           vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
           @node_config.vnode_start(vnode)
           vnode.status = Resource::Status::RUNNING
@@ -495,8 +497,16 @@ module Distem
         if daemon?
           vnode.status = Resource::Status::CONFIGURING
 
-          vnode.host = @daemon_resources.get_pnode_available(vnode) unless \
-            vnode.host
+          if vnode.host
+            if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
+              raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+            else
+              vnode.host.local_vifaces += vnode.vifaces.length
+            end
+          else
+            vnode.host = @daemon_resources.get_pnode_available(vnode)
+          end
+
           vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
 
 
@@ -666,23 +676,11 @@ module Distem
         begin
           vifacename = vifacename.gsub(' ','_')
           vnode = vnode_get(vnodename)
-
           viface = Resource::VIface.new(vifacename,vnode)
-          
-          if target?(vnode)
-            @@nb_local_vifaces += 1
-            raise Lib::DistemError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached" if @@nb_local_vifaces > Node::Admin.vifaces_max
-            Lib::Shell.run("ip link set dev ifb#{viface.id} up")
-          end
-
           vnode.add_viface(viface)
-
           downkeys(desc)
-
           viface_update(vnode.name,viface.name,desc)
-
           return viface
-
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
@@ -698,7 +696,7 @@ module Distem
       #
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
-        @@nb_local_vifaces -= 1 if target?(vnode)
+        vnode.host.local_vifaces -= 1 if daemon? && vnode.host
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnode.name,viface.name)
         vnode.remove_viface(viface)
