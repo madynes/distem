@@ -6,21 +6,20 @@ module Distem
     # Class to generate events from a probabilist distribution
     class EventGenerator < Event
 
-      def initialize(resource_desc, change_type, generator_desc, event_value = nil, value_generator = nil, date_generator = nil)
+      def initialize(resource_desc, change_type, generator_desc, event_value = nil, random_generators = nil)
 
         @generator_desc = generator_desc
         @random_generators = {}
+        @random_generators = random_generators if random_generators
         raise "No description given for the date generator" unless @generator_desc['date']
 
         if change_type == 'churn'
           event_value = 'down' unless event_value
         else
           raise "No description given for the value generator" unless @generator_desc['value']
-          if value_generator
-            @random_generators['value'] = value_generator
-          else
-            @random_generators['value'] = RngStreamRandomGenerator.new
-          end
+
+          @random_generators['value'] = RngStreamRandomGenerator.new unless @random_generators['value']
+
           event_value = get_random_value('value')
           if change_type == 'power'
             # For this event,  non-integer values are accepted only if between 0 and 1
@@ -34,11 +33,7 @@ module Distem
 
         super(resource_desc, change_type, event_value)
 
-        if date_generator
-          @random_generators['date'] = date_generator
-        else
-          @random_generators['date'] = RngStreamRandomGenerator.new
-        end
+        @random_generators['date'] = RngStreamRandomGenerator.new unless @random_generators['date']
 
       end
 
@@ -60,7 +55,7 @@ module Distem
         if @change_type == 'churn'
           next_value = (@event_value == 'up' ? 'down' : 'up')
         end
-        return EventGenerator.new(@resource_desc, @change_type, @generator_desc, next_value, @random_generators['value'], @random_generators['date'])
+        return EventGenerator.new(@resource_desc, @change_type, @generator_desc, next_value, @random_generators)
       end
 
       # Get a value for the choosen generator, 'date' or 'value'
