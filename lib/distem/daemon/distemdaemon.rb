@@ -498,19 +498,19 @@ module Distem
 
         if daemon?
           vnode.status = Resource::Status::CONFIGURING
-
-          if vnode.host
-            if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
-              raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+          unless vnode_down
+            if vnode.host
+              if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
+                raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+              else
+                vnode.host.local_vifaces += vnode.vifaces.length
+              end
             else
-              vnode.host.local_vifaces += vnode.vifaces.length
+              vnode.host = @daemon_resources.get_pnode_available(vnode)
             end
-          else
-            vnode.host = @daemon_resources.get_pnode_available(vnode)
+
+            vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
           end
-
-          vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-
 
           block = Proc.new {
             @@semvnodestart_pnodelock.synchronize {
