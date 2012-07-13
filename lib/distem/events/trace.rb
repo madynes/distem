@@ -12,11 +12,14 @@ module Distem
 
       def initialize
         @event_list = []
+        @mutex = Mutex.new
       end
 
       def add_event_list(event_list)
-        @event_list += event_list
-        @event_list.sort!
+        @mutex.synchronize do
+          @event_list += event_list
+          @event_list.sort!
+        end
       end
 
       def add_event(date, event)
@@ -26,11 +29,17 @@ module Distem
       end
 
       def pop_next_event
-        return @event_list.delete_at(0)
+        next_event = nil
+        @mutex.synchronize do
+          next_event = @event_list.delete_at(0)
+        end
+        return next_event
       end
 
       def clear
-        @event_list = []
+        @mutex.synchronize do
+          @event_list.clear
+        end
       end
 
     end
