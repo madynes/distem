@@ -9,12 +9,16 @@ module Distem
 
         @@lock = Mutex.new
         @@store = {}
+        @@ifballocator = nil
 
         def initialize()
           @limited_bw_output = false
           @limited_lat_output = false
           @limited_bw_input = false
           @limited_lat_input = false
+          if @@ifballocator.nil?
+            @@ifballocator = Node::IFBAllocator::new
+          end
         end
 
         # :nodoc:
@@ -44,10 +48,10 @@ module Distem
           }
 
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
-          ifb = "ifb#{viface.id}"
+          ifb = viface.ifb
 
-          str = Lib::Shell.run("tc qdisc show | grep #{ifb}")
-          if str and !str.empty? and !str.include?('pfifo_fast')
+          str = Lib::Shell.run("tc qdisc show").grep(/ dev #{ifb} /)
+          if not str.empty? and not str[0].include?('pfifo_fast')
             inputroot = TCWrapper::QdiscRoot.new(ifb)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
           end
@@ -57,6 +61,8 @@ module Distem
             inputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
           end
+
+          @@ifballocator.free_ifb(ifb)
 
           str = Lib::Shell.run("tc qdisc show | grep #{iface}")
           if str and !str.empty? and !str.include?('pfifo_fast')
