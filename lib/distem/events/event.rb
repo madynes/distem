@@ -47,23 +47,22 @@ module Distem
             vnode_desc = cl.vnode_info(@resource_desc['vnodename'])
             vnode_desc['vifaces'].each do |viface_desc|
               if viface_desc['name'] == @resource_desc['vifacename']
-                if viface_desc['output'] and not (@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='output')
+                if viface_desc['output'] and not (@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='input')
                   viface_desc['output']['properties'].each do |property|
-                    # output = input, don't ask me why, i don't know (yet)
-                    if property['type'] == 'Bandwidth'
-                      desc['input']['bandwidth'] = { 'rate' => property['rate'] }
-                    elsif property['type'] == 'Latency'
-                      desc['input']['latency'] = { 'delay' => property['delay'] }
-                    end
-                  end
-                end
-
-                if viface_desc['input'] and not (@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='input')
-                  viface_desc['input']['properties'].each do |property|
                     if property['type'] == 'Bandwidth'
                       desc['output']['bandwidth'] = { 'rate' => property['rate'] }
                     elsif property['type'] == 'Latency'
                       desc['output']['latency'] = { 'delay' => property['delay'] }
+                    end
+                  end
+                end
+
+                if viface_desc['input'] and not (@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='output')
+                  viface_desc['input']['properties'].each do |property|
+                    if property['type'] == 'Bandwidth'
+                      desc['input']['bandwidth'] = { 'rate' => property['rate'] }
+                    elsif property['type'] == 'Latency'
+                      desc['input']['latency'] = { 'delay' => property['delay'] }
                     end
                   end
                 end
