@@ -186,17 +186,18 @@ module Distem
 
       # See the visit_vplatform documentation
       def visit_vtraffic(vtraffic)
-        return {
-          'viface' => vtraffic.viface.name,
-          'direction' => vtraffic.direction,
-          'properties' => visit(vtraffic.properties),
-        }
+        ret = {}
+        vtraffic.properties.each_value do |prop|
+          name = prop.class.name.split('::').last.downcase
+          ret[name] = {} unless ret[name]
+          ret[name].merge!(visit(prop))
+        end
+        return ret
       end
 
       # See the visit_vplatform documentation
       def visit_bandwidth(limitbw)
         return {
-          'type' => limitbw.to_s(),
           'rate' => limitbw.rate,
         }
       end
@@ -204,7 +205,6 @@ module Distem
       # See the visit_vplatform documentation
       def visit_latency(limitlat)
         return {
-          'type' => limitlat.to_s(),
           'delay' => limitlat.delay,
         }
       end
