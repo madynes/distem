@@ -39,6 +39,16 @@ module Distem
         return ret
       end
 
+      # Gets the inet interface configuration in a form suitable for 'ip addr add'
+      # ==== Attributes
+      # * +iface+ The network interface name (String)
+      # ==== Returns
+      # String object
+      #
+      def self.get_iface_config(iface)
+        return Shell.run("/bin/ip addr show dev #{iface}").grep(/inet /)[0].gsub(/.*inet ([^\s]+ brd [^\s]+).*/, '\1').chomp
+      end
+
       # Gets the IP address of the default network interface used for network communications
       # ==== Returns
       # String object
@@ -57,11 +67,11 @@ module Distem
         cmdret = Shell.run("/bin/ip route list")
         return cmdret.lines.grep(/^default /).first.gsub(/.* via ([0-9.]+).*/, '\1').chomp
       end
-
+      
       # Set up the default bridge that will be used to attach new network interfaces
       def self.set_bridge
         iface = self.get_default_iface()
-        addr = self.get_default_addr()
+        cfg = self.get_iface_config(iface)
 
         str = Shell.run("ifconfig")
 
@@ -73,7 +83,9 @@ module Distem
           Shell.run("brctl addbr #{NAME_BRIDGE}")
           Shell.run("brctl setfd #{NAME_BRIDGE} 0")
           Shell.run("brctl setageing #{NAME_BRIDGE} 3000000")
-          Shell.run("ifconfig #{NAME_BRIDGE} #{addr} promisc up")
+          Shell.run("/bin/ip addr add dev #{NAME_BRIDGE} #{cfg}")
+          Shell.run("/bin/ip link set dev #{NAME_BRIDGE} promisc on")
+          Shell.run("/bin/ip link set dev #{NAME_BRIDGE} up")
           Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
           Shell.run("ifconfig #{iface} 0.0.0.0 up")
           iface = self.get_default_iface()
