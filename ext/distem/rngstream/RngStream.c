@@ -2,14 +2,12 @@
  *
  * File:           RngStream.c for multiple streams of Random Numbers
  * Language:       ANSI C
- * Copyright:      Pierre L'Ecuyer, Université de Montréal
- * Notice:         This code can be used freely for personal, academic,
- *                 or non-commercial purposes. For commercial purposes, 
- *                 please contact P. L'Ecuyer at: lecuyer@iro.UMontreal.ca
+ * Copyright:      Pierre L'Ecuyer, University of Montreal
  * Date:           14 August 2001
-
- * Correction:     24 August 2011
- *		                  changed m1 to m2 in error message of CheckSeed
+ * License: 	   GPL version 2 or later
+ *
+ * Notice:         Please contact P. L'Ecuyer at <lecuyer@iro.UMontreal.ca>
+ *                 for commercial purposes.
  *
 \***********************************************************************/
 
