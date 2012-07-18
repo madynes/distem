@@ -17,11 +17,12 @@ module Distem
       # ==== Returns
       # String object
       def self.get_default_iface
-        cmdret = Shell.run("/sbin/route") 
-        # | grep 'default' | awk '{print \$8}' | tr -d '\n'")
-        ret=""
-        cmdret.each_line { |s| ret=s.split[7] if s.include?("default") }
-        return ret
+        defroute = Shell.run("/bin/ip route list").split(/\n/).grep(/^default /)
+        if defroute.empty?
+          return ""
+        else
+          return defroute[0].gsub(/.* dev ([^\s]+)( .*)?/, '\1')
+        end
       end 
 
       # Gets the IP address of a specified network interface
