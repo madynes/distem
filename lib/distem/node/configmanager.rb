@@ -69,10 +69,9 @@ module Distem
       # Start a virtual node to be able to use it (it have to be installed and in the status READY)
       # ==== Attributes
       # * +vnode+ The VNode object
-      # * +already_set+ Set it to true if the VNode have been previously stopped but the associate VM not removed
       #
-      def vnode_start(vnode, already_set = false)
-        if already_set
+      def vnode_start(vnode)
+        if @containers[vnode.name]
           @containers[vnode.name].start()
         else
           @containers[vnode.name] = Node::Container.new(vnode)

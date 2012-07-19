@@ -492,7 +492,7 @@ module Distem
           vnode.status = Resource::Status::CONFIGURING
           vnode.host = @node_config.pnode unless vnode.host
           vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-          @node_config.vnode_start(vnode, vnode_down)
+          @node_config.vnode_start(vnode)
           vnode.status = Resource::Status::RUNNING
         }
 
