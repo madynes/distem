@@ -523,12 +523,12 @@ module Distem
 
       # Start the event manager
       def event_manager_start
-        post_json("/eventmanager", {'state' => 'up'})
+        post_json("/eventmanager", {})
       end
 
-      # Stop the event manager
+      # Stop the event manager and clear the event list
       def event_manager_stop
-        post_json("/eventmanager", {'state' => 'down'})
+        delete_json("/eventmanager")
       end
 
       protected

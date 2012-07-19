@@ -663,18 +663,22 @@ module Distem
         end
       end
 
-      # Start an stop the event manager
+      # Start the event manager
       post '/eventmanager/?' do
         check do
-          if(params['state'] == 'up')
-            @daemon.event_manager_start
-          else
-            @daemon.event_manager_stop
-          end
+          @daemon.event_manager_start
           @body = ""
         end
 
         return result!
+      end
+
+      # Stop the event manager and clear the event list
+      delete '/eventmanager/?' do
+        check do
+          @daemon.event_manager_stop
+          @body = ""
+        end
       end
 
       protected
