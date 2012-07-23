@@ -485,10 +485,6 @@ module Distem
         nodemodeblock = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
           vnode.host = @node_config.pnode unless vnode.host
-          # The IFBs have to be mounted now since the host pnode can be unknown before vnode_start()
-          vnode.vifaces.each { |viface|
-            Lib::Shell.run("ip link set dev ifb#{viface.id} up")
-          }
           vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
           @node_config.vnode_start(vnode)
           vnode.status = Resource::Status::RUNNING

@@ -1,5 +1,6 @@
 require 'distem/distem'
 require 'distem/node/admin'
+require 'distem/node/ifballocator'
 require 'distem/distemlib/semaphore'
 require 'distem/distemlib/filemanager'
 require 'distem/distemlib/shell'

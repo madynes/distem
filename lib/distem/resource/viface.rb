@@ -102,6 +102,8 @@ module Distem
       attr_accessor :voutput
       # The input VTraffic description
       attr_accessor :vinput
+      # The ifb device used by this viface
+      attr_accessor :ifb
 
       # Create a new VIface
       # ==== Attributes
@@ -120,6 +122,7 @@ module Distem
         @voutput = nil
         @vroutes = []
         @@ids += 1
+        @ifb = nil
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address

@@ -57,7 +57,8 @@ module Distem
             if !(limited_bw_output || limited_lat_output)
               tcroot = TCWrapper::QdiscIngress.new(iface)
               Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
-              iface = "ifb#{vtraffic.viface.id}"
+              vtraffic.viface.ifb = @@ifballocator.get_ifb if vtraffic.viface.ifb.nil?
+              iface = vtraffic.viface.ifb
               tmproot = TCWrapper::QdiscRoot.new(iface)            
             end
             direction = 'output'
@@ -159,7 +160,7 @@ module Distem
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
 
           if (@limited_bw_output || @limited_lat_output)
-            outputroot = TCWrapper::QdiscRoot.new("ifb#{viface.id}")
+            outputroot = TCWrapper::QdiscRoot.new(viface.ifb)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
             outputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
