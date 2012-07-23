@@ -1,3 +1,9 @@
+distem (0.7) unstable; urgency=low
+
+  * new upstream release.
+
+ -- Lucas Nussbaum <lucas@debian.org>  Mon, 23 Jul 2012 17:42:16 +0200
+
 distem (0.6) unstable; urgency=low
 
   * New upstream release.
