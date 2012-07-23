@@ -45,16 +45,15 @@ VAR_DISTEM_NODES  = 'DISTEM_NODES'
 VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
 STATS_PORT        = 12345
 if g5k?
-  #GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
+  GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
   GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
   STATS_SERV      = "carol.nancy.grid5000.fr"
   
 else
-  #GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
+  GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
   GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
   STATS_SERV      = ""
 end
-GIT_REPOSITORY = "https://gforge.inria.fr/git/distem/distem.git"
 
 ULIMIT_OPEN_FILES = 65535 # to be removed
 
