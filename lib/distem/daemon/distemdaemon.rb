@@ -157,6 +157,7 @@ module Distem
               [Algorithm::CPU::GOV.upcase,
               Algorithm::CPU::HOGS.upcase].include?(algo)
             pnode.algorithms[:cpu] = algo
+            return {'algorithms' => {'cpu'=> algo }}
           end
         end
       end
