@@ -13,10 +13,10 @@ module Distem
       def initialize(vnode, algorithm=Algorithm::CPU::HOGS)
         #raise unless algorithm.is_a?(Algorithm::CPU)
         
-        case algorithm
-          when Algorithm::CPU::GOV
+        case algorithm.upcase
+          when Algorithm::CPU::GOV.upcase
             algorithm = Algorithm::CPU::Gov.new
-          when Algorithm::CPU::HOGS
+          when Algorithm::CPU::HOGS.upcase
             algorithm = Algorithm::CPU::Hogs.new
           else
             algorithm = Algorithm::CPU::Hogs.new

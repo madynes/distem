@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 #include "cpugov.h"
 #include "main.h"
 
@@ -147,9 +148,14 @@ int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh
 {
   char strbuff[STRBUFF_SIZE];
 
-	if (signal(SIGINT, stop) == SIG_ERR || signal(SIGTERM, stop) == SIG_ERR)
-		return 1;
-
+  if (signal(SIGINT, stop) == SIG_ERR || signal(SIGTERM, stop) == SIG_ERR)
+    return 1;
+  init_cores();
+  lowfreq = freqlow;
+  lowfreqstr_size = snprintf(lowfreqstr,sizeof(lowfreqstr),"%d",lowfreq);
+  highfreq = freqhigh;
+  highfreqstr_size = snprintf(highfreqstr,sizeof(highfreqstr),"%d",highfreq);
+  
   if (ratelow == 0.0f)
   {
     set_frequency_high();
@@ -162,19 +168,12 @@ int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh
   }
   else
   {
-    lowfreq = freqlow;
-    lowfreqstr_size = snprintf(lowfreqstr,sizeof(lowfreqstr),"%d",lowfreq);
     lowtime = (__typeof__(lowtime)) (pitch * ratelow);
-
-    highfreq = freqhigh;
-    highfreqstr_size = snprintf(highfreqstr,sizeof(highfreqstr),"%d",highfreq);
     hightime = (__typeof__(hightime)) (pitch * (1-ratelow));
-
 
     snprintf(strbuff,sizeof(strbuff),"%s/freezer.state",cgroup_path);
     cgroupfreezefd = open(strbuff,O_WRONLY);
 
-    init_cores();
     printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
 
     set_frequency_high();
