@@ -45,34 +45,34 @@ static VALUE cpugov_run(
   VALUE low_rate
 )
 {
-	int pid;
+  int pid;
   char strbuff[STRBUFF_SIZE];
   char *ptr;
 
-	pid = fork();
-	if (pid < 0)
-		rb_raise(rb_eRuntimeError,"fork");
-	if (!pid)
-	{
-		if (setsid() < 0)
-			rb_raise(rb_eRuntimeError,"setsid");
+  pid = fork();
+  if (pid < 0)
+    rb_raise(rb_eRuntimeError,"fork");
+  if (!pid)
+    {
+      if (setsid() < 0)
+	rb_raise(rb_eRuntimeError,"setsid");
       close(STDIN_FILENO);
-		  close(STDOUT_FILENO);
-		  close(STDERR_FILENO);
+      close(STDOUT_FILENO);
+      close(STDERR_FILENO);
 
-    rb_iterate(rb_each, rb_iv_get(self,"@cores"), cpugov_parse_core, Qnil);
+      rb_iterate(rb_each, rb_iv_get(self,"@cores"), cpugov_parse_core, Qnil);
 
-    extrun(
-      (unsigned long long) (NUM2DBL(rb_iv_get(self, "@pitch")) * 1000000),
-      NUM2INT(low_freq),NUM2INT(high_freq),NUM2DBL(low_rate),
-      STR2CSTR(rb_iv_get(self,"@cgrouppath"))
-    );
+      extrun(
+	     (unsigned long long) (NUM2DBL(rb_iv_get(self, "@pitch")) * 1000000),
+	     NUM2INT(low_freq),NUM2INT(high_freq),NUM2DBL(low_rate),
+	     STR2CSTR(rb_iv_get(self,"@cgrouppath"))
+	     );
+      exit(0);
+    }
+  else
+    rb_iv_set(self, "@pid", INT2NUM(pid));
 
-	}
-	else
-		rb_iv_set(self, "@pid", INT2NUM(pid));
-
-	return Qnil;
+  return Qnil;
 }
 
 static VALUE cpugov_stop(VALUE self)

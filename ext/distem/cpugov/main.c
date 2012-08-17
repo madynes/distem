@@ -12,9 +12,10 @@ static char lowfreqstr[STRBUFF_SIZE], highfreqstr[STRBUFF_SIZE];
 static unsigned int lowfreqstr_size, highfreqstr_size;
 static int corefds[MAX_CORES];
 static int cgroupfreezefd;
+unsigned int finished = 0;
 
 #define DO_NOTHING() \
-while(1) \
+while(!finished) \
   sleep(2);
 
 /* Using of cores and corenb global var (see cpugov.h) */
@@ -138,10 +139,9 @@ void stop(int num)
   tmp = corenb;
   while (tmp--)
     close(corefds[tmp]);
-
   close(cgroupfreezefd);
-
   reset_frequency();
+  finished = 1;
 }
 
 int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh, double ratelow, char *cgroup_path)
@@ -177,7 +177,8 @@ int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh
     printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
 
     set_frequency_high();
-    while (1)
+    while (!finished)
       cycle();
   }
+  return 0;
 }
