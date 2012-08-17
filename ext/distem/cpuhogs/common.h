@@ -7,7 +7,6 @@
 #define LORIA 1
 
 #include <stdlib.h>
-#define IPADDR "172.28.54.100"
 
 typedef long long int lli;
 
