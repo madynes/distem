@@ -386,6 +386,7 @@ module Distem
         vnode.remove_vcpu()
 
         if daemon?
+          pnode = @daemon_resources.get_pnode_by_address(vnode.host)
           @daemon_resources.remove_vnode(vnode)
           if !target?(vnode) and vnode.host and (pnode.status == Resource::Status::RUNNING)
             cl = NetAPI::Client.new(vnode.host.address)
