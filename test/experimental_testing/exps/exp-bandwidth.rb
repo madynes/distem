@@ -6,7 +6,7 @@ require File.join(File.dirname(__FILE__), 'helpers')
 
 ERROR = ARGV[0].to_f / 100
 IPFILE = '/tmp/ip'
-REPETS = 5
+REPETS = 10
 
 puts '<<< Bandwidth test >>>'
 

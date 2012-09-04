@@ -6,6 +6,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'yaml'
+require 'pp'
 require 'rubygems'
 require 'net/ssh'
 require 'net/ssh/multi'
@@ -121,16 +122,27 @@ class ExperimentalTesting < Test::Unit::TestCase
     end
   end
 
-  def launch_vnodes(ssh, nb_vnodes, pnodes, cli = false)
-    case nb_vnodes
-    when 2
+  def launch_vnodes(ssh, opts)
+    pf_kind = opts['pf_kind']
+    return false if not pf_kind
+    pnodes = opts['pnodes'] if opts['pnodes']
+    cli = opts['cli'] ? opts['cli'] : false
+
+    case pf_kind
+    when '1node_cpu'
+      if cli 
+        return false
+      else
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+      end
+    when '2nodes'
       if cli
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       end
     else
-      raise "Nb of vnodes not supported"
+      raise "Invalid platform kind"
     end
   end
 
@@ -183,27 +195,51 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def test_A1_platform_api
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, 2, @@pnodes)
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
     }
   end
 
   def test_A2_platform_cli
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, 2, @@pnodes, true)
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes, 'cli' => true})
     }
   end
 
   def test_A3_latency
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, 2, @@pnodes)
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']}"))
     }
   end
 
   def test_A4_bandwidth
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, 2, @@pnodes)
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']}"))
-    }    
+    }
+  end
+
+  def test_A5_hpcc_gov
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+      [1,4].each { |nb_cpu|
+        cpu = "#{nb_cpu}cpu"
+        (0..(@@ref['hpcc']['freqs'].length - 1)).each { |i|
+          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-hpcc.rb')} #{nb_cpu} gov #{@@ref['hpcc']['freqs'][i]} #{@@ref['hpcc']['error']} #{@@ref['hpcc']['results'][cpu]['dgemm'][i]} #{@@ref['hpcc']['results'][cpu]['fft'][i]} #{@@ref['hpcc']['results'][cpu]['hpl'][i]}"))
+        }
+      }
+    }
+  end
+
+  def test_A6_hpcc_hogs
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+      [1,4].each { |nb_cpu|
+        cpu = "#{nb_cpu}cpu"
+        (0..(@@ref['hpcc']['freqs'].length - 1)).each { |i|
+          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-hpcc.rb')} #{nb_cpu} HOGS #{@@ref['hpcc']['freqs'][i]} #{@@ref['hpcc']['error']} #{@@ref['hpcc']['results'][cpu]['dgemm'][i]} #{@@ref['hpcc']['results'][cpu]['fft'][i]} #{@@ref['hpcc']['results'][cpu]['hpl'][i]}"))
+        }
+      }
+    }
   end
 end
