@@ -1,5 +1,5 @@
 require 'distem'
-
+require 'pp'
 module Distem
   module Algorithm 
     module CPU
@@ -28,8 +28,7 @@ module Distem
             #check available frequencies table
             pcores = vnode.host.cpu.get_allocated_cores(vnode)
             cores = pcores.collect{ |core| core.physicalid.to_i }
-
-            vcore = vnode.vcpu.vcores[0]
+            vcore = vnode.vcpu.vcores[vnode.vcpu.vcores.keys[0]]
             freqs = vcore.pcore.frequencies
             freqs.sort
             freqmax = vcore.pcore.frequency
