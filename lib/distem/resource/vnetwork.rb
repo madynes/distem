@@ -6,8 +6,7 @@ module Distem
 
     # Abstract representation of a virtual network
     class VNetwork
-      @@ids = 0
-      @@alreadyusedaddr = Array.new
+      @alreadyusedaddr = nil
       # The IPAddress object describing the address range of this virtual network
       attr_reader :address
       # The (unique) name of this virtual network
@@ -22,10 +21,10 @@ module Distem
       # Create a new VNetwork
       # ==== Attributes
       # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
-      # * +name+ (optional) The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
-      def initialize(address,name=nil)
-        @id = @@ids
-        @name = name || "_vnetwork#{@id}"
+      # * +name+ The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
+      def initialize(address,name)
+        @id = 0
+        @name = name
         if address.is_a?(IPAddress)
           @address = address.network.clone
         else
@@ -40,10 +39,9 @@ module Distem
         @visibility = []
 
         # Address used by the coordinator
-        @@alreadyusedaddr << @address.last.to_s
+        @alreadyusedaddr = [@address.last.to_s]
 
         @curaddress = @address.first
-        @@ids += 1
       end
 
       # Connect a VNode to this vitual network
@@ -71,17 +69,16 @@ module Distem
             unless @address.include?(address)
 
           raise Lib::UnavailableResourceError, address.to_s \
-            if @@alreadyusedaddr.include?(address.to_s)
+            if @alreadyusedaddr.include?(address.to_s)
 
           addr = address.clone
         else
-          inc_curaddress() if @@alreadyusedaddr.include?(@curaddress.to_s)
+          inc_curaddress() if @alreadyusedaddr.include?(@curaddress.to_s)
           addr = @curaddress.clone
           inc_curaddress()
         end
-
         @vnodes[vnode] = viface
-        @@alreadyusedaddr << addr.to_s
+        @alreadyusedaddr << addr.to_s
         viface.attach(self,addr)
       end
 
@@ -140,7 +137,7 @@ module Distem
       def remove_vnode(vnode,detach = true)
         #Atm one VNode can only be attached one time to a VNetwork
         if @vnodes[vnode]
-          @@alreadyusedaddr.delete(@vnodes[vnode].address.to_s)
+          @alreadyusedaddr.delete(@vnodes[vnode].address.to_s)
           @vnodes[vnode].detach() if detach
           @vnodes.delete(vnode)
         end
@@ -214,7 +211,7 @@ module Distem
         @vnodes.each_key do |vnode|
           remove_vnode(vnode)
         end
-        @@alreadyusedaddr.delete(@address.last.to_s)
+        @alreadyusedaddr.delete(@address.last.to_s)
       end
 
       # Compare two virtual networks
@@ -251,7 +248,7 @@ module Distem
           tmpaddr = IPAddress::IPv4.parse_u32(tmp,@curaddress.prefix)
           raise Lib::UnavailableRessourceError, "IP/#{@name}" \
             if tmpaddr == @address.last
-        end while @@alreadyusedaddr.include?(tmpaddr.to_s)
+        end while @alreadyusedaddr.include?(tmpaddr.to_s)
         @curaddress = tmpaddr
       end
     end
