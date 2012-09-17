@@ -474,7 +474,7 @@ Net::SSH::Multi.start do |session|
   session.loop
 
   if options[:init_pnodes] or ARGV[0]
-    launched = exec(session,"lsof -Pnl -i4 | grep ':4567 '",nil,false,false)
+    launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",nil,false,false)
     unless launched.empty?
       tokill = launched.keys
       tokill.collect!{ |node| nodeobjlist[node] }
@@ -485,7 +485,7 @@ Net::SSH::Multi.start do |session|
       time_start = Time.now
       until !launched or launched.empty?
         exec(session,'kill -9 `ps aux|grep "distemd"|grep -v grep|sed "s/ \{1,\}/ /g"|cut -f 2 -d" "`',tokill,false,false) if (Time.now - time_start) > 2
-        launched = exec(session,"lsof -Pnl -i4 | grep ':4567 '",
+        launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",
           tokill,false,false)
         if launched and !launched.empty?
           tokill = launched.keys
@@ -501,7 +501,7 @@ Net::SSH::Multi.start do |session|
 
     launched = []
     until launched and !launched.empty?
-      launched = exec(session,"lsof -Pnl -i4 | grep ':4567 '",:coord,false,false)[coordinator]
+      launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",:coord,false,false)[coordinator]
       sleep(0.1)
     end
     session.loop

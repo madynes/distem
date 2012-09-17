@@ -28,17 +28,23 @@ optparse.parse!
 str = Distem::Lib::Shell.run('pidof lxc-wait')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
 if (options['f_daemon'])
-  puts "Starting the server in Daemon mode"
+  puts "Starting the server in Coordinator mode"
   if (options['f_verbose'])
-    Distem::NetAPI::ServerDaemonDebug.run!
+    tid = []
+    tid << Thread.new {Distem::NetAPI::ServerCoordinatorDebug.run!}
+    tid << Thread.new {Distem::NetAPI::ServerPnodeDebug.run!}
+    tid.each { |t| t.join}
   else
-    Distem::NetAPI::ServerDaemon.run!
+    tid = []
+    tid << Thread.new {Distem::NetAPI::ServerCoordinator.run!}
+    tid << Thread.new {Distem::NetAPI::ServerPnode.run!}
+    tid.each { |t| t.join}
   end
 else
-  puts "Starting the server in Node mode"
+  puts "Starting the server in Pnode mode"
   if options['f_verbose']
-    Distem::NetAPI::ServerNodeDebug.run!
+    Distem::NetAPI::ServerPnodeDebug.run!
   else
-    Distem::NetAPI::ServerNode.run!
+    Distem::NetAPI::ServerPnode.run!
   end
 end

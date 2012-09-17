@@ -48,8 +48,6 @@ module Distem
       # @private
       def initialize()
         super
-        @mode = settings.mode
-        @daemon = Daemon::DistemDaemon.new(@mode)
       end
 
       # @private
@@ -717,9 +715,27 @@ module Distem
     end
 
 
+    class CoordinatorServer < Server
+      set :port, 4567
+
+      def initialize
+        super
+        @daemon = Daemon::DistemCoordinator.new
+
+      end
+    end
+
+    class PnodeServer < Server
+      set :port, 4568
+
+      def initialize
+        super
+        @daemon = Daemon::DistemPnode.new
+      end
+    end
+
     # @private
-    class ServerDaemon < Server
-      set :mode, Daemon::DistemDaemon::MODE_DAEMON
+    class ServerCoordinator < CoordinatorServer
       set :verbose, false
 
       def initialize
@@ -728,13 +744,12 @@ module Distem
       end
 
       def run
-        ServerDaemon.run!
+        ServerCoordinator.run!
       end
     end
 
     # @private
-    class ServerDaemonDebug < Server
-      set :mode, Daemon::DistemDaemon::MODE_DAEMON
+    class ServerCoordinatorDebug < CoordinatorServer
       set :verbose, true
 
       def initialize
@@ -743,27 +758,25 @@ module Distem
       end
 
       def run
-        ServerDaemonDebug.run!
+        ServerCoordinatorDebug.run!
       end
     end
 
     # @private
-    class ServerNode < Server
-      set :mode, Daemon::DistemDaemon::MODE_NODE
+    class ServerPnode < PnodeServer
       set :verbose, false
 
       def run
-        ServerNode.run!
+        ServerPnode.run!
       end
     end
 
     # @private
-    class ServerNodeDebug < Server
-      set :mode, Daemon::DistemDaemon::MODE_NODE
+    class ServerPnodeDebug < PnodeServer
       set :verbose, true
 
       def run
-        ServerNodeDebug.run!
+        ServerPnodeDebug.run!
       end
     end
 

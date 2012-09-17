@@ -7,18 +7,7 @@ require 'pp'
 
 module Distem
   module Daemon
-
-    # The main daemon class. Both used by the coordinator daemon to contact each physical nodes and create virtual resources in them and manage every virtual resources and by the physical nodes daemon to set up physical resources to fit to virtual resources specifications. See REST API documentation for the methods specifications.
-    class DistemDaemon
-      # The dameon is in coordinator mode
-      MODE_DAEMON=0
-      # The daemon is in normal mode
-      MODE_NODE=1
-
-      # >>> TODO: Remove attr_readers
-
-      # The VPlatform object that describes each resources in the experimental platform
-      attr_reader :daemon_resources
+    class DistemPnode
       # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
       attr_reader  :node_config
 
@@ -39,22 +28,10 @@ module Distem
         :vnode_stop => {},
       }
 
-      # Create a new Daemon
-      # ==== Attribute
-      # * +mode+ The mode the daemon should be executed in (0 for Coordinator, 1 for Normal)
-      #
-      def initialize(mode=MODE_NODE)
+      def initialize
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
-        @mode = mode
-
         @node_config = Node::ConfigManager.new
-
-        if @mode == MODE_DAEMON
-          @daemon_resources = Resource::VPlatform.new
-          @event_trace = Events::Trace.new
-          @event_manager = Events::EventManager.new(@event_trace)
-        end
       end
 
 
@@ -67,87 +44,27 @@ module Distem
       # Resource::PNode object
       # ==== Exceptions
       #
-      def pnode_create(targets,desc={},async=false)
-        l = lambda { |target|
-          begin
-            async = parse_bool(async)
-            pnode = nil
-            
-            nodemodeblock = Proc.new {
-              pnode = @node_config.pnode
-              Node::Admin.init_node(pnode,desc)
-              
-              @node_config.vplatform.add_pnode(pnode)
-              pnode.status = Resource::Status::RUNNING
-            }
-            
-            if daemon?
-              if target?(target)
-                pnode = @node_config.pnode
-              else
-                pnode = @daemon_resources.get_pnode_by_address(target)
-                pnode = Resource::PNode.new(target) unless pnode
-              end
-
-              @daemon_resources.add_pnode(pnode)
-              
-              block = Proc.new {
-                unless target?(target)
-                  Admin.pnode_run_server(pnode)
-                  cl = NetAPI::Client.new(target)
-                  ret = cl.pnode_init(nil,desc,async)
-                  # here ret should always contains one element
-                  updateobj_pnode(pnode,ret.first)
-                end
-                pnode.status = Resource::Status::RUNNING
-              }
-
-              if async
-                thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
-                  block.call
-                }
-                #thr.abort_on_exception = true
-              else
-                block.call
-              end
-            end
-
-            if target?(target)
-              nodemodeblock.call
-            end
-
-            pnode_update(pnode.address.to_s,desc)
-
-            return pnode
-          rescue Lib::AlreadyExistingResourceError
-            raise
-          rescue Exception
-            destroy(pnode) if pnode
-            raise
-          end
-        }
-        
-        if targets.is_a?(Array) then
-          threads_info = {}
-          targets.each { |target|
-            threads_info[target] = {}
-            threads_info[target]['tid'] = Thread.new {
-              threads_info[target]['ret'] = l.call(target)
-            }
-          }
-          ret = []
-          threads_info.each_value { |host| 
-            host['tid'].join
-            ret << host['ret']
-          }
-          return ret
-        else
-          return [l.call(targets)]
+      def pnode_create(target,desc={},async=false)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
+        begin
+          async = parse_bool(async)
+          pnode = @node_config.pnode
+          Node::Admin.init_node(pnode,desc)
+          @node_config.vplatform.add_pnode(pnode)
+          pnode.status = Resource::Status::RUNNING
+          pnode_update(pnode.address.to_s,desc)
+          return pnode
+        rescue Lib::AlreadyExistingResourceError
+          raise
+        rescue Exception
+          destroy(pnode) if pnode
+          raise
         end
       end
 
       # Update PNode properties
       def pnode_update(target,desc)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
         pnode = pnode_get(target)
 
         if desc['algorithms']
@@ -162,72 +79,26 @@ module Distem
         end
       end
 
-      # Wait for a PNode to be ready
-      def pnode_wait(target)
-        pnode = pnode_get(target)
-
-        @@threads[:pnode_init][pnode.address.to_s].join if \
-          @@threads[:pnode_init][pnode.address.to_s]
-      end
-
       # Quit distem on a physical machine (remove everything that was created)
       # ==== Returns
       # Resource::PNode object
       # ==== Exceptions
       #
       def pnode_quit(target)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
         pnode = pnode_get(target,false)
         pnode.status = Resource::Status::CONFIGURING
-        if daemon? and pnode
-          @daemon_resources.vnodes.each_value do |vnode|
-            if vnode.host == pnode
-              vnode_stop(vnode.name)
-            end
-          end
-
-          if target?(target)
-            raise Lib::InvalidParameterError, target if \
-              @daemon_resources.pnodes.size > 1
-          else
-            cl = NetAPI::Client.new(target)
-            cl.pnode_quit(target)
-          end
-          @daemon_resources.remove_pnode(pnode)
-        end
-
-        if target?(target)
-          vnodes_remove()
-          vnetworks_remove()
-
-          Node::Admin.quit_node()
-          Thread.new do
-            sleep(2)
-            exit!
-          end
+        vnodes_remove()
+        vnetworks_remove()
+        
+        Node::Admin.quit_node()
+        #TODO: understand that ...
+        Thread.new do
+          sleep(2)
+          exit!
         end
         pnode.status = Resource::Status::READY
         return pnode
-      end
-
-      # Quit distem on all the physical machines (remove everything that was created)
-      # ==== Returns
-      # Array of Resource::PNode objects
-      # ==== Exceptions
-      #
-      def pnodes_quit()
-        if daemon?
-          me = nil
-          ret = @daemon_resources.pnodes.dup
-          @daemon_resources.pnodes.each_value do |pnode|
-            if target?(pnode.address.to_s)
-              me = pnode.address.to_s
-              next
-            end
-            pnode_quit(pnode.address.to_s)
-          end
-          pnode_quit(me)
-        end
-        return ret
       end
 
       # Get the description of a virtual node
@@ -235,7 +106,7 @@ module Distem
       # ==== Attributes
       #
       def pnode_get(hostname, raising = true) 
-        ret = nil
+        pnode = nil
 
         if hostname and Lib::NetTools.localaddr?(hostname)
           pnode = @node_config.pnode
@@ -246,14 +117,8 @@ module Distem
           rescue Resolv::ResolvError
             raise Lib::InvalidParameterError, hostname
           end
-
-          if daemon?
-            pnode = @daemon_resources.get_pnode_by_address(address)
-          else
-            pnode = @node_config.vplatform.get_pnode_by_address(address)
-          end
+          pnode = @node_config.vplatform.get_pnode_by_address(address)
         end
-
         raise Lib::ResourceNotFoundError, hostname if raising and !pnode
 
         return pnode
@@ -265,27 +130,18 @@ module Distem
       # ==== Exceptions
       #
       def pnodes_get()
-        vplatform = nil
-        if daemon?
-          vplatform = @daemon_resources
-        else
-          vplatform = @node_config.vplatform
-        end
-
-        return vplatform.pnodes
+        return @node_config.vplatform.pnodes
       end
 
       # Get the description of the cpu of a physical node
       def pcpu_get(hostname, raising = true) 
         pnode = pnode_get(hostname)
-
         return pnode.cpu
       end
 
       # Get the description of the memory of a physical node
       def pmemory_get(hostname, raising = true) 
         pnode = pnode_get(hostname)
-
         return pnode.memory
       end
 
@@ -306,21 +162,11 @@ module Distem
           else
             raise Lib::ArgumentMissingError "name"
           end
-
           downkeys(desc)
-
           vnode = Resource::VNode.new(name,ssh_key)
-
-          if daemon?
-            @daemon_resources.add_vnode(vnode)
-          else
-            @node_config.vnode_add(vnode)
-          end
-
+          @node_config.vnode_add(vnode)
           vnode_update(vnode.name,desc,async)
-
           return vnode
-
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
@@ -334,16 +180,11 @@ module Distem
       def vnode_update(name,desc,async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
-
         downkeys(desc)
-
         vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-
         vnode_attach(vnode.name,desc['host']) if desc['host']
-
         vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
-
         if desc['vcpu']
           if vnode.vcpu
             vcpu_update(vnode.name,desc['vcpu'])
@@ -351,7 +192,6 @@ module Distem
             vcpu_create(vnode.name,desc['vcpu'])
           end
         end
-
         if desc['vifaces']
           desc['vifaces'].each do |ifdesc|
             if vnode.get_viface_by_name(ifdesc['name'])
@@ -361,11 +201,8 @@ module Distem
             end
           end
         end
-
         vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
-
         vnode_status_update(vnode.name,desc['status'],async) if desc['status']
-
         return vnode
       end
 
@@ -376,60 +213,30 @@ module Distem
       #
       def vnode_remove(name)
         vnode = vnode_get(name)
-
         raise Lib::BusyResourceError, "#{vnode.name}/running" if \
           vnode.status == Resource::Status::RUNNING
-
         ret = vnode.dup
-
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
         vnode.remove_vcpu()
-
-        if daemon?
-          pnode = @daemon_resources.get_pnode_by_address(vnode.host)
-          @daemon_resources.remove_vnode(vnode)
-          if !target?(vnode) and vnode.host and (pnode.status == Resource::Status::RUNNING)
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.vnode_remove(vnode.name)
-          end
-        end
-
-        if target?(vnode)
-          @node_config.vnode_remove(vnode)
-        end
-
+        @node_config.vnode_remove(vnode)
         return ret
       end
 
       def vnode_attach(name,host)
         vnode = vnode_get(name)
-        if daemon?
-          pnode = @daemon_resources.get_pnode_by_address(host)
-        else
-          pnode = @node_config.pnode
-        end
-
+        pnode = @node_config.pnode
         if pnode
           raise Lib::UninitializedResourceError, pnode.address.to_s unless \
             pnode.status == Resource::Status::RUNNING
         else
           raise Lib::ResourceNotFoundError host if host
         end
-
         if vnode.host and vnode.status == Resource::Status::RUNNING
           raise Lib::AlreadyExistingResourceError, 'host'
         else
           vnode.host = pnode
         end
-
         return vnode
-      end
-
-      def vnode_wait(name)
-        vnode = vnode_get(name)
-
-        @@threads[:vnode_start][vnode.name].join if @@threads[:vnode_start][vnode.name]
-        @@threads[:vnode_stop][vnode.name].join if @@threads[:vnode_stop][vnode.name]
       end
 
       # Get the description of a virtual node
@@ -439,14 +246,8 @@ module Distem
       #
       def vnode_get(name, raising = true)
         name = name.gsub(' ','_')
-        if daemon?
-          vnode = @daemon_resources.get_vnode(name)
-        else
-          vnode = @node_config.get_vnode(name)
-        end
-
+        vnode = @node_config.get_vnode(name)
         raise Lib::ResourceNotFoundError, name if raising and !vnode
-
         return vnode
       end
 
@@ -481,7 +282,7 @@ module Distem
       def vnode_start(name,async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
-
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         raise Lib::BusyResourceError, vnode.name if \
           vnode.status == Resource::Status::CONFIGURING
 
@@ -489,80 +290,11 @@ module Distem
           vnode.status == Resource::Status::RUNNING
 
         vnode_down = (vnode.status ==  Resource::Status::DOWN)
-
-        nodemodeblock = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          vnode.host = @node_config.pnode unless vnode.host
-          vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-          @node_config.vnode_start(vnode)
-          vnode.status = Resource::Status::RUNNING
-        }
-
-        if daemon?
-          vnode.status = Resource::Status::CONFIGURING
-          unless vnode_down
-            if vnode.host
-              if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
-                raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
-              else
-                vnode.host.local_vifaces += vnode.vifaces.length
-              end
-            else
-              vnode.host = @daemon_resources.get_pnode_available(vnode)
-            end
-
-            vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-          end
-
-          block = Proc.new {
-            @@semvnodestart_pnodelock.synchronize {
-              if not @@semvnodestart_pnode[vnode.host.address.to_s]
-                @@semvnodestart_pnode[vnode.host.address.to_s] = Lib::Semaphore.new(MAX_VNODES_SIMULT_START_ON_PNODE)
-              end
-            }
-            
-            @@semvnodestart_pnode[vnode.host.address.to_s].synchronize {
-              if target?(vnode)
-                nodemodeblock.call
-              else
-                cl = NetAPI::Client.new(vnode.host.address.to_s)
-
-                if vnode_down
-                  # Just restart the node
-                  ret = cl.vnode_start(vnode.name,async)
-                else
-                  # Create VNetworks on remote PNode
-                  vnode.get_vnetworks.each do |vnet|
-                    vnetwork_sync(vnet,vnode.host)
-                  end
-
-                  desc = TopologyStore::HashWriter.new.visit(vnode)
-                  # we want the node to be runned
-                  desc['status'] = Resource::Status::RUNNING
-
-                  ret = cl.vnode_create(vnode.name,desc)
-                end
-
-                updateobj_vnode(vnode,ret)
-
-                vnode.status = Resource::Status::RUNNING
-              end
-            }
-          }
-
-          if async
-            thr = @@threads[:vnode_start][vnode.name] = Thread.new {
-              block.call
-            }
-            thr.abort_on_exception = true
-          else
-            block.call
-          end
-        else
-          if target?(vnode)
-            nodemodeblock.call
-          end
-        end
+        vnode.status = Resource::Status::CONFIGURING
+        vnode.host = @node_config.pnode unless vnode.host
+        vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
+        @node_config.vnode_start(vnode)
+        vnode.status = Resource::Status::RUNNING
 
         return vnode
       end
@@ -571,47 +303,15 @@ module Distem
       def vnode_stop(name, async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         raise Lib::BusyResourceError, vnode.name if \
           vnode.status == Resource::Status::CONFIGURING
         raise Lib::UninitializedResourceError, vnode.name if \
           vnode.status == Resource::Status::INIT
 
-        nodemodeblock = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          @node_config.vnode_stop(vnode)
-          vnode.status = Resource::Status::READY
-        }
-
-        if daemon?
-          block = Proc.new {
-            if target?(vnode)
-              nodemodeblock.call
-            else
-              vnode.status = Resource::Status::CONFIGURING
-              Distem.client(vnode.host.address) do |cl|
-                cl.vnode_stop(vnode.name)
-                cl.vnode_remove(vnode.name)
-              end
-              vnode.status = Resource::Status::READY
-            end
-            vnode.vcpu.detach if vnode.vcpu
-            vnode.host = nil
-          }
-
-          if async
-            thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
-              block.call
-            }
-            thr.abort_on_exception = true
-          else
-            block.call
-          end
-        else
-          if target?(vnode)
-            nodemodeblock.call
-          end
-        end
-
+        vnode.status = Resource::Status::CONFIGURING
+        @node_config.vnode_stop(vnode)
+        vnode.status = Resource::Status::READY
         return vnode
       end
 
@@ -619,44 +319,15 @@ module Distem
       def vnode_shutdown(name, async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         raise Lib::BusyResourceError, vnode.name if \
           vnode.status == Resource::Status::CONFIGURING
         raise Lib::UninitializedResourceError, vnode.name if \
           vnode.status == Resource::Status::INIT
 
-        nodemodeblock = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          @node_config.vnode_stop(vnode, false)
-          vnode.status = Resource::Status::DOWN
-        }
-
-        if daemon?
-          block = Proc.new {
-            if target?(vnode)
-              nodemodeblock.call
-            else
-              vnode.status = Resource::Status::CONFIGURING
-              Distem.client(vnode.host.address) do |cl|
-                cl.vnode_shutdown(vnode.name)
-              end
-              vnode.status = Resource::Status::DOWN
-            end
-          }
-
-          if async
-            thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
-              block.call
-            }
-            thr.abort_on_exception = true
-          else
-            block.call
-          end
-        else
-          if target?(vnode)
-            nodemodeblock.call
-          end
-        end
-
+        vnode.status = Resource::Status::CONFIGURING
+        @node_config.vnode_stop(vnode, false)
+        vnode.status = Resource::Status::DOWN
         return vnode
       end
 
@@ -688,14 +359,7 @@ module Distem
       # ==== Exceptions
       #
       def vnodes_get()
-        vnodes = nil
-        if daemon?
-          vnodes = @daemon_resources.vnodes
-        else
-          vnodes = @node_config.vplatform.vnodes
-        end
-
-        return vnodes
+        return @node_config.vplatform.vnodes
       end
 
       # Remove every virtual nodes
@@ -704,15 +368,8 @@ module Distem
       # ==== Exceptions
       #
       def vnodes_remove()
-        vnodes = nil
-        if daemon?
-          vnodes = @daemon_resources.vnodes
-        else
-          vnodes = @node_config.vplatform.vnodes
-        end
-
+        vnodes = @node_config.vplatform.vnodes
         vnodes.each_value { |vnode| vnode_remove(vnode.name) }
-
         return vnodes
       end
 
@@ -747,7 +404,6 @@ module Distem
       #
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
-        vnode.host.local_vifaces -= 1 if daemon? && vnode.host
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnode.name,viface.name)
         vnode.remove_viface(viface)
@@ -793,18 +449,10 @@ module Distem
 
           desc['vnetwork'] = desc['vnetwork'].gsub(' ','_') if desc['vnetwork']
 
-          if daemon?
-            raise Lib::MissingParameterError, "address|vnetwork" if \
-              ((!desc['address'] or desc['address'].empty?) \
-               and (!desc['vnetwork'] or desc['vnetwork'].empty?))
-
-            vplatform = @daemon_resources
-          else
-            raise Lib::MissingParameterError, "address&vnetwork" if \
-              ((!desc['address'] or desc['address'].empty?) \
-               or (!desc['vnetwork'] or desc['vnetwork'].empty?))
-            vplatform = @node_config.vplatform
-          end
+          raise Lib::MissingParameterError, "address&vnetwork" if \
+          ((!desc['address'] or desc['address'].empty?) \
+           or (!desc['vnetwork'] or desc['vnetwork'].empty?))
+          vplatform = @node_config.vplatform
 
           if desc['address'] and !desc['address'].empty?
             begin
@@ -905,6 +553,7 @@ module Distem
 
       def vinput_update(vnodename,vifacename,desc)
         vnode = vnode_get(vnodename)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         viface = viface_get(vnodename,vifacename)
 
         downkeys(desc)
@@ -918,12 +567,7 @@ module Distem
 
         if vnode.status == Resource::Status::RUNNING
           vnode.status = Resource::Status::CONFIGURING
-          if target?(vnode)
-              @node_config.vnode_reconfigure(vnode)
-          elsif daemon?
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.vinput_update(vnode.name,viface.name,desc)
-          end
+          @node_config.vnode_reconfigure(vnode)
           vnode.status = Resource::Status::RUNNING
         end
 
@@ -941,6 +585,7 @@ module Distem
 
       def voutput_update(vnodename,vifacename,desc)
         vnode = vnode_get(vnodename)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         viface = viface_get(vnodename,vifacename)
 
         downkeys(desc)
@@ -954,12 +599,7 @@ module Distem
 
         if vnode.status == Resource::Status::RUNNING
           vnode.status = Resource::Status::CONFIGURING
-          if target?(vnode)
-              @node_config.vnode_reconfigure(vnode)
-          elsif daemon?
-            cl = NetAPI::Client.new(vnode.host.address)
-            cl.voutput_update(vnode.name,viface.name,desc)
-          end
+          @node_config.vnode_reconfigure(vnode)
           vnode.status = Resource::Status::RUNNING
         end
 
@@ -979,7 +619,7 @@ module Distem
       def vcpu_create(vnodename,desc)
         begin
           vnode = vnode_get(vnodename)
-
+          raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
           downkeys(desc)
 
           corenb = nil
@@ -1002,12 +642,7 @@ module Distem
 
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
-            if target?(vnode)
-              @node_config.vnode_reconfigure(vnode)
-            elsif daemon?
-              cl = NetAPI::Client.new(vnode.host.address)
-              cl.vcpu_update(vnode.name,desc)
-            end
+            @node_config.vnode_reconfigure(vnode)
             vnode.status = Resource::Status::RUNNING
           end
 
@@ -1032,6 +667,7 @@ module Distem
       def vcpu_update(vnodename,desc)
         begin
           vnode = vnode_get(vnodename)
+          raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
           vcpu = vcpu_get(vnode.name)
 
           downkeys(desc)
@@ -1049,12 +685,7 @@ module Distem
 
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
-            if target?(vnode)
-              @node_config.vnode_reconfigure(vnode)
-            elsif daemon?
-              cl = NetAPI::Client.new(vnode.host.address)
-              cl.vcpu_update(vnode.name,desc)
-            end
+            @node_config.vnode_reconfigure(vnode)
             vnode.status = Resource::Status::RUNNING
           end
 
@@ -1129,74 +760,14 @@ module Distem
       #
       def vfilesystem_image(vnodename)
         vnode = vnode_get(vnodename)
+        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
         archivepath = nil
-
-        if target?(vnode)
-          if vnode.filesystem.shared
-            archivepath = Lib::FileManager::compress(vnode.filesystem.sharedpath)
-          else
-            archivepath = Lib::FileManager::compress(vnode.filesystem.path)
-          end
+        if vnode.filesystem.shared
+          archivepath = Lib::FileManager::compress(vnode.filesystem.sharedpath)
         else
-          raise Lib::ResourceError, "Please, contact the good PNode" \
+          archivepath = Lib::FileManager::compress(vnode.filesystem.path)
         end
-
         return archivepath
-      end
-
-      # Execute and get the result of a command on a virtual node
-      # ==== Attributes
-      # * +command+ the command to be executed
-      # ==== Returns
-      # Hash object: { 'command' => <the command that was executed>, 'result' => <the result of the command> }
-      # ==== Exceptions
-      #
-      def vnode_execute(vnodename,command)
-        ret = ""
-        if daemon?
-          # >>> TODO: check if vnode exists
-          vnode = vnode_get(vnodename)
-          raise Lib::UninitializedResourceError, vnode.name unless \
-            vnode.status == Resource::Status::RUNNING
-
-          raise unless vnode
-
-          ret = Daemon::Admin.vnode_run(vnode,command)
-        end
-
-        return ret
-      end
-
-      def vnetwork_sync(vnet, pnode, lock=true)
-        if daemon?
-          block = Proc.new do
-            if !vnet.visibility.include?(pnode)
-              vnet.visibility << pnode
-              cl = NetAPI::Client.new(pnode.address.to_s)
-              # Adding VNetwork on the pnode
-              cl.vnetwork_create(vnet.name,vnet.address.to_string)
-
-              # Adding VRoutes to the new VNetwork
-              vnet.vroutes.values.each do |vroute|
-                  vnetwork_sync(vroute.dstnet,pnode,false)
-                cl.vroute_create(vnet.name,vroute.dstnet.name,vroute.gw.to_s)
-              end
-            end
-          end
-
-          if lock
-            @@lockslock.synchronize {
-              @@locks[:vnetsync][pnode] = Mutex.new unless \
-              @@locks[:vnetsync][pnode]
-            }
-
-            @@locks[:vnetsync][pnode].synchronize do
-              block.call
-            end
-          else
-            block.call
-          end
-        end
       end
 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
@@ -1211,16 +782,8 @@ module Distem
         begin
           name = name.gsub(' ','_') if name
           vnetwork = Resource::VNetwork.new(address,name)
-          if daemon?
-            @daemon_resources.add_vnetwork(vnetwork)
-            #Add a virtual interface connected on the network
-            Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork),
-                                      vnetwork.address.netmask)
-          end
           @node_config.vnetwork_add(vnetwork)
-
           return vnetwork
-
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
@@ -1240,20 +803,7 @@ module Distem
         vnetwork.vnodes.each_pair do |vnode,viface|
           viface_detach(vnode.name,viface.name)
         end
-
-        if daemon?
-          @daemon_resources.remove_vnetwork(vnetwork)
-
-          vnetwork.visibility.each do |pnode|
-            if (pnode.status == Resource::Status::RUNNING)
-              cl = NetAPI::Client.new(pnode.address.to_s)
-              cl.vnetwork_remove(vnetwork.name)
-            end
-          end
-        end
-
         @node_config.vnetwork_remove(vnetwork)
-
         return vnetwork
       end
 
@@ -1264,14 +814,8 @@ module Distem
       #
       def vnetworks_remove()
         vnetworks = nil
-        if daemon?
-          vnetworks = @daemon_resources.vnetworks
-        else
-          vnetworks = @node_config.vplatform.vnetworks
-        end
-
+        vnetworks = @node_config.vplatform.vnetworks
         vnetworks.each_value { |vnetwork| vnetwork_remove(vnetwork.name) }
-
         return vnetworks
       end
 
@@ -1282,14 +826,8 @@ module Distem
       #
       def vnetwork_get(name,raising = true)
         name = name.gsub(' ','_')
-        if daemon?
-          vnetwork = @daemon_resources.get_vnetwork_by_name(name)
-        else
-          vnetwork = @node_config.vplatform.get_vnetwork_by_name(name)
-        end
-
+        vnetwork = @node_config.vplatform.get_vnetwork_by_name(name)
         raise Lib::ResourceNotFoundError, name if raising and !vnetwork
-
         return vnetwork
       end
 
@@ -1299,14 +837,7 @@ module Distem
       # ==== Exceptions
       #
       def vnetworks_get()
-        vnetworks = nil
-        if daemon?
-          vnetworks = @daemon_resources.vnetworks
-        else
-          vnetworks = @node_config.vplatform.vnetworks
-        end
-
-        return vnetworks
+        return @node_config.vplatform.vnetworks
       end
 
       # Create a virtual route ("go from <networkname> to <destnetwork> via <gatewaynode>").
@@ -1324,21 +855,14 @@ module Distem
         begin
           srcnet = vnetwork_get(networksrc)
           destnet = vnetwork_get(networkdst)
-
-          if daemon?
-            gw = vnode_get(nodegw)
-            gwaddr = gw.get_viface_by_network(srcnet)
-            gwaddr = gwaddr.address if gwaddr
-          else
-            begin
-              gw = IPAddress.parse(nodegw)
-            rescue ArgumentError
-              raise Lib::InvalidParameterError, nodegw
-            end
-            gwaddr = gw
-            #destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst) unless destnet
-            #destnet = vnetwork_create(nil,networkdst) unless destnet
+          begin
+            gw = IPAddress.parse(nodegw)
+          rescue ArgumentError
+            raise Lib::InvalidParameterError, nodegw
           end
+          gwaddr = gw
+          #destnet = @node_config.vplatform.get_vnetwork_by_address(networkdst) unless destnet
+          #destnet = vnetwork_create(nil,networkdst) unless destnet
 
           raise Lib::ResourceNotFoundError, networksrc unless srcnet
           raise Lib::ResourceNotFoundError, networkdst unless destnet
@@ -1350,22 +874,6 @@ module Distem
             vroute = Resource::VRoute.new(srcnet,destnet,gwaddr)
             srcnet.add_vroute(vroute)
           end
-
-          if daemon?
-            raise Lib::InvalidParameterError, "#{gw.name}->#{srcnet}" unless \
-              gw.connected_to?(srcnet)
-            vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless \
-              gw.gateway
-
-            srcnet.visibility.each do |pnode|
-              if (pnode.status == Resource::Status::RUNNING)
-                cl = NetAPI::Client.new(pnode.address.to_s)
-                vnetwork_sync(dstnet,pnode)
-                cl.vroute_create(srcnet.name,destnet.name,gwaddr.to_s)
-              end
-            end
-          end
-
           return vroute
         rescue Lib::AlreadyExistingResourceError
           raise
@@ -1376,212 +884,8 @@ module Distem
       end
 
 
-      # Try to create every possible virtual routes between the current
-      # set of virtual nodes automagically finding and setting up
-      # the gateways to use
-      # ==== Returns
-      # Array of Resource::VRoute objects
-      # ==== Exceptions
-      #
-      def vroute_complete()
-        ret = []
-
-        if daemon?
-          # >>> TODO: Use vnetworks_get
-          @daemon_resources.vnetworks.each_value do |srcnet|
-            @daemon_resources.vnetworks.each_value do |destnet|
-              next if srcnet == destnet
-              gw = srcnet.perform_vroute(destnet)
-              if gw
-                vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless gw.gateway
-                ret << vroute_create(srcnet.name,destnet.name,gw.name)
-              end
-            end
-          end
-        end
-
-        return ret
-      end
-
-      # Add an event trace to a resource
-      def event_trace_add(resource_desc, event_type, trace)
-        if daemon?
-          trace.to_a.each do |date, event_value|
-            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, event_type, event_value))
-          end
-        else
-          raise "You must contact the coordinator for that."
-        end
-      end
-
-      # Add an event trace to a resource, from a string
-      def event_trace_string_add(resource_desc, event_type, trace)
-        if daemon?
-          trace.strip.split(/\n+/).each do |trace_line|
-            date, event_value = trace_line.split
-            @event_trace.add_event(date.to_f, Events::Event.new(resource_desc, event_type, event_value))
-          end
-        else
-          raise "You must contact the coordinator for that."
-        end
-      end
-
-      # Add an random generated event to a resource
-      def event_random_add(resource_desc, event_type, generator_desc, first_value = nil)
-        if daemon?
-          event = Events::EventGenerator.new(resource_desc, event_type, generator_desc, first_value)
-          @event_trace.add_event(event.get_next_date, event)
-        else
-          raise "You must contact the coordinator for that."
-        end
-      end
-
-      # Start the churn
-      def event_manager_start
-        if daemon?
-          @event_manager.run
-        else
-          raise "You must contact the coordinator for that."
-        end
-      end
-
-      # Stop the churn
-      def event_manager_stop
-        if daemon?
-          @event_manager.stop
-        else
-          raise "You must contact the coordinator for that."
-        end
-      end
-
-      # Load a configuration
-      # ==== Attributes
-      # * +data+ data to be applied
-      # * +format+ the format of the data
-      # ==== Returns
-      # Resource::VPlatform object
-      # ==== Exceptions
-      #
-      def vplatform_create(format,data)
-        # >>> TODO: check if there is already a created vplatform
-        raise Lib::InvalidParameterError unless daemon?
-        raise Lib::MissingParameterError, 'data' unless data
-
-        parser = nil
-        desc = {}
-
-        case format.upcase
-        when 'XML'
-          parser = TopologyStore::XMLReader.new
-        when 'JSON'
-          desc = JSON.parse(data)
-        when 'SIMGRID'
-          parser = TopologyStore::SimgridReader.new('file:///home/lsarzyniec/rootfs.tar.bz2')
-        else
-          raise Lib::InvalidParameterError, format 
-        end
-
-        if desc.empty?
-          desc = parser.parse(data)
-          #raise PP.pp(hash['vplatform'])
-        end
-
-        raise InvalidParameterError, data unless Lib::Validator.validate(hash)
-
-        # Initialize the pnodes (if there is some)
-=begin
-        if desc['vplatform']['pnodes']
-          pnodes = []
-          desc['vplatform']['pnodes'].each do |pnodedesc|
-            pnodes << pnode_create!(pnodedesc['address'], pnodedesc)
-          end
-
-          pnodes.each do |pnode|
-            while pnode.status != Resource::Status::READY
-              sleep(0.2)
-            end
-          end
-        end
-=end
-
-        # Creating vnetworks
-        if desc['vplatform']['vnetworks']
-          desc['vplatform']['vnetworks'].each do |vnetdesc|
-            vnetwork_create(vnetdesc['name'],vnetdesc['address'])
-          end
-        end
-
-        # Creating the vnodes
-        starting_vnodes = []
-        if desc['vplatform']['vnodes']
-          desc['vplatform']['vnodes'].each do |vnodedesc|
-            ret = vnode_create!(vnode['name'], vnodedesc)
-            starting_vnodes << ret if \
-              vnodedesc['status'] == Resource::Status::RUNNING
-          end
-        end
-
-        # Creating VRoutes
-        #vroute_complete()
-        if desc['vplatform']['vnetworks']
-          desc['vplatform']['vnetworks'].each do |vnetdesc|
-            if vnetdesc['vroutes']
-              vnetdesc['vroutes'].each do |vroutedesc|
-                vroute_create(vroutedesc['networksrc'],vroutedesc['networkdst'],
-                  vroutedesc['gateway']
-                )
-              end
-            end
-          end
-        end
-
-        starting_vnodes.each do |vnode|
-          while vnode.status != Resource::Status::READY
-            sleep(0.2)
-          end
-        end
-
-        return @daemon_resources
-      end
-
-      # Get the description file of the current platform in a specified format (JSON if not specified)
-      # ==== Attributes
-      # * +format+ the format of the returned data
-      # ==== Returns
-      # String value that reprents the platform in the _format_ form
-      # ==== Exceptions
-      #
-      def vplatform_get(format)
-        format = '' unless format
-        visitor = nil
-        ret = ''
-
-        case format.upcase
-        when 'XML'
-          visitor = TopologyStore::XMLWriter.new
-        when 'JSON', ''
-          visitor = TopologyStore::HashWriter.new
-          ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
-        else
-          raise Lib::InvalidParameterError, format 
-        end
-
-        if ret.empty?
-          return visitor.visit(@daemon_resources)
-        else
-          return ret
-        end
-      end
-
       protected
 
-      # Check if the server is launched in daemon mode
-      # ==== Returns
-      # Boolean value
-      #
-      def daemon?
-        @mode == MODE_DAEMON
-      end
 
       # Guess that we are in a local context
       # ==== Attributes
@@ -1590,23 +894,19 @@ module Distem
       # Boolean value
       def target?(param)
         ret = false
-        if daemon?
-          target = nil
-          if param.is_a?(Resource::VNode)
-            target = param.host.address.to_s if param.host
-          elsif param.is_a?(String)
-            begin
-              target = Resolv.getaddress(param)
-            rescue Resolv::ResolvError
-              raise Lib::InvalidParameterError, param
-            end
-          elsif param == nil
-            ret = true
+        target = nil
+        if param.is_a?(Resource::VNode)
+          target = param.host.address.to_s if param.host
+        elsif param.is_a?(String)
+          begin
+            target = Resolv.getaddress(param)
+          rescue Resolv::ResolvError
+            raise Lib::InvalidParameterError, param
           end
-          ret = Lib::NetTools.localaddr?(target) if target
-        else
+          elsif param == nil
           ret = true
         end
+        ret = Lib::NetTools.localaddr?(target) if target
         return ret
       end
 
@@ -1679,9 +979,6 @@ module Distem
 
       # Destroy (clean) a resource
       def destroy(resource)
-        if daemon?
-          @daemon_resources.destroy(resource)
-        end
         @node_config.destroy(resource)
       end
     end

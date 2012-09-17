@@ -142,7 +142,7 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
 end
 
 def killall(session, objlist)
-  launched = exec(session,"lsof -Pnl -i4 | grep ':4567 ' | grep LISTEN",nil,false,false)
+  launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 ' | grep LISTEN",nil,false,false)
   unless launched.empty?
     tokill = launched.keys
     tokill.collect!{ |node| objlist[node] }
@@ -153,7 +153,7 @@ def killall(session, objlist)
     time_start = Time.now
     until !launched or launched.empty?
       exec(session,'kill -9 `ps aux|grep "distemd"|grep -v grep|sed "s/ \{1,\}/ /g"|cut -f 2 -d" "`',tokill,false,false) if (Time.now - time_start) > 2
-      launched = exec(session,"lsof -Pnl -i4 | grep ':4567 ' | grep LISTEN",
+      launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 ' | grep LISTEN",
         tokill,false,false)
       if launched and !launched.empty?
         tokill = launched.keys
@@ -165,7 +165,7 @@ def killall(session, objlist)
 end
 
 def statusall(session,allnodes)
-  launched = exec(session,"lsof -Pnl -i4 | grep ':4567 ' | grep LISTEN",nil,false,false)
+  launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 ' | grep LISTEN",nil,false,false)
   ret = {}
   allnodes.each { |node| ret[node] = launched.include?(node) }
   return ret
@@ -477,7 +477,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
   	  
       launched = []
       until launched and !launched.empty?
-        launched = exec(session,"lsof -Pnl -i4 | grep ':4567 '",:coord,false,
+        launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",:coord,false,
           false)[coordinator]
         sleep(0.1)
       end
