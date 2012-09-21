@@ -1,3 +1,4 @@
+
 #!/usr/bin/ruby
 # Experimental test suite for Distem
 # - supposed to be executed inside an OAR reservation with KaVLAN
@@ -20,6 +21,13 @@ ROOT = '/home/ejeanvoine/distem/test/experimental_testing'
 USER = `id -nu`.strip
 NET = '10.144.0.0/18'
 MIN_PNODES = 2
+
+module Kernel
+private
+  def this_method
+    caller[0] =~ /`([^']*)'/ and $1
+  end
+end
 
 class CommonTools
   def CommonTools::error(str)
@@ -189,23 +197,27 @@ class ExperimentalTesting < Test::Unit::TestCase
   ##############################
 
   def test_A0_setup_ok
+    puts "\n\n**** Running #{this_method} ****"
     assert_not_nil(@@coordinator)
     assert_not_nil(@@pnodes)
   end
 
   def test_A1_platform_api
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
     }
   end
 
   def test_A2_platform_cli
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes, 'cli' => true})
     }
   end
 
   def test_A3_latency
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']}"))
@@ -213,6 +225,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   end
 
   def test_A4_bandwidth
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']}"))
@@ -220,6 +233,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   end
 
   def test_A5_hpcc_gov
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
       [1,4].each { |nb_cpu|
@@ -232,6 +246,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   end
 
   def test_A6_hpcc_hogs
+    puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
       [1,4].each { |nb_cpu|
