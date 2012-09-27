@@ -1136,13 +1136,13 @@ module Distem
       # ==== Attributes
       # * +data+ data to be applied
       # * +format+ the format of the data
+      # * +rootfs+ the rootfs to boot vnodes
       # ==== Returns
       # Resource::VPlatform object
       # ==== Exceptions
       #
-      def vplatform_create(format,data)
+      def vplatform_create(format,data,rootfs=nil)
         # >>> TODO: check if there is already a created vplatform
-        raise Lib::InvalidParameterError unless daemon?
         raise Lib::MissingParameterError, 'data' unless data
         parser = nil
         desc = {}
@@ -1152,7 +1152,8 @@ module Distem
         when 'JSON'
           desc = JSON.parse(data)
         when 'SIMGRID'
-          parser = TopologyStore::SimgridReader.new('file:///home/lsarzyniec/rootfs.tar.bz2')
+          raise Lib::MissingParameterError, 'rootfs' unless rootfs
+          parser = TopologyStore::SimgridReader.new(rootfs)
         else
           raise Lib::InvalidParameterError, format 
         end
@@ -1171,7 +1172,7 @@ module Distem
         starting_vnodes = []
         if desc['vplatform']['vnodes']
           desc['vplatform']['vnodes'].each do |vnodedesc|
-            ret = vnode_create!(vnode['name'], vnodedesc)
+            ret = vnode_create(vnodedesc['name'], vnodedesc)
             starting_vnodes << ret if \
             vnodedesc['status'] == Resource::Status::RUNNING
           end

@@ -605,21 +605,21 @@ module Distem
       # ==== Return Content-Type:
       # +application/file+ -- The file in the requested format
       #
-      post '/vplatform/?' do
-      end
+      # post '/vplatform/?' do
+      # end
 
-      # (see POST /vplatform)
-      post '/' do
-      end
+      # # (see POST /vplatform)
+      # post '/' do
+      # end
 
       ['/vplatform/?', '/'].each do |path|
-      post path do
-        check do
-          @body = @daemon.vplatform_create(params['format'],params['data'])
+        post path do
+          check do
+            @body = @daemon.vplatform_create(params['format'],params['data'],params['rootfs'] == '' ? nil : params['rootfs'])
+          end
+          
+          return result!
         end
-
-        return result!
-      end
       end
 
       # Add a event trace to a resource

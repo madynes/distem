@@ -93,8 +93,9 @@ module Distem
                 ]
               }
             }],
-            'filesystem' =>  {
-              'image' => @image
+            'vfilesystem' =>  {
+              'image' => @image,
+              'shared' => true
             }
           }
         }
@@ -139,8 +140,9 @@ module Distem
             'name' => nodename,
             'vifaces' => [],
             'gateway' => true,
-            'filesystem' => {
-              'image' => @image
+            'vfilesystem' => {
+              'image' => @image,
+              'shared' => true
             }
           }
           tmp['switches'] = [] unless tmp['switches']

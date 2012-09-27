@@ -466,10 +466,10 @@ module Distem
       # Create an set a platform with backup data
       # @param [String] format The input data format
       # @param [String] data Data structured as described in {file:files/resources_desc.md#Virtual_Node}.
+      # @param [String] rootfs The rootfs to boot vnodes
       # @return [Hash] The virtual platform description (see {file:files/resources_desc.md#Virtual_Platform Resource Description - VPlatform})
-
-      def vplatform_create(data,format = 'JSON')
-        post_json("/vplatform", { 'format' => format, 'data' => data })
+      def vplatform_create(data,format = 'JSON',rootfs = nil)
+        post_json("/vplatform", { 'format' => format, 'data' => data, 'rootfs' => rootfs })
       end
 
       # Get the full description of the platform
