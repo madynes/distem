@@ -379,7 +379,7 @@ options['f_options'].each { |option|
   when 'config_viface'
     if (options['bw'] || options['latency']) then
       vnode = cl.vnode_info(options['vnode'])
-      viface_addr = vnode['vifaces'].collect{ |vif| vif['name'] == options['iface'] }[0]
+      viface_addr = vnode['vifaces'].collect{ |vif| vif['name'] == options['iface'] }.include?(true)
       if not viface_addr
         puts 'The address of the virtual interface cannot be found'
         exit 1
