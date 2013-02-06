@@ -53,8 +53,8 @@ module Distem
               ssh.exec!("mkdir -p #{Node::Admin::PATH_DISTEM_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
 
-              str = ssh.exec!("lsof -Pnl -i4")
-              unless /^distemd .*/.match(str)
+              str = ssh.exec!("lsof -Pnl -i4 | grep ':4568 '")
+              if str == ""
                 ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
 
                 retries = 20
