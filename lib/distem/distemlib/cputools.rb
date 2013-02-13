@@ -11,24 +11,16 @@ module Distem
       #
       def self.set_resource(pcpu)
         raise InvalidParameterError, pcpu unless pcpu.is_a?(Resource::CPU)
-        #str = File.read('/proc/cpuinfo')
         strhwloc = Shell.run('hwloc-ls --no-useless-caches')
         core = {}
 
         #Describe cores
+        #hwloc 1.0.2 (Debian Squeeze)
+        pattern1 = /\s*Core\s*#[0-9]+\s*\+\s*PU\s*#([0-9]+)\s*\(\s*phys\s*=\s*([0-9]+)\s*\)\s*/
+        #hwloc 1.4.1 (Debian Wheezy)
+        pattern2 = /\s*Core\s*L#[0-9]+\s*\+\s*PU\s*L#([0-9]+)\s*\(P#([0-9]+)\)\s*/
         strhwloc.each_line do |line|
-=begin
-          if line =~ /processor\s*:\s*([0-9]+)\s*/
-                  core['physicalid'] = Regexp.last_match(1)
-          elsif line =~ /cpu MHz\s*:\s*([0-9]+\.?[0-9]*)\s*/
-                  core['frequency'] = Regexp.last_match(1).to_f
-          elsif line =~ /physical id\s*:\s([0-9]+)\s/
-                  core['socketid'] = Regexp.last_match(1)
-          elsif line =~ /core id\s*:\s([0-9]+)\s/
-                  core['coreid'] = Regexp.last_match(1)
-          end
-=end
-          if line =~ /\s*Core\s*#[0-9]+\s*\+\s*PU\s*#([0-9]+)\s*\(\s*phys\s*=\s*([0-9]+)\s*\)\s*/
+          if (line =~ pattern1) || (line =~ pattern2)
           #/\s*Core\s*p#([0-9]+)\s*\+\s*PU\s*p#([0-9]+)\s*/
             core['physicalid'] = Regexp.last_match(2)
             core['coreid'] = Regexp.last_match(1)
@@ -54,15 +46,19 @@ module Distem
         end
 
         # Set cache links
+        #hwloc 1.0.2 (Debian Squeeze)
+        pattern1 = /\s*Core\s*p#[0-9]+\s*\+\s*PU\s*p#([0-9]+)\s*/
+        #hwloc 1.4.1 (Debian Wheezy)
+        pattern2 = /\s*Core\s*P#[0-9]+\s*\+\s*PU\s*P#([0-9]+)\s*/
         strhwloc = Shell.run('hwloc-ls -p --no-useless-caches')
         cur = []
         cache_links = false
         strhwloc.each_line do |line|
-          if line =~ /\s*[A-Z][0-9]\s*\([0-9]+\s*[kKmMgGtT]?B\)\s*/
+          if line =~ /\s*L[0-9]\s*\([0-9]+\s*[kKmMgGtT]?B\)\s*/
             cache_links = true
             pcpu.add_critical_cache_link(cur) unless cur.empty?
             cur = []
-          elsif line =~ /\s*Core\s*p#[0-9]+\s*\+\s*PU\s*p#([0-9]+)\s*/
+          elsif (line =~ pattern1) || (line =~ pattern2)
             cur << Regexp.last_match(1)
           end
         end
