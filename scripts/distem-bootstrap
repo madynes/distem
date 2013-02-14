@@ -397,7 +397,7 @@ Net::SSH::Multi.start do |session|
   if options[:git] or options[:gerrit]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord)
-    exec(session,"apt-get install -q -y --force-yes #{pkg_build * ' '}",
+    exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_build * ' '}",
       :coord) unless pkg_build.empty?
     unless pkg_build_gem.empty?
       msg("Installing gems build packages on #{coordinator}",MSG_INFO)
@@ -445,25 +445,24 @@ Net::SSH::Multi.start do |session|
     depends = depends.split("|").last.gsub!(' ','')
     exec(session,"dpkg --ignore-depends #{depends} " \
         "-i #{TMP_DIR}/#{File.basename(debarchivefile)}")
-    exec(session,"echo yes | apt-get install -q -y --force-yes -f")
+    exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --force-yes -f")
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
     exec(session,"rm -Rf #{gitdir}",:coord)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
     distempkg = (options[:distem_version]?"#{PKG_NAME}=#{options[:distem_version]}":PKG_NAME)
-    exec(session,"echo yes | apt-get install -q -y --force-yes " \
-        "--allow-unauthenticated #{distempkg}")
+    exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --allow-unauthenticated #{distempkg}")
   end
 
   msg("Installing debian misc packages",MSG_INFO)
-  exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") \
+  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_tmp_dependencies * ' '}") \
     unless pkg_tmp_dependencies.empty?
-  exec(session,"apt-get install -q -y --force-yes #{pkg_utils * ' '}") \
+  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_utils * ' '}") \
     unless pkg_utils.empty?
   options[:debpackages].each do |debpkg|
     msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
-    exec(session,"apt-get install -q -y --force-yes #{debpkg}")
+    exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{debpkg}")
   end
   options[:gempackages].each do |gempkg|
     msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
