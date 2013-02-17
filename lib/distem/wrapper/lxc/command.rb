@@ -123,7 +123,7 @@ module LXCWrapper # :nodoc: all
     def self.clean(wait=false)
       stopall(wait)
       destroyall(wait)
-      str = Distem::Lib::Shell.run('pidof lxc-wait | true')
+      str = Distem::Lib::Shell.run('pidof lxc-wait || true')
       Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
     end
 
