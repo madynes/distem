@@ -1,6 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
 
 
   class QdiscRoot < Wrapper

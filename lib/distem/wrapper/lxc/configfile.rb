@@ -1,4 +1,3 @@
-require 'distem'
 
 module LXCWrapper # :nodoc: all
 

@@ -1,4 +1,4 @@
-require 'distem'
+#require 'distem'
 
 module Distem
   module TopologyStore

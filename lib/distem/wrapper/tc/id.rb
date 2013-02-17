@@ -1,6 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
 
   class Id
     attr_reader :major, :minor

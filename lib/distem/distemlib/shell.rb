@@ -1,4 +1,3 @@
-require 'distem'
 require 'open3'
 
 module Distem
@@ -26,14 +25,24 @@ module Distem
           log = "#{cmdlog}\n#{ret}"
           error = !$?.success?
         else
-          Open3.popen3(cmd) do |stdin, stdout, stderr|
-            ret = stdout.read
-            err = stderr.read
-            Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) \
-              unless File.exists?(Distem::Node::Admin::PATH_DISTEM_LOGS)
-            log = "#{cmdlog}\n#{ret}"
-            log += "\nError: #{err}" unless err.empty? 
-            error = !$?.success? or !err.empty?
+          Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) unless File.exists?(Distem::Node::Admin::PATH_DISTEM_LOGS)
+          case RUBY_VERSION.split('.')[1].to_i
+          when 8
+            Open3.popen3(cmd) do |stdin, stdout, stderr|
+              ret = stdout.read
+              err = stderr.read
+              log = "#{cmdlog}\n#{ret}"
+              log += "\nError: #{err}" unless err.empty? 
+              error = !$?.success? or !err.empty?
+            end
+          when 9
+            Open3.popen3(cmd) do |stdin, stdout, stderr, thr|
+              ret = stdout.read
+              err = stderr.read
+              log = "#{cmdlog}\n#{ret}"
+              log += "\nError: #{err}" unless err.empty? 
+              error = !thr.value.success? or !err.empty?
+            end
           end
         end
         File.open(PATH_DISTEMD_LOG_CMD,'a+') { |f| f.write(log) }

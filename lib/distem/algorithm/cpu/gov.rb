@@ -1,4 +1,3 @@
-require 'distem'
 require 'pp'
 module Distem
   module Algorithm 

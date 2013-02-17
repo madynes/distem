@@ -1,4 +1,3 @@
-require 'distem'
 require 'uri'
 
 module Distem

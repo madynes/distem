@@ -1,6 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
 
 
   class IdRoot < Id

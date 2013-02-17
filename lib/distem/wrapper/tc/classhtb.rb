@@ -1,7 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
-
 
   class ClassHTB < Class
     TYPE="htb"

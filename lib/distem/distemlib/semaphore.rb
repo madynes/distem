@@ -1,4 +1,3 @@
-require 'distem'
 require 'thread'
 
 module Distem

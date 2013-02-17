@@ -1,6 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
 
 
   class QdiscSFQ < Qdisc

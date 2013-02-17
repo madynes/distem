@@ -1,4 +1,4 @@
-require 'distem'
+#require 'distem'
 require 'thread'
 require 'fileutils'
 

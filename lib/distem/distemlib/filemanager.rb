@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-require 'distem'
 require 'thread'
 require 'uri'
 require 'digest/sha2'
