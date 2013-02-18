@@ -1,4 +1,3 @@
-require 'distem'
 
 module LXCWrapper # :nodoc: all
 
@@ -82,21 +81,21 @@ module LXCWrapper # :nodoc: all
       ret = nil
       if cache
         @@lscache[:time] = Time.now unless @@lscache[:time]
-        @@lscache[:value] = Distem::Lib::Shell.run("lxc-ls",true) unless @@lscache[:value]
+        @@lscache[:value] = Distem::Lib::Shell.run("lxc-ls",true).split(/\n/) unless @@lscache[:value]
 
         if (Time.now - @@lscache[:time]) >= LS_CACHE_TIME
           if @@lslock.locked?
             @@lslock.synchronize{}
           else
             @@lslock.synchronize {
-              @@lscache[:value] = Distem::Lib::Shell.run('lxc-ls',true).split
+              @@lscache[:value] = Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
               @@lscache[:time] = Time.now
             }
           end
         end
         ret = @@lscache[:value]
       else
-        ret = Distem::Lib::Shell.run('lxc-ls',true).split
+        ret = Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
       end
       return ret
     end
@@ -124,7 +123,7 @@ module LXCWrapper # :nodoc: all
     def self.clean(wait=false)
       stopall(wait)
       destroyall(wait)
-      str = Distem::Lib::Shell.run('pidof lxc-wait')
+      str = Distem::Lib::Shell.run('pidof lxc-wait | true')
       Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
     end
 

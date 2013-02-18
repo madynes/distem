@@ -1,4 +1,3 @@
-require 'distem'
 require 'rexml/document'
 
 module Distem
@@ -287,7 +286,7 @@ module Distem
       # See the parse_platform method documentation
       def parse_link_ctn(xmldoc,result,tmp)
         name = xmldoc.attribute('id').to_s
-        switch = tmp['switches'].select{ |switch| switch['name'] == name }[0] if tmp['switches']
+        switch = tmp['switches'].select{ |sw| sw['name'] == name }[0] if tmp['switches']
         ret = true
         if switch
           ret = switch

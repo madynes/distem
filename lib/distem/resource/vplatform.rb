@@ -1,4 +1,3 @@
-require 'distem'
 require 'resolv'
 
 module Distem

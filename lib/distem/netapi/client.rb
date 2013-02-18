@@ -1,8 +1,6 @@
-require 'distem'
 require 'rest_client'
 require 'json'
 require 'cgi'
-require 'uri'
 require 'pp'
 
 module Distem
@@ -143,7 +141,7 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_remove(vnodename)
-        delete_json("/vnodes/#{URI.escape(vnodename)}")
+        delete_json("/vnodes/#{CGI.escape(vnodename)}")
       end
 
       # Update a virtual node description
@@ -153,7 +151,7 @@ module Distem
       # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_update(vnodename, desc = {}, async=false)
-        put_json("/vnodes/#{URI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
       end
 
       # Retrieve informations about a virtual node
@@ -161,7 +159,7 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_info(vnodename)
-        get_json("/vnodes/#{URI.escape(vnodename)}")
+        get_json("/vnodes/#{CGI.escape(vnodename)}")
       end
 
       # Start a virtual node.
@@ -175,7 +173,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_start(vnodename, async=false)
         desc = { :status => Resource::Status::RUNNING }
-        put_json("/vnodes/#{URI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
       end
 
       # Same as {#vnode_start} but in asynchronious mode
@@ -193,7 +191,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_stop(vnodename, async=false)
         desc = { :status => Resource::Status::READY }
-        put_json("/vnodes/#{URI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
       end
 
       # Same as {#vnode_stop} but in asynchronious mode
@@ -210,7 +208,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_shutdown(vnodename, async=false)
 		desc = { :status => Resource::Status::DOWN }
-		put_json("/vnodes/#{URI.escape(vnodename)}", { :desc => desc, :async => async })
+		put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
       end
 
       # Set the mode of a virtual node
@@ -219,7 +217,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_mode(vnodename,gateway=true)
         desc = { :mode => gateway ? Resource::VNode::MODE_GATEWAY : Resource::VNode::MODE_NORMAL }
-        put_json("/vnodes/#{URI.escape(vnodename)}", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc })
       end
 
       # Remove all vnodes
@@ -242,7 +240,7 @@ module Distem
       # @param [String] command The command to be executed
       # @return [String] The result of the command (Array of string if multilines)
       def vnode_execute(vnodename, command)
-        post_json("/vnodes/#{URI.escape(vnodename)}/commands", { :command => command })
+        post_json("/vnodes/#{CGI.escape(vnodename)}/commands", { :command => command })
       end
 
       # Create a virtual network interface on the virtual node
@@ -252,7 +250,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Network_interface Resource Description - VIface}.
       # @return [Hash] The virtual network interface description (see {file:files/resources_desc.md#Network_Interfaces Resource Description - VIfaces})
       def viface_create(vnodename, name, desc)
-        post_json("/vnodes/#{URI.escape(vnodename)}/ifaces", { :name => name, :desc => desc })
+        post_json("/vnodes/#{CGI.escape(vnodename)}/ifaces", { :name => name, :desc => desc })
       end
 
       # Remove a virtual network interface
@@ -261,7 +259,7 @@ module Distem
       # @param [String] vifacename The name of the network virtual interface
       # @return [Hash] The virtual network interface description (see {file:files/resources_desc.md#Network_Interfaces Resource Description - VIfaces})
       def viface_remove(vnodename,vifacename)
-        delete_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}")
+        delete_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}")
       end
 
       # Update a virtual network interface
@@ -273,7 +271,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Network_interface Resource Description - VIface}.
       # @return [Hash] The virtual network interface description (see {file:files/resources_desc.md#Network_Interfaces Resource Description - VIfaces})
       def viface_update(vnodename, vifacename, desc = {})
-        put_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}", { :desc => desc })
       end
 
       # Update the traffic description on the input of a specified virtual network interface
@@ -285,7 +283,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Virtual_Traffic Resource Description - VTraffic}.
       # @return [Hash] The virtual traffic description (see {file:files/resources_desc.md#Traffic Resource Description - VTraffic})
       def vinput_update(vnodename, vifacename, desc = {})
-        put_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}/input", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}/input", { :desc => desc })
       end
 
       # Retrive the traffic description on the input of a specified virtual network interface
@@ -294,7 +292,7 @@ module Distem
       # @param [String] vifacename The name of the virtual network interface
       # @return [Hash] The virtual traffic description (see {file:files/resources_desc.md#Traffic Resource Description - VTraffic})
       def vinput_info(vnodename, vifacename)
-        get_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}/input")
+        get_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}/input")
       end
 
       # Update the traffic description on the output of a specified virtual network interface
@@ -306,7 +304,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Virtual_Traffic Resource Description - VTraffic}.
       # @return [Hash] The virtual traffic description (see {file:files/resources_desc.md#Traffic Resource Description - VTraffic})
       def voutput_update(vnodename, vifacename, desc = {})
-        put_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}/output", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}/output", { :desc => desc })
       end
 
       # Retrive the traffic description on the output of a specified virtual network interface
@@ -315,7 +313,7 @@ module Distem
       # @param [String] vifacename The name of the virtual network interface
       # @return [Hash] The virtual traffic description (see {file:files/resources_desc.md#Traffic Resource Description - VTraffic})
       def voutput_info(vnodename, vifacename)
-        get_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}/output")
+        get_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}/output")
       end
 
       # Retrieve informations about a virtual network interface associated to a virtual node
@@ -324,7 +322,7 @@ module Distem
       # @param [String] vifacename The name of the virtual network interface
       # @return [Hash] The virtual network interface description (see {file:files/resources_desc.md#Network_Interfaces Resource Description - VIfaces})
       def viface_info(vnodename, vifacename)
-        get_json("/vnodes/#{URI.escape(vnodename)}/ifaces/#{URI.escape(vifacename)}")
+        get_json("/vnodes/#{CGI.escape(vnodename)}/ifaces/#{CGI.escape(vifacename)}")
       end
 
       # Set up a virtual CPU on the virtual node
@@ -335,7 +333,7 @@ module Distem
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
       def vcpu_create(vnodename, corenb=1, frequency=1.0)
         desc = { :corenb => corenb, :frequency => frequency }
-        post_json("/vnodes/#{URI.escape(vnodename)}/cpu", { :desc => desc })
+        post_json("/vnodes/#{CGI.escape(vnodename)}/cpu", { :desc => desc })
       end
 
       # Update a virtual CPU on the virtual node
@@ -345,7 +343,7 @@ module Distem
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
       def vcpu_update(vnodename, frequency)
         desc = { :frequency => frequency }
-        put_json("/vnodes/#{URI.escape(vnodename)}/cpu", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}/cpu", { :desc => desc })
       end
 
       # Removing a virtual CPU on the virtual node
@@ -353,14 +351,14 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
       def vcpu_remove(vnodename)
-        delete_json("/vnodes/#{URI.escape(vnodename)}/cpu")
+        delete_json("/vnodes/#{CGI.escape(vnodename)}/cpu")
       end
 
       # Retrive information about a virtual node CPU
       #
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
       def vcpu_info(vnodename)
-        get_json("/vnodes/#{URI.escape(vnodename)}/cpu")
+        get_json("/vnodes/#{CGI.escape(vnodename)}/cpu")
       end
 
       # Set up the filesystem of a virtual node
@@ -369,7 +367,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem}.
       # @return [Hash] The virtual Filesystem description (see {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem})
       def vfilesystem_create(vnodename,desc)
-        post_json("/vnodes/#{URI.escape(vnodename)}/filesystem", { :desc => desc })
+        post_json("/vnodes/#{CGI.escape(vnodename)}/filesystem", { :desc => desc })
       end
 
       # Update the filesystem of a virtual node
@@ -378,7 +376,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem}.
       # @return [Hash] The virtual Filesystem description (see {file:files/resources_desc.md#File_System0 Resource Description - VFilesystem})
       def vfilesystem_update(vnodename,desc)
-        put_json("/vnodes/#{URI.escape(vnodename)}/filesystem", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}/filesystem", { :desc => desc })
       end
 
       # Retrieve informations about a virtual node filesystem
@@ -386,7 +384,7 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @return [Hash] The virtual node filesystem informations
       def vfilesystem_info(vnodename)
-        get_json("/vnodes/#{URI.escape(vnodename)}/filesystem")
+        get_json("/vnodes/#{CGI.escape(vnodename)}/filesystem")
       end
 
       # Retrieve compressed image (tgz) of the filesystem of a node.
@@ -399,7 +397,7 @@ module Distem
         if File.directory?(target)
           target = File.join(target,"#{vnodename}-fsimage.tar.gz")
         end
-        content = get_content("/vnodes/#{URI.escape(vnodename)}/filesystem/image")
+        content = get_content("/vnodes/#{CGI.escape(vnodename)}/filesystem/image")
 
         File.open(target, 'w') { |f|
           f.syswrite(content)
@@ -421,7 +419,7 @@ module Distem
       # @param [String] vnetname The name of the virtual network
       # @return [Hash] The virtual network description (see {file:files/resources_desc.md#Virtual_Networks Resource Description - VNetworks})
       def vnetwork_remove(vnetname)
-        delete_json("/vnetworks/#{URI.escape(vnetname)}")
+        delete_json("/vnetworks/#{CGI.escape(vnetname)}")
       end
 
       # Retrieve informations about a virtual network
@@ -429,7 +427,7 @@ module Distem
       # @param [String] vnetname The name of the virtual network
       # @return [Hash] The virtual network description (see {file:files/resources_desc.md#Virtual_Networks Resource Description - VNetworks})
       def vnetwork_info(vnetname)
-        get_json("/vnetworks/#{URI.escape(vnetname)}")
+        get_json("/vnetworks/#{CGI.escape(vnetname)}")
       end
 
       # Remove every virtual network
@@ -452,7 +450,7 @@ module Distem
       # @param [String] gateway The name of the virtual node to use as gateway (this node have to be connected on both of the previously mentioned networks), the node is automatically set in gateway mode
       # @return [Hash] The virtual route description (see {file:files/resources_desc.md#Virtual_Routes Resource Description - VRoutes})
       def vroute_create(srcnet,dstnet,gateway)
-        post_json("/vnetworks/#{URI.escape(srcnet)}/routes",
+        post_json("/vnetworks/#{CGI.escape(srcnet)}/routes",
           { :destnetwork => dstnet, :gatewaynode => gateway })
       end
 
@@ -633,7 +631,7 @@ module Distem
       end
 
       def get_content(route)
-        raw_request(:get, route, data = { }, json = false)
+        raw_request(:get, route, { }, false)
       end
 
     end

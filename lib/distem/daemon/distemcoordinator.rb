@@ -1,4 +1,3 @@
-require 'distem'
 require 'thread'
 require 'socket'
 require 'ipaddress'
@@ -64,7 +63,8 @@ module Distem
             }
 
             if async
-              thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
+              #thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
+              @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
                 block.call
               }
               #thr.abort_on_exception = true
@@ -155,7 +155,6 @@ module Distem
       # ==== Exceptions
       #
       def pnodes_quit()
-        me = nil
         ret = @daemon_resources.pnodes.dup
         @daemon_resources.pnodes.each_value do |pnode|
           pnode_quit(pnode.address.to_s)
@@ -462,12 +461,6 @@ module Distem
         raise Lib::UninitializedResourceError, vnode.name if \
         vnode.status == Resource::Status::INIT
 
-        nodemodeblock = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          @node_config.vnode_stop(vnode, false)
-          vnode.status = Resource::Status::DOWN
-        }
-
         block = Proc.new {
           vnode.status = Resource::Status::CONFIGURING
           Distem.client(vnode.host.address, 4568) do |cl|
@@ -659,7 +652,6 @@ module Distem
       # ==== Exceptions
       #
       def viface_detach(vnodename,vifacename)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
         viface.detach()
 
@@ -703,7 +695,6 @@ module Distem
       end
 
       def vinput_get(vnodename,vifacename, raising = true)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
         raise Lib::UninitializedResourceError, 'input' if raising and !viface.vinput
@@ -735,7 +726,6 @@ module Distem
       end
 
       def voutput_get(vnodename,vifacename, raising = true)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
         raise Lib::UninitializedResourceError, 'voutput' if raising and !viface.voutput

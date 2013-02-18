@@ -1,4 +1,3 @@
-require 'distem'
 require 'net/ssh'
 
 module Distem

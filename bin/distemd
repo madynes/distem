@@ -25,18 +25,20 @@ optparse = OptionParser.new(USAGE) do |opts|
 end
 optparse.parse!
 
-str = Distem::Lib::Shell.run('pidof lxc-wait')
+str = Distem::Lib::Shell.run('pidof lxc-wait || true')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"
   if (options['f_verbose'])
     tid = []
     tid << Thread.new {Distem::NetAPI::ServerCoordinatorDebug.run!}
+    sleep(2)
     tid << Thread.new {Distem::NetAPI::ServerPnodeDebug.run!}
     tid.each { |t| t.join}
   else
     tid = []
     tid << Thread.new {Distem::NetAPI::ServerCoordinator.run!}
+    sleep(2)
     tid << Thread.new {Distem::NetAPI::ServerPnode.run!}
     tid.each { |t| t.join}
   end

@@ -1,4 +1,3 @@
-require 'distem'
 require 'thread'
 require 'socket'
 require 'ipaddress'
@@ -289,7 +288,6 @@ module Distem
         raise Lib::ResourceError, "#{vnode.name} already running" if \
           vnode.status == Resource::Status::RUNNING
 
-        vnode_down = (vnode.status ==  Resource::Status::DOWN)
         vnode.status = Resource::Status::CONFIGURING
         vnode.host = @node_config.pnode unless vnode.host
         vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
@@ -499,7 +497,6 @@ module Distem
       # ==== Exceptions
       #
       def viface_detach(vnodename,vifacename)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
         viface.detach()
 
@@ -543,7 +540,6 @@ module Distem
       end
 
       def vinput_get(vnodename,vifacename, raising = true)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
         raise Lib::UninitializedResourceError, 'input' if raising and !viface.vinput
@@ -575,7 +571,6 @@ module Distem
       end
 
       def voutput_get(vnodename,vifacename, raising = true)
-        vnode = vnode_get(vnodename)
         viface = viface_get(vnodename,vifacename)
 
         raise Lib::UninitializedResourceError, 'voutput' if raising and !viface.voutput

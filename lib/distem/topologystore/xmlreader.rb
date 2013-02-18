@@ -1,4 +1,3 @@
-require 'distem'
 require 'rexml/document'
 
 module Distem

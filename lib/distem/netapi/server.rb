@@ -1,4 +1,3 @@
-require 'distem'
 require 'sinatra/base'
 require 'socket'
 require 'ipaddress'
@@ -219,7 +218,7 @@ module Distem
       # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
       delete '/vnodes/:vnodename/?' do
         check do
-          @body = @daemon.vnode_remove(URI.unescape(params['vnodename']))
+          @body = @daemon.vnode_remove(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -228,7 +227,7 @@ module Distem
       # Get the description of a virtual node
       get '/vnodes/:vnodename/?' do
         check do
-          @body = @daemon.vnode_get(URI.unescape(params['vnodename']))
+          @body = @daemon.vnode_get(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -261,7 +260,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vnode_update(URI.unescape(params['vnodename']),desc,params['async'])
+          @body = @daemon.vnode_update(CGI.unescape(params['vnodename']),desc,params['async'])
         end
 
         return result!
@@ -275,7 +274,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vfilesystem_create(URI.unescape(params['vnodename']),desc)
+          @body = @daemon.vfilesystem_create(CGI.unescape(params['vnodename']),desc)
         end
 
         return result!
@@ -289,7 +288,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vfilesystem_update(URI.unescape(params['vnodename']),desc)
+          @body = @daemon.vfilesystem_update(CGI.unescape(params['vnodename']),desc)
         end
 
         return result!
@@ -299,7 +298,7 @@ module Distem
       # Retrieve informations about the virtual node filesystem
       get '/vnodes/:vnodename/filesystem/?' do
         check do
-          @body = @daemon.vfilesystem_get(URI.unescape(params['vnodename']))
+          @body = @daemon.vfilesystem_get(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -310,7 +309,7 @@ module Distem
       # *Important*: You have to contact the physical node the vnode is hosted on directly
       get '/vnodes/:vnodename/filesystem/image/?' do
         check do
-          @body = @daemon.vfilesystem_image(URI.unescape(params['vnodename']))
+          @body = @daemon.vfilesystem_image(CGI.unescape(params['vnodename']))
           send_file(@body, :filename => "#{params['vnodename']}-fsimage.tar.gz")
         end
       end
@@ -322,7 +321,7 @@ module Distem
       #
       post '/vnodes/:vnodename/commands/?' do
         check do
-          r = @daemon.vnode_execute(URI.unescape(params['vnodename']),
+          r = @daemon.vnode_execute(CGI.unescape(params['vnodename']),
                                     params['command'])
           @body = (r ? r.split("\n") : [])
         end
@@ -340,7 +339,7 @@ module Distem
         check do
           desc = {}
             desc = JSON.parse(params['desc']) if params['desc']
-            @body = @daemon.viface_create(URI.unescape(params['vnodename']),params['name'],desc)
+            @body = @daemon.viface_create(CGI.unescape(params['vnodename']),params['name'],desc)
         end
 
         return result!
@@ -349,8 +348,8 @@ module Distem
       # Remove a specified virtual network interface
       delete '/vnodes/:vnodename/ifaces/:ifacename/?' do
         check do
-          @body = @daemon.viface_remove(URI.unescape(params['vnodename']),
-            URI.unescape(params['ifacename']))
+          @body = @daemon.viface_remove(CGI.unescape(params['vnodename']),
+            CGI.unescape(params['ifacename']))
         end
 
         return result!
@@ -359,8 +358,8 @@ module Distem
       # Get the description of a virtual network interface
       get '/vnodes/:vnodename/ifaces/:ifacename/?' do
         check do
-          @body = @daemon.viface_get(URI.unescape(params['vnodename']),
-            URI.unescape(params['ifacename']))
+          @body = @daemon.viface_get(CGI.unescape(params['vnodename']),
+            CGI.unescape(params['ifacename']))
         end
 
         return result!
@@ -376,8 +375,8 @@ module Distem
       # *Note*: Dettach/Disconnect the virtual interface if properties is empty
       put '/vnodes/:vnodename/ifaces/:ifacename/?' do
         check do
-          vnodename = URI.unescape(params['vnodename'])
-          vifacename = URI.unescape(params['ifacename'])
+          vnodename = CGI.unescape(params['vnodename'])
+          vifacename = CGI.unescape(params['ifacename'])
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
           @body = @daemon.viface_update(vnodename,vifacename,desc)
@@ -390,8 +389,8 @@ module Distem
       #
       get '/vnodes/:vnodename/ifaces/:ifacename/input/?' do
         check do
-          vnodename = URI.unescape(params['vnodename'])
-          vifacename = URI.unescape(params['ifacename'])
+          vnodename = CGI.unescape(params['vnodename'])
+          vifacename = CGI.unescape(params['ifacename'])
           @body = @daemon.vinput_get(vnodename,vifacename)
         end
 
@@ -406,8 +405,8 @@ module Distem
       # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_traffic Resource Description - VTraffic}.
       put '/vnodes/:vnodename/ifaces/:ifacename/input/?' do
         check do
-          vnodename = URI.unescape(params['vnodename'])
-          vifacename = URI.unescape(params['ifacename'])
+          vnodename = CGI.unescape(params['vnodename'])
+          vifacename = CGI.unescape(params['ifacename'])
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
           @body = @daemon.vinput_update(vnodename,vifacename,desc)
@@ -420,8 +419,8 @@ module Distem
       #
       get '/vnodes/:vnodename/ifaces/:ifacename/output/?' do
         check do
-          vnodename = URI.unescape(params['vnodename'])
-          vifacename = URI.unescape(params['ifacename'])
+          vnodename = CGI.unescape(params['vnodename'])
+          vifacename = CGI.unescape(params['ifacename'])
           @body = @daemon.voutput_get(vnodename,vifacename)
         end
 
@@ -436,8 +435,8 @@ module Distem
       # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_traffic Resource Description - VTraffic}.
       put '/vnodes/:vnodename/ifaces/:ifacename/output/?' do
         check do
-          vnodename = URI.unescape(params['vnodename'])
-          vifacename = URI.unescape(params['ifacename'])
+          vnodename = CGI.unescape(params['vnodename'])
+          vifacename = CGI.unescape(params['ifacename'])
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
           @body = @daemon.voutput_update(vnodename,vifacename,desc)
@@ -455,7 +454,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vcpu_create(URI.unescape(params['vnodename']),desc)
+          @body = @daemon.vcpu_create(CGI.unescape(params['vnodename']),desc)
         end
 
         return result!
@@ -464,7 +463,7 @@ module Distem
       # Remove virtual CPU of a virtual node
       delete '/vnodes/:vnodename/cpu/?' do
         check do
-          @body = @daemon.vcpu_remove(URI.unescape(params['vnodename']))
+          @body = @daemon.vcpu_remove(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -480,7 +479,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vcpu_update(URI.unescape(params['vnodename']),desc)
+          @body = @daemon.vcpu_update(CGI.unescape(params['vnodename']),desc)
         end
 
         return result!
@@ -489,7 +488,7 @@ module Distem
       # Get the description of the virtual CPU associated with a virtual node
       get '/vnodes/:vnodename/cpu/?' do
         check do
-          @body = @daemon.vcpu_get(URI.unescape(params['vnodename']))
+          @body = @daemon.vcpu_get(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -512,7 +511,7 @@ module Distem
       # Delete the virtual network
       delete '/vnetworks/:vnetname/?' do
         check do
-          @body = @daemon.vnetwork_remove(URI.unescape(params['vnetname']))
+          @body = @daemon.vnetwork_remove(CGI.unescape(params['vnetname']))
         end
 
         return result!
@@ -521,7 +520,7 @@ module Distem
       # Get the description of a virtual network
       get '/vnetworks/:vnetname/?' do
         check do
-          @body = @daemon.vnetwork_get(URI.unescape(params['vnetname']))
+          @body = @daemon.vnetwork_get(CGI.unescape(params['vnetname']))
         end
 
         return result!
@@ -556,7 +555,7 @@ module Distem
       post '/vnetworks/:vnetname/routes/?' do
         check do
           @body = @daemon.vroute_create(
-            URI.unescape(params['vnetname']),
+            CGI.unescape(params['vnetname']),
             params['destnetwork'],
             params['gatewaynode']
           )
@@ -629,7 +628,7 @@ module Distem
           trace = JSON.parse(params['trace']) if params['trace']
           resource_desc = {}
           resource_desc = JSON.parse(params['resource']) if params['resource']
-          event_type = URI.unescape(params['event_type'])
+          event_type = CGI.unescape(params['event_type'])
           @daemon.event_trace_add(resource_desc, event_type, trace)
           @body = ""
         end
@@ -638,9 +637,9 @@ module Distem
       # Add a event trace to a resource, but the source is a string
       post '/events/trace_string/?' do
         check do
-          trace_string = URI.unescape(params['trace_string'])
+          trace_string = CGI.unescape(params['trace_string'])
           resource_desc = JSON.parse(params['resource']) if params['resource']
-          event_type = URI.unescape(params['event_type'])
+          event_type = CGI.unescape(params['event_type'])
           @daemon.event_trace_string_add(resource_desc, event_type, trace_string)
           @body = ""
         end
@@ -653,9 +652,9 @@ module Distem
           generator_desc = JSON.parse(params['generator']) if params['generator']
           resource_desc = {}
           resource_desc = JSON.parse(params['resource']) if params['resource']
-          event_type = URI.unescape(params['event_type'])
+          event_type = CGI.unescape(params['event_type'])
           first_value = nil
-          first_value = URI.unescape(params['first_value']) if params['first_value']
+          first_value = CGI.unescape(params['first_value']) if params['first_value']
           @daemon.event_random_add(resource_desc, event_type, generator_desc, first_value)
           @body = ""
         end
@@ -685,7 +684,13 @@ module Distem
       # @return [Array] An array of the format [@status,@headers,@body]
       # @private
       def result!
-        classname = @body.class.name.split('::').last
+        classname = nil
+        case RUBY_VERSION.split('.')[1].to_i
+        when 8
+          classname = @body.class.name.split('::').last
+        when 9
+          classname = (@body.class.name.split('::').last).to_sym
+        end
         if Distem::Resource.constants.include?(classname) \
           or @body.is_a?(Resource::VIface::VTraffic) \
           or @body.is_a?(Array) or @body.is_a?(Hash)

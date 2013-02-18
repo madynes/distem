@@ -22,7 +22,7 @@ def check_opts(opt, subopts, required, optional)
     end
   }
   subopts.each_key { |k|
-    if not (required.include?(k) || optional.include?(k))
+    if not(required.include?(k) || optional.include?(k))
       puts "The sub-option #{k} is not supported with --#{opt}"
       return false
     end

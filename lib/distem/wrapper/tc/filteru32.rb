@@ -1,7 +1,5 @@
 module TCWrapper # :nodoc: all
 
-  require 'distem'
-
 
   class FilterU32 < Filter
     TYPE="u32"
