@@ -1227,7 +1227,7 @@ module Distem
       # New Hash object
       def downkeys(hash)
         if hash.is_a?(Hash)
-          hash.each do |k,v|
+          hash.dup.each do |k,v|
             hash[k.downcase] = downkeys(v)
             hash.delete(k) unless k.downcase == k
           end
