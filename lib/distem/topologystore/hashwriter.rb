@@ -117,7 +117,7 @@ module Distem
       # See the visit_vplatform documentation
       def visit_vcpu(vcpu)
         return {
-          'pcpu' => vcpu.pcpu.id.to_s,
+          'pcpu' => vcpu.pcpu.object_id.to_s,
           'vcores' => visit(vcpu.vcores),
         }
       end

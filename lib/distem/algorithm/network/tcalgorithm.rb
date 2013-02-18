@@ -49,13 +49,13 @@ module Distem
           iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
           ifb = viface.ifb
 
-          str = Lib::Shell.run("tc qdisc show").grep(/ dev #{ifb} /)
+          str = Lib::Shell.run("tc qdisc show || true").split(/\n/).grep(/ dev #{ifb} /)
           if not str.empty? and not str[0].include?('pfifo_fast')
             inputroot = TCWrapper::QdiscRoot.new(ifb)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
           end
 
-          str = Lib::Shell.run("tc qdisc show | grep #{iface} | grep ingress")
+          str = Lib::Shell.run("tc qdisc show | grep #{iface} | grep ingress || true")
           if str and !str.empty?
             inputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
