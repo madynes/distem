@@ -793,7 +793,7 @@ module Distem
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
             cl = NetAPI::Client.new(vnode.host.address, 4568)
-            cl.vcpu_update(vnode.name,desc)
+            cl.vcpu_update(vnode.name,desc['frequency'])
             vnode.status = Resource::Status::RUNNING
           end
 
@@ -807,19 +807,12 @@ module Distem
         end
       end
 
-      def vcpu_get(vnodename)
-        vnode = vnode_get(vnodename)
-
-        raise Lib::UninitializedResourceError, 'vcpu' unless vnode.vcpu
-
-        return vnode.vcpu
-      end
-
       def vcpu_update(vnodename,desc)
         begin
           vnode = vnode_get(vnodename)
-          vcpu = vcpu_get(vnode.name)
-
+          raise Lib::UninitializedResourceError, 'vcpu' unless vnode.vcpu
+          
+          vcpu = vnode.vcpu
           downkeys(desc)
 
           if desc['vcores']
@@ -836,7 +829,7 @@ module Distem
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
             cl = NetAPI::Client.new(vnode.host.address, 4568)
-            cl.vcpu_update(vnode.name,desc)
+            cl.vcpu_update(vnode.name,desc['frequency'])
             vnode.status = Resource::Status::RUNNING
           end
 
@@ -1259,16 +1252,17 @@ module Distem
       def updateobj_vnode(vnode,hash)
         vnode.filesystem.sharedpath = hash['vfilesystem']['sharedpath']
         vnode.filesystem.path = hash['vfilesystem']['path']
-
-        if vnode.vcpu
-          #vnode.vcpu.pcpu = vnode.host.cpu if vnode.host
-          i = 0
-          vnode.vcpu.vcores.each_value do |vcore|
-            vcore.pcore = hash['vcpu']['vcores'][i]['pcore']
-            vcore.frequency = hash['vcpu']['vcores'][i]['frequency'].split[0].to_i * 1000
-            i += 1
-          end
-        end
+        
+        # Commented since the coordinator view of the VCpu should not be modified by the Pnode view
+        # if vnode.vcpu
+        #   #vnode.vcpu.pcpu = vnode.host.cpu if vnode.host
+        #   i = 0
+        #   vnode.vcpu.vcores.each_value do |vcore|
+        #     vcore.pcore = hash['vcpu']['vcores'][i]['pcore']
+        #     vcore.frequency = hash['vcpu']['vcores'][i]['frequency'].split[0].to_i * 1000
+        #     i += 1
+        #   end
+        # end
       end
 
       def parse_bool(param)
