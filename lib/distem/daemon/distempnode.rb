@@ -91,11 +91,6 @@ module Distem
         vnetworks_remove()
         
         Node::Admin.quit_node()
-        #TODO: understand that ...
-        Thread.new do
-          sleep(2)
-          exit!
-        end
         pnode.status = Resource::Status::READY
         return pnode
       end

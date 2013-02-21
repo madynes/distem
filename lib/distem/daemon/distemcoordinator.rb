@@ -156,9 +156,13 @@ module Distem
       #
       def pnodes_quit()
         ret = @daemon_resources.pnodes.dup
+        first_node = Resolv.getaddress(@node_name).to_s
         @daemon_resources.pnodes.each_value do |pnode|
-          pnode_quit(pnode.address.to_s)
+          if pnode.address.to_s != first_node
+            pnode_quit(pnode.address.to_s)
+          end
         end
+        pnode_quit(first_node)
         return ret
       end
 

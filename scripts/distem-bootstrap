@@ -58,19 +58,19 @@ end
 ULIMIT_OPEN_FILES = 65535 # to be removed
 
 pkg_utils=[
-  'htop'
-]
+           'htop'
+          ]
 
 pkg_tmp_dependencies=[]
 
 pkg_build=[
-  'git',
-  'rake'
-]
+           'git',
+           'rake'
+          ]
 
 pkg_build_gem=[
-  #'rake-compiler'
-]
+               #'rake-compiler'
+              ]
 
 options = {}
 @options = options
@@ -122,45 +122,42 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
       unless success
         msg("unable to execute '#{cmd}' on #{ch.connection.host}",MSG_ERROR)
       end
-      msg("Executing '#{cmd}' on #{ch.connection.host}]",MSG_INFO) \
-        if @options[:debug]
-    end
-  end
-
-  channel.on_data do |chtmp,data|
-    outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
-    outs[chtmp.connection.host] << data.strip
-    msg("[#{chtmp.connection.host}] #{data.strip}") \
-      if @options[:debug] or showout
-  end
-
-  channel.on_extended_data do |chtmp,type,data|
-    errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
-    errs[chtmp.connection.host] << data.strip
-    msg("[#{chtmp.connection.host}] #{data.strip}") \
-      if @options[:debug] or showout
-  end
-
-  channel.on_request("exit-status") do |chtmp, data|
-    status = data.read_long
-    if status != 0
-      if showerr or critical
-        msg("exec of '#{cmd}' on #{chtmp.connection.host} failed " \
-            "with return status #{status.to_s}",MSG_ERROR)
-        msg("---stdout dump---")
-        outs[chtmp.connection.host].each { |out| msg(out) } if \
-          outs[chtmp.connection.host]
-        msg("---stderr dump---")
-        errs[chtmp.connection.host].each { |err| msg(err) } if \
-          errs[chtmp.connection.host]
-        msg("---\n")
+      if @options[:debug]
+        msg("Executing '#{cmd}' on #{ch.connection.host}]",MSG_INFO)
       end
-      exit 1 if critical
+    end
+
+    channel.on_data do |chtmp,data|
+      outs[chtmp.connection.host] = [] unless outs[chtmp.connection.host]
+      outs[chtmp.connection.host] << data.strip
+      if @options[:debug] or showout
+        msg("[#{chtmp.connection.host}] #{data.strip}")
+      end
+    end
+    channel.on_extended_data do |chtmp,type,data|
+      errs[chtmp.connection.host] = [] unless errs[chtmp.connection.host]
+      errs[chtmp.connection.host] << data.strip
+      if @options[:debug] or showout
+        msg("[#{chtmp.connection.host}] #{data.strip}")
+      end
+    end  
+    channel.on_request("exit-status") do |chtmp, data|
+      status = data.read_long
+      if status != 0
+        if showerr or critical
+          msg("exec of '#{cmd}' on #{chtmp.connection.host} failed with return status #{status.to_s}",MSG_ERROR)
+              msg("---stdout dump---")
+          outs[chtmp.connection.host].each { |out| msg(out) } if outs[chtmp.connection.host]
+          msg("---stderr dump---")
+          errs[chtmp.connection.host].each { |err| msg(err) } if errs[chtmp.connection.host]
+          msg("---\n")
+        end
+        exit 1 if critical
+      end
     end
   end
-
   channel.wait
-
+  
   return outs
 end
 
@@ -298,7 +295,7 @@ if nodelist.include?(coordinator)
   nodelist.delete(coordinator)
 else
   tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
-   if tmp.empty?
+  if tmp.empty?
     msg("Coordinator not present in <nodes_file>",MSG_WARNING)
   else
     msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
@@ -334,7 +331,7 @@ else
   end
 end
 msg("Copying SSH key pair files",
-  MSG_INFO)
+    MSG_INFO)
 allnodes.each do |node|
   `scp #{sshkeyfile} root@#{node}:/root/.ssh/`
 end
@@ -381,15 +378,12 @@ Net::SSH::Multi.start do |session|
 
   #setting up ulimit-open_files, to be removed
   rule="root hard nofile"
-  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || " \
-      "echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
+  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
   rule="root soft nofile"
-  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || " \
-      "echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
+  exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
 
   # setup Debian repo
-  exec(session,"grep -q '#{DEB_REPOSITORY}' /etc/apt/sources.list || " \
-      "echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
+  exec(session,"grep -q '#{DEB_REPOSITORY}' /etc/apt/sources.list || echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
 
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
@@ -398,11 +392,10 @@ Net::SSH::Multi.start do |session|
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord)
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_build * ' '}",
-      :coord) unless pkg_build.empty?
+         :coord) unless pkg_build.empty?
     unless pkg_build_gem.empty?
       msg("Installing gems build packages on #{coordinator}",MSG_INFO)
-      exec(session,"export http_proxy=#{HTTP_PROXY};" \
-          "gem install #{pkg_build_gem * ' '}",:coord)
+      exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{pkg_build_gem * ' '}",:coord)
     end
     gitdir = "#{TMP_DIR}/git"
     exec(session,"mkdir -p #{TMP_DIR}")
@@ -416,50 +409,45 @@ Net::SSH::Multi.start do |session|
       end
       unless options[:git] == :git_last
         msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
-          MSG_INFO)
+            MSG_INFO)
         exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
-          :coord)
+             :coord)
       end
     else # gerrit
       msg("Setting up git repository from gerrit ref:#{options[:gerrit]} on #{coordinator}",
-        MSG_INFO)
+          MSG_INFO)
       exec(session,"git clone #{GERRIT_REPOSITORY} #{gitdir}",:coord)
       exec(session,"cd #{gitdir} && git fetch #{GERRIT_REPOSITORY} #{options[:gerrit]} && git checkout FETCH_HEAD", :coord)
     end
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
-    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc"\
-        " #{TMP_DIR}/*.tar.gz",:coord)
+    exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord)
 
     debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",
-      :coord)[coordinator][0]
+                          :coord)[coordinator][0]
     msg("Copying generated debian package #{File.basename(debarchivefile)}",
-      MSG_INFO)
+        MSG_INFO)
     #exec(session,"cp #{debarchivefile} #{TMP_DIR}",:coord,true)
-    nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no " \
-          "#{debarchivefile} root@#{node}:#{TMP_DIR}",:coord)}
+    nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord)}
     msg("Installing generated debian package #{File.basename(debarchivefile)}",
-      MSG_INFO)
+        MSG_INFO)
     depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",
-      :coord)[coordinator][0]
+                   :coord)[coordinator][0]
     depends = depends.split("|").last.gsub!(' ','')
-    exec(session,"dpkg --ignore-depends #{depends} " \
-        "-i #{TMP_DIR}/#{File.basename(debarchivefile)}")
+    exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}")
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --force-yes -f")
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
     exec(session,"rm -Rf #{gitdir}",:coord)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
   else
     msg("Installing debian distem packages",MSG_INFO)
-    distempkg = (options[:distem_version]?"#{PKG_NAME}=#{options[:distem_version]}":PKG_NAME)
+    distempkg = options[:distem_version] ? "#{PKG_NAME}=#{options[:distem_version]}":PKG_NAME
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --allow-unauthenticated #{distempkg}")
   end
-
+  
   msg("Installing debian misc packages",MSG_INFO)
-  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_tmp_dependencies * ' '}") \
-    unless pkg_tmp_dependencies.empty?
-  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_utils * ' '}") \
-    unless pkg_utils.empty?
+  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_tmp_dependencies * ' '}") unless pkg_tmp_dependencies.empty?
+  exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_utils * ' '}") unless pkg_utils.empty?
   options[:debpackages].each do |debpkg|
     msg("Installing additional debian package '#{debpkg}'",MSG_INFO)
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{debpkg}")
@@ -467,7 +455,7 @@ Net::SSH::Multi.start do |session|
   options[:gempackages].each do |gempkg|
     msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
-      :coord)
+         :coord)
   end
 
   session.loop
@@ -485,7 +473,7 @@ Net::SSH::Multi.start do |session|
       until !launched or launched.empty?
         exec(session,'kill -9 `ps aux|grep "distemd"|grep -v grep|sed "s/ \{1,\}/ /g"|cut -f 2 -d" "`',tokill,false,false) if (Time.now - time_start) > 2
         launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",
-          tokill,false,false)
+                        tokill,false,false)
         if launched and !launched.empty?
           tokill = launched.keys
           tokill.collect!{ |node| nodeobjlist[node] }
@@ -496,13 +484,14 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     exec(session,"distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
-      :coord)
-
-    launched = []
-    until launched and !launched.empty?
-      launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",:coord,false,false)[coordinator]
-      sleep(0.1)
-    end
+         :coord)
+    [ '4567', '4568' ].each { |port|
+      launched = []
+      until launched and !launched.empty?
+        launched = exec(session,"lsof -Pnl -i4 | grep ':#{port} '",:coord,false,false)[coordinator]
+        sleep(0.1)
+      end
+    }
     session.loop
 
     if options[:init_pnodes]
@@ -534,15 +523,14 @@ Net::SSH::Multi.start do |session|
         `scp #{ARGV[0]} root@#{coordinator}:#{filename}`
         exec(session,"chmod +x #{filename}",:coord)
         msg("Executing script file '#{filename}' on #{coordinator}",
-          MSG_INFO)
+            MSG_INFO)
 
-        ARGV_dup = ARGV.dup
-        ARGV_dup.shift
-        script_args = (ARGV_dup.length > 0 ? ARGV_dup.join(" ") : "")
+        argv_dup = ARGV.dup
+        argv_dup.shift
+        script_args = (argv_dup.length > 0 ? argv_dup.join(" ") : "")
         exec(session,
-          "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}';" \
-            "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
-            "#{filename} #{script_args}",:coord,true,true,true)
+             "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}'; export #{VAR_DISTEM_COORD}='#{coordinator}';#{filename} #{script_args}",
+             :coord,true,true,true)
         exec(session,"rm #{filename}",:coord)
       end
       msg('Script execution done',MSG_INFO)

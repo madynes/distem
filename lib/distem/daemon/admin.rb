@@ -51,11 +51,14 @@ module Distem
             Net::SSH.start(pnode.address.to_s, pnode.ssh_user, :keys => ssh_keys_priv, :password => pnode.ssh_password) do |ssh|
               ssh.exec!("mkdir -p #{Node::Admin::PATH_DISTEM_LOGS}")
               ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
-
               str = ssh.exec!("lsof -Pnl -i4 | grep ':4568 '")
-              if str == ""
+              if !str || (str == "")
                 ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
-
+                launched = []
+                until launched and !launched.empty?
+                  launched = ssh.exec!("lsof -Pnl -i4 | grep ':4568 '")
+                  sleep(0.1)
+                end
                 retries = 20
                 cl = NetAPI::Client.new(pnode.address)
                 begin

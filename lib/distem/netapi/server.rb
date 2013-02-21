@@ -159,6 +159,13 @@ module Distem
         return result!
       end
 
+      after '/pnodes/:pnode/?' do
+        Thread.new {
+          sleep 2
+          exit!
+        }
+      end
+
       # Quit distem on all the physical machines (remove everything that was created)
       delete '/pnodes/?' do
         check do
