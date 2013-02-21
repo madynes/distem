@@ -93,7 +93,7 @@ module Distem
         Node::Admin.quit_node()
         #TODO: understand that ...
         Thread.new do
-          sleep(2)
+          sleep(4)
           exit!
         end
         pnode.status = Resource::Status::READY
