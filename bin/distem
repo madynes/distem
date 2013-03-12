@@ -352,7 +352,7 @@ options['f_options'].each { |option|
     end
   when 'get_image'
     vnode = cl.vnode_info(options['vnode'])
-    cl2 = Distem::NetAPI::Client.new(vnode['host'])
+    cl2 = Distem::NetAPI::Client.new(vnode['host'],4568)
     cl2.vfilesystem_image(vnode['name'],options['dest'])
   when 'create_vnetwork'
     pp cl.vnetwork_create(options['vnetwork'],options['address'])
