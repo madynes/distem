@@ -685,6 +685,13 @@ module Distem
         end
       end
 
+      post '/peers_matrix_latencies/?' do
+        check do 
+          vnodes = (params['vnodes'] == "") ? nil : JSON.parse(params['vnodes'])
+          @body = @daemon.set_peers_latencies(vnodes, JSON.parse(params['matrix']))
+        end
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})

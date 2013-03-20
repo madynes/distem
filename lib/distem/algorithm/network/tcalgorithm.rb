@@ -33,7 +33,8 @@ module Distem
           clean(viface) if (bw_output != @limited_bw_output) ||
             (lat_output != @limited_lat_output) ||
             (bw_input != @limited_bw_input) ||
-            (lat_input != @limited_lat_input)
+            (lat_input != @limited_lat_input) ||
+            viface.latency_filters
         end
 
         # Clean every previous run config

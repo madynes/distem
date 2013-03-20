@@ -529,6 +529,17 @@ module Distem
         delete_json("/eventmanager")
       end
 
+      # Configure latencies of peers from a matrix
+      #
+      # @param [Array] ordered vnode names
+      # @param [Array] matrix of latencies
+      def set_peers_latencies(vnodes, matrix)
+        params = {}
+        params['vnodes'] = vnodes
+        params['matrix'] = matrix
+        post_json("/peers_matrix_latencies", params)
+      end
+
       protected
 
       # Check if there was an error in the REST request

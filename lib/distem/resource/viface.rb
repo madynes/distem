@@ -104,6 +104,8 @@ module Distem
       attr_accessor :vinput
       # The ifb device used by this viface
       attr_accessor :ifb
+      # Special rules that override all the virtual traffic
+      attr_accessor :latency_filters
 
       # Create a new VIface
       # ==== Attributes
@@ -123,6 +125,7 @@ module Distem
         @vroutes = []
         @@ids += 1
         @ifb = nil
+        @filters = nil
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address

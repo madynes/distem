@@ -7,7 +7,7 @@ module TCWrapper # :nodoc: all
       super(1,0)
     end
 
-    def get_unique_major_id
+    def get_unique_major_id(iface)
       "1"
     end
 

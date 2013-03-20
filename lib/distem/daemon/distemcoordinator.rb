@@ -1215,6 +1215,50 @@ module Distem
         end
       end
 
+      def set_peers_latencies(vnodes, matrix)
+        #sanity check
+        if (vnodes.length == matrix.length)
+          matrix.each { |row|
+            if row.length != vnodes.length
+              return false
+            end
+          }
+        else
+          return false
+        end
+        vnodesbyhost = {}
+        #group vnodes by pnode
+        vnodes.each { |name|
+          vnode = vnode_get(name)
+          vnode.status = Resource::Status::CONFIGURING
+          host = vnode.host.address
+          vnodesbyhost[host] = {} if !vnodesbyhost.has_key?(host)
+          vnodesbyhost[host][vnode.name] = {}
+          row = matrix[vnodes.index(name)]
+          rules = {}
+          (0...matrix.length).each { |i|
+            if row[i] != 0
+              dest_vnode = vnode_get(vnodes[i])
+              rules[dest_vnode.vifaces[0].address.to_s] = row[i]
+            end
+          }
+          vnodesbyhost[host][vnode.name] = vnode.vifaces[0].latency_filters = rules
+        }
+        tids = []
+        vnodesbyhost.each_pair { |pnode,vnodeshash|
+          tids << Thread.new {
+            cl = NetAPI::Client.new(pnode, 4568)
+            cl.set_peers_latencies(nil, vnodeshash)
+          }
+        }
+        tids.each { |tid| tid.join }
+        vnodes.each { |name|
+          vnode = vnode_get(name)
+          vnode.status = Resource::Status::RUNNING
+        }
+        return true
+      end
+
       protected
 
       # Get a new version of the hash with downcase keys

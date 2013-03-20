@@ -16,13 +16,103 @@ module Distem
         #
         def apply(viface)
           super(viface)
-          if viface.voutput
-            apply_vtraffic(viface.voutput)
-          end
-          if viface.vinput
-            apply_vtraffic(viface.vinput)
+          if viface.latency_filters
+            apply_filters(viface)
+          else
+            if viface.voutput
+              apply_vtraffic(viface.voutput)
+            end
+            if viface.vinput
+              apply_vtraffic(viface.vinput)
+            end
           end
         end
+
+
+        def apply_filters(viface)
+          baseiface = Lib::NetTools::get_iface_name(viface.vnode, viface)
+          latency_mapping = viface.latency_filters.values.uniq
+          nb_filters = latency_mapping.length
+          if nb_filters > 255
+            raise "Too much different latency values for #{viface.vnode.name}"
+          end
+
+          ingressroot = TCWrapper::QdiscIngress.new(baseiface)
+          add = ingressroot.get_cmd(TCWrapper::Action::ADD)
+          Lib::Shell.run(add)
+          viface.ifb = @@ifballocator.get_ifb if viface.ifb.nil?
+          iface = viface.ifb
+          qdiscroot = TCWrapper::QdiscRoot.new(iface)
+
+          prio = TCWrapper::QdiscPrio.new(iface, qdiscroot, { 'bands' => 16 })
+          add = prio.get_cmd(TCWrapper::Action::ADD)
+          Lib::Shell.run(add)
+          prio_roots = []
+          netem = []
+          if (nb_filters < 16)
+            #1 prio level
+            prio_roots << prio
+            #create the Netem queues
+            latency_mapping.each { |lat|
+              current = TCWrapper::QdiscNetem.new(iface, prio, { 'delay' => "#{lat}ms"})
+              netem << current
+              add = current.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+            }
+            viface.latency_filters.each_pair { |dest,val|
+              filter = TCWrapper::FilterU32.new(iface, prio, netem[latency_mapping.index(val)], "ip", 1)
+              filter.add_match_ip_dst(dest)
+              add = filter.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+            }
+            #default traffic
+            fake_qdisc = TCWrapper::QdiscPrio.new(iface, prio)
+            filter = TCWrapper::FilterU32.new(iface, prio, fake_qdisc, "ip", 2)
+            filter.add_match_u32('0','0')
+            cmd = filter.get_cmd(TCWrapper::Action::ADD)
+            Lib::Shell.run(cmd)
+          else
+            #2 prio levels
+            nb_2nd_level_prios = ((nb_filters + 1) / 16) + (((nb_filters + 1) % 16) > 0 ? 1 : 0)
+            (0...nb_2nd_level_prios).each {
+              current = TCWrapper::QdiscPrio.new(iface, prio, { 'bands' => 16})
+              prio_roots << current
+              add = current.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+            }
+            #create the Netem queues
+            latency_mapping.each { |lat|
+              current = TCWrapper::QdiscNetem.new(iface, prio_roots[latency_mapping.index(lat) / 16], { 'delay' => "#{lat}ms"})
+              netem << current
+              add = current.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+            }
+            #Filters
+            viface.latency_filters.each_pair { |dest,val|
+              filter = TCWrapper::FilterU32.new(iface, prio, prio_roots[latency_mapping.index(val) / 16], "ip", 1)
+              filter.add_match_ip_dst(dest)
+              add = filter.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+              filter = TCWrapper::FilterU32.new(iface, prio_roots[latency_mapping.index(val) / 16], netem[latency_mapping.index(val)], "ip", 1)
+              filter.add_match_ip_dst(dest)
+              add = filter.get_cmd(TCWrapper::Action::ADD)
+              Lib::Shell.run(add)
+            }
+
+            #default traffic
+            fake_qdisc = TCWrapper::QdiscPrio.new(iface, prio_roots[nb_filters / 16])
+            filter = TCWrapper::FilterU32.new(iface, prio_roots[nb_filters / 16], fake_qdisc, "ip", 2)
+            filter.add_match_u32('0','0')
+            cmd = filter.get_cmd(TCWrapper::Action::ADD)
+            Lib::Shell.run(cmd)
+          end
+          filter = TCWrapper::FilterU32.new(baseiface, ingressroot, qdiscroot)
+          filter.add_match_u32('0','0')
+          filter.add_param("action","mirred egress")
+          filter.add_param("redirect","dev #{iface}")
+          Lib::Shell.run(filter.get_cmd(TCWrapper::Action::ADD))
+        end
+
 
         # Apply the limitation following a specific traffic instruction
         # ==== Attributes

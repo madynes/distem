@@ -13,7 +13,7 @@ module TCWrapper # :nodoc: all
       if (@parent.kind_of? QdiscRoot)
         @id = Id.new(@parent.id.major,0)
       else
-        @id = Id.new(Id.get_unique_major_id,0)
+        @id = Id.new(Id.get_unique_major_id(iface),0)
       end
 
       if (@parent.kind_of? Class)
