@@ -874,16 +874,19 @@ module Distem
       end
 
       def set_peers_latencies(vnodes, matrix)
+        tids = []
         matrix.each_pair { |vnode_name,destinations|
-          vnode = vnode_get(vnode_name)
-          vnode.vifaces[0].latency_filters = destinations
-          if vnode.status == Resource::Status::RUNNING
-            vnode.status = Resource::Status::CONFIGURING
-            @node_config.vnode_reconfigure(vnode)
-            vnode.status = Resource::Status::RUNNING
-          end
-
+          tids << Thread.new {
+            vnode = vnode_get(vnode_name)
+            vnode.vifaces[0].latency_filters = destinations
+            if vnode.status == Resource::Status::RUNNING
+              vnode.status = Resource::Status::CONFIGURING
+              @node_config.vnode_reconfigure(vnode)
+              vnode.status = Resource::Status::RUNNING
+            end
+          }
         }
+        tids.each { |tid| tid.join }
         return true
       end
 
