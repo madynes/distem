@@ -2,28 +2,18 @@
 module LXCWrapper # :nodoc: all
 
   class Command
-    LS_CACHE_TIME=1 #second
-    MAX_SIMULTANEOUS_START = 8
+    LS_WAIT_TIME = 1
     MAX_WAIT_CYCLES=16
-    @@contlock = {}
-    @@lslock = Mutex.new
-    @@lscache = {}
-    @@waitlock = Mutex.new
-    @@startsem = Distem::Lib::Semaphore.new(MAX_SIMULTANEOUS_START)
+    @@lxc = Mutex.new
 
     def self.create(contname, configfile, wait=true)
       destroy(contname,wait) if ls().include?(contname)
-
-      contsync(contname) {
-        Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
-      }
+      lxc_safe_run("lxc-create -n #{contname} -f #{configfile}",true)
     end
 
     def self.destroy(contname,wait=true)
-      contsync(contname) {
-        Distem::Lib::Shell.run("lxc-destroy -n #{contname}",true) if ls().include?(contname)
-        wait_disapear(contname) if wait
-      }
+      lxc_safe_run("lxc-destroy -n #{contname}",true) if ls().include?(contname)
+      wait_disapear(contname) if wait
     end
 
     def self.destroyall(wait=false)
@@ -37,22 +27,16 @@ module LXCWrapper # :nodoc: all
 
     def self.start(contname,daemon=true,wait=true,strict=true)
       wait_exist(contname) if strict
-      @@startsem.synchronize do 
-        stop(contname,true,strict) if status(contname) == Status::RUNNING
-        contsync(contname) {
-          Distem::Lib::Shell.run("lxc-start -n #{contname} #{(daemon ? '-d' : '')}",true)
-          wait(contname,Status::RUNNING) if wait
-        }
-      end
+      stop(contname,true,strict) if status(contname) == Status::RUNNING
+      lxc_safe_run("lxc-start -n #{contname} #{(daemon ? '-d' : '')}",true)
+      wait(contname,Status::RUNNING) if wait
     end
 
     def self.stop(contname,wait=true,strict=true)
       #wait_exist(contname) if strict
       unless status(contname) == Status::STOPPED
-        contsync(contname) {
-          Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
-          wait(contname,Status::STOPPED) if wait
-        }
+        lxc_safe_run("lxc-stop -n #{contname}",true)
+        wait(contname,Status::STOPPED) if wait
       end
     end
 
@@ -66,38 +50,15 @@ module LXCWrapper # :nodoc: all
     end
 
     def self.wait(contname, status)
-      @@waitlock.synchronize {
-        Distem::Lib::Shell.run("lxc-wait -n #{contname} -s #{status}")
-      }
+      lxc_safe_run("lxc-wait -n #{contname} -s #{status}")
     end
 
     def self.status(contname)
-      contsync(contname) {
-        Distem::Lib::Shell.run("lxc-info -n #{contname}",true).split().last
-      }
+      lxc_safe_run("lxc-info -n #{contname}",true).split().last
     end
 
     def self.ls(cache=true)
-      ret = nil
-      if cache
-        @@lscache[:time] = Time.now unless @@lscache[:time]
-        @@lscache[:value] = Distem::Lib::Shell.run("lxc-ls",true).split(/\n/) unless @@lscache[:value]
-
-        if (Time.now - @@lscache[:time]) >= LS_CACHE_TIME
-          if @@lslock.locked?
-            @@lslock.synchronize{}
-          else
-            @@lslock.synchronize {
-              @@lscache[:value] = Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
-              @@lscache[:time] = Time.now
-            }
-          end
-        end
-        ret = @@lscache[:value]
-      else
-        ret = Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
-      end
-      return ret
+      return lxc_safe_run('lxc-ls',true).split(/\n/)
     end
 
     def self.wait_exist(contname)
@@ -105,7 +66,7 @@ module LXCWrapper # :nodoc: all
       begin
         raise Distem::Lib::ResourceNotFoundError.new contname if cycle > MAX_WAIT_CYCLES
         list = ls()
-        sleep(LS_CACHE_TIME) if cycle > 0
+        sleep(LS_WAIT_TIME) if cycle > 0
         cycle += 1
       end while !(list.include?(contname))
     end
@@ -115,7 +76,7 @@ module LXCWrapper # :nodoc: all
       begin
         raise Distem::Lib::ResourceNotFoundError.new contname if cycle > MAX_WAIT_CYCLES
         list = ls()
-        sleep(LS_CACHE_TIME) if cycle > 0
+        sleep(LS_WAIT_TIME) if cycle > 0
         cycle += 1
       end while list.include?(contname)
     end
@@ -126,13 +87,16 @@ module LXCWrapper # :nodoc: all
       str = Distem::Lib::Shell.run('pidof lxc-wait || true')
       Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
     end
-
+    
     protected
-    def self.contsync(contname)
-      @@contlock[contname] = Mutex.new unless @@contlock[contname]
-      @@contlock[contname].synchronize {
-        yield
+
+    #LXC is not thread safe, so no simultaneous execution...
+    def self.lxc_safe_run(cmd,simple=false)
+      ret = nil
+      @@lxc.synchronize {
+        ret = Distem::Lib::Shell.run(cmd,simple)
       }
+      return ret
     end
   end
 

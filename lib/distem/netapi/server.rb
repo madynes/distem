@@ -249,6 +249,15 @@ module Distem
         return result!
       end
 
+      # Stop every virtal nodes (must not be called directly)
+      put '/vnodes/?' do
+        check do
+          @body = @daemon.vnodes_stop()
+        end
+
+        return result!
+      end
+
       # Get the list of the the currently created virtual nodes
       get '/vnodes/?' do
         check do
