@@ -170,13 +170,25 @@ module Distem
 
       end
 
+      def vnodes_stop()
+        vnodes = vnodes_get()
+        tids = []
+        vnodes.each_value { |vnode| 
+          tids << Thread.new {
+            vnode_status_update(vnode.name, Resource::Status::READY)
+          }
+        }
+        tids.each { |tid| tid.join }
+        return vnodes
+      end
+
       # Update the vnode resource
       def vnode_update(name,desc,async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
         downkeys(desc)
         vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
-          (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
+        (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
         vnode_attach(vnode.name,desc['host']) if desc['host']
         vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
         if desc['vcpu']
@@ -361,8 +373,14 @@ module Distem
       # ==== Exceptions
       #
       def vnodes_remove()
-        vnodes = @node_config.vplatform.vnodes
-        vnodes.each_value { |vnode| vnode_remove(vnode.name) }
+        vnodes = vnodes_get()
+        tids = []
+        vnodes.each_value { |vnode| 
+          tids << Thread.new {
+            vnode_remove(vnode.name) 
+          }
+        }
+        tids.each { |tid| tid.join }
         return vnodes
       end
 

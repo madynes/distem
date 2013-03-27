@@ -132,14 +132,18 @@ module Distem
       # Resource::PNode object
       # ==== Exceptions
       #
-      def pnode_quit(target)
+      def pnode_quit(target, only_distant_quit = false)
         pnode = pnode_get(target,false)
-        pnode.status = Resource::Status::CONFIGURING
         if pnode
-          @daemon_resources.vnodes.each_value do |vnode|
-            if vnode.host == pnode
-              vnode_stop(vnode.name)
+          if !only_distant_quit
+            pnode.status = Resource::Status::CONFIGURING
+            vnodes = []
+            @daemon_resources.vnodes.each_value do |vnode|
+              if vnode.host == pnode
+                vnodes << vnode
+              end
             end
+            vnodes_stop(vnodes)
           end
           cl = NetAPI::Client.new(target, 4568)
           cl.pnode_quit(target)
@@ -157,12 +161,29 @@ module Distem
       def pnodes_quit()
         ret = @daemon_resources.pnodes.dup
         first_node = Resolv.getaddress(@node_name).to_s
+        tids = []
+        start = Time.now.to_i
         @daemon_resources.pnodes.each_value do |pnode|
           if pnode.address.to_s != first_node
-            pnode_quit(pnode.address.to_s)
+            tids << Thread.new {
+              pnode_quit(pnode.address.to_s)
+            }
+          else
+            tids << Thread.new {
+              pnode.status = Resource::Status::CONFIGURING
+              vnodes = []
+              @daemon_resources.vnodes.each_value do |vnode|
+                if vnode.host == pnode
+                  vnodes << vnode
+                end
+              end
+              vnodes_stop(vnodes)              
+            }
           end
         end
-        pnode_quit(first_node)
+        tids.each { |tid| tid.join }
+
+        pnode_quit(first_node, true)
         return ret
       end
 
@@ -422,6 +443,42 @@ module Distem
         end
 
         return vnode
+      end
+
+      def vnodes_stop(vnodes, async=false)
+        async = parse_bool(async)
+        vnodes.each { |vnode|
+          raise Lib::BusyResourceError, vnode.name if vnode.status == Resource::Status::CONFIGURING
+          raise Lib::UninitializedResourceError, vnode.name if vnode.status == Resource::Status::INIT
+          vnode.status = Resource::Status::CONFIGURING
+        }
+        block = Proc.new {
+          tids = []
+          hosts = vnodes.collect { |vnode| vnode.host.address }
+          hosts.uniq.each { |address|
+            tids << Thread.new {
+              Distem.client(address, 4568) do |cl|
+                cl.vnodes_stop
+                cl.vnodes_remove
+              end
+            }
+          }
+          tids.each { |tid| tid.join }
+          vnodes.each { |vnode|
+            vnode.status = Resource::Status::READY
+            vnode.vcpu.detach if vnode.vcpu
+            vnode.host = nil
+          }
+        }
+        if async
+          thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
+            block.call
+          }
+          thr.abort_on_exception = true
+        else
+            block.call
+        end
+        return vnodes
       end
 
       # Same as vnode_set_status(name,Resource::Status::READY,properties)

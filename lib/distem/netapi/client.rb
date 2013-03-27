@@ -200,7 +200,12 @@ module Distem
       def vnode_stop!(vnodename)
         return vnode_stop(vnodename, true)
       end
-      
+
+      # Stop every virtal nodes (must not be called directly)
+      def vnodes_stop()
+        put_json("/vnodes", {})
+      end
+
       # Stopping a virtual node, but without deleting its data
       # 
       # @param [String] vnodename The name of the virtual node
