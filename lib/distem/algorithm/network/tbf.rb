@@ -158,7 +158,7 @@ module Distem
           primroot = nil
           bandwidth = nil
           bwlim = vtraffic.get_property(Resource::Bandwidth.name)
-          if bwlim
+          if bwlim && bwlim.rate
             existing_root = nil
             if eval("limited_bw_#{direction}")
               action = TCWrapper::Action::CHANGE
@@ -194,7 +194,7 @@ module Distem
           end
 
           latlim = vtraffic.get_property(Resource::Latency.name)
-          if latlim
+          if latlim && latlim.delay
             existing_root = nil
             if eval("limited_lat_#{direction}")
               # if bandwidth limitation has been set before, netem is removed, so we have

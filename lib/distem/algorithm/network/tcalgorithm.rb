@@ -26,10 +26,11 @@ module Distem
             @@store[viface] = {} if !@@store[viface]
           }
 
-          bw_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Bandwidth.name) != nil)
-          lat_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Latency.name) != nil)
-          bw_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Bandwidth.name) != nil)
-          lat_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Latency.name) != nil)
+          bw_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Bandwidth.name) != nil) && (viface.voutput.get_property(Resource::Bandwidth.name).rate != nil)
+          lat_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Latency.name) != nil) && (viface.voutput.get_property(Resource::Latency.name).delay != nil)
+          bw_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Bandwidth.name) != nil) && (viface.vinput.get_property(Resource::Bandwidth.name).rate != nil)
+          lat_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Latency.name) != nil) && (viface.vinput.get_property(Resource::Latency.name).delay != nil)
+
           clean(viface) if (bw_output != @limited_bw_output) ||
             (lat_output != @limited_lat_output) ||
             (bw_input != @limited_bw_input) ||
