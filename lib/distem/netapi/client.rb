@@ -75,7 +75,7 @@ module Distem
       # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}.
       # @return [Hash] The physical node description (see {file:files/resources_desc.md#Physical_Nodes Resource Description - PNodes}).
       def pnode_update(target='localhost', desc={})
-        put_json("/pnodes/#{target}", { :desc => desc })
+        put_json("/pnodes/#{CGI.escape(target)}", { :desc => desc })
       end
 
       # Retrieve informations about a physical node
