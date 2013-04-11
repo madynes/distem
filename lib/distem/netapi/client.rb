@@ -212,8 +212,8 @@ module Distem
       # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_shutdown(vnodename, async=false)
-		desc = { :status => Resource::Status::DOWN }
-		put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
+        desc = { :status => Resource::Status::DOWN }
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
       end
 
       # Set the mode of a virtual node
@@ -543,6 +543,12 @@ module Distem
         params['vnodes'] = vnodes
         params['matrix'] = matrix
         post_json("/peers_matrix_latencies", params)
+      end
+
+      def set_global_etchosts(data = nil)
+        params = {}
+        params['data'] = data if data
+        post_json("/global_etchosts", params)
       end
 
       protected

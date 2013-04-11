@@ -1316,6 +1316,26 @@ module Distem
         return true
       end
 
+      def set_global_etchosts(param = nil)
+        results = []
+        pnodes = []
+        @daemon_resources.vnodes.each_value {|vnode|
+          vnode.vifaces.each do |viface|
+            if viface.vnetwork
+              results << [vnode.name, viface.address.address.to_s]
+            end
+          end
+        }
+        @daemon_resources.pnodes.each_value {|pnode|
+          tids = []
+          tids << Thread.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.set_global_etchosts(results)
+          }
+          tids.each { |tid| tid.join }
+        }
+      end
+
       protected
 
       # Get a new version of the hash with downcase keys

@@ -908,6 +908,22 @@ module Distem
         return true
       end
 
+      def set_global_etchosts(data)
+        shared_fs = []
+        private_fs = []
+        @node_config.vplatform.vnodes.each_value { |vnode|
+          if vnode.filesystem.shared
+            shared_fs << vnode
+          else
+            private_fs << vnode
+          end
+        }
+        @node_config.set_global_etchosts(shared_fs.first, data) if !shared_fs.empty?
+        private_fs.each {|vnode|
+          @node_config.set_global_etchosts(vnode, data)
+        } if !private_fs.empty?
+      end
+
       protected
 
 
