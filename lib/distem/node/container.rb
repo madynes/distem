@@ -181,6 +181,20 @@ module Distem
           @networkforges.each_value { |netforge| netforge.apply }
       end
 
+      def set_global_etchosts(data)
+        if @vnode.filesystem.shared
+          rootfspath = @vnode.filesystem.sharedpath
+        else
+          rootfspath = @vnode.filesystem.path
+        end
+        etcpath = File.join(rootfspath,'etc')
+        File.open(File.join(etcpath,'hosts'),'w') {|f|
+          data.each {|entry|
+            f.puts("#{entry[1]}\t#{entry[0]}")
+          }
+        }
+      end
+
       # Congigure a virtual node (set LXC config files, ...) on a physical machine
       def configure
         @@confsem.synchronize do

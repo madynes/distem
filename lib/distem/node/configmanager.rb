@@ -173,6 +173,10 @@ module Distem
           vroute_remove(resource)
         end
       end
+
+      def set_global_etchosts(vnode, data)
+        @containers[vnode.name].set_global_etchosts(data)
+      end
     end
 
   end

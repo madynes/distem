@@ -698,6 +698,14 @@ module Distem
         end
       end
 
+      post '/global_etchosts/?' do
+        check do
+          data = params.has_key?('data') ? JSON.parse(params['data']) : nil
+          @daemon.set_global_etchosts(data)
+          @body = ""
+        end
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})
