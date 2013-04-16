@@ -267,6 +267,12 @@ optparse = OptionParser.new(USAGE) do |opts|
   end
   opts.separator "Global platform management:"
   opts.on(
+    '--set-global-etchosts',
+    'Set a global /etc/hosts file on every virtual nodes'
+  ) do
+    options['f_options'] << 'set_global_etchosts'
+  end
+  opts.on(
     '--save-config format=JSON|XML[,configfile=FILE]',
     'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
   ) do |str|
@@ -461,6 +467,8 @@ options['f_options'].each { |option|
       str = STDIN.read
     end
     pp cl.vplatform_create(str,options['format'],options['rootfs'])
+  when 'set_global_etchosts'
+    cl.set_global_etchosts()
   when 'quit'
     if options['pnode']
       pp cl.pnode_quit(options['pnode'])
