@@ -25,7 +25,6 @@ module Distem
       BIN_TAR='tar' # :nodoc:
 
       @@extractsem = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT) # :nodoc:
-      @@cachesem = Semaphore.new(MAX_SIMULTANEOUS_CACHE) # :nodoc:
       @@hashsem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
       @@extractlock = {} # :nodoc:
       @@extractlocklock = Mutex.new # :nodoc:
@@ -138,25 +137,17 @@ module Distem
       def self.cache_archive(archivefile,filehash)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
         newcache = false
-        do_extract = false
 
         @@archivecachelock.synchronize {
           unless @@archivecache.include?(filehash)
             @@archivecache << filehash 
-            do_extract = true
-          end
-        }
-
-        if do_extract
-          @@cachesem.synchronize do
             if File.exists?(cachedir)
               Lib::Shell.run("rm -R #{cachedir}")
             end
             extract!(archivefile,cachedir)
             newcache = true
           end
-        end
-
+        }
         return cachedir,newcache
       end
 
