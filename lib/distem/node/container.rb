@@ -165,8 +165,13 @@ module Distem
       # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
         LXCWrapper::Command.destroy(@vnode.name,true)
-        Lib::Shell.run("rm -R #{@vnode.filesystem.path}") unless \
-          @vnode.filesystem.shared
+        unless @vnode.filesystem.shared
+          if @vnode.filesystem.cow
+            Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
+          else
+            Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
+          end
+        end
       end
 
       # Remove and shutdown the virtual node, remove it's filesystem, ...
@@ -230,7 +235,7 @@ module Distem
                 end
               end
             end
-              
+
             # Load config in rc.local
             filename = File.join(etcpath,'rc.local')
             cmd = '. /etc/rc.local-`hostname`'
@@ -243,7 +248,7 @@ module Distem
               }
             end
           }
-          
+
           if @vnode.filesystem.shared
             @@filelock.synchronize { block.call }
           else
@@ -270,10 +275,10 @@ module Distem
             f.puts("exit 0")
           }
           LXCWrapper::Command.create(@vnode.name,configfile)
-          
+
           @id += 1
         end
       end
-    end    
+    end
   end
 end

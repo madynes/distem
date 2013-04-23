@@ -11,26 +11,25 @@ module Distem
       attr_accessor :image
       # Is the file system shared between several nodes ?
       attr_reader :shared
+      # Is the filesystem use an underline COW filesystem ?
+      attr_reader :cow
       # The path to the filesystem on the physical machine
       attr_accessor :path
       # The path to shared parts of the filesystem on the physical machine (if there is one)
       attr_accessor :sharedpath
 
       # Create a new FileSystem
-      def initialize(vnode,image,shared = false)
+      def initialize(vnode,image,shared = false,cow = false)
         @vnode = vnode
         @image = URI.encode(image)
-        if shared
-          @shared = true
-        else
-          @shared = false
-        end
+        @shared = shared
+        @cow = cow
         @path = nil
         @sharedpath = nil
       end
 
       def to_s
-        return "vnode: #{@vnode.name}, image: #{@image}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}"
+        return "vnode: #{@vnode.name}, image: #{@image}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}"
       end
     end
 

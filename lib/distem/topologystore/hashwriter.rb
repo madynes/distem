@@ -156,6 +156,7 @@ module Distem
           'shared' => filesystem.shared,
           'path' => filesystem.path,
           'sharedpath' => filesystem.sharedpath,
+          'cow' => filesystem.cow,
         }
       end
 
