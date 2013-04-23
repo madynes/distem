@@ -13,7 +13,7 @@ module Distem
       PATH_DEFAULT_ROOTFS_SHARED="/tmp/distem/rootfs-shared/"
 
 
-      # Create a new FileSystemForge specifying the virtual node resource to modify 
+      # Create a new FileSystemForge specifying the virtual node resource to modify
       # ==== Attributes
       # * +vnode+ The VNode object
       #
@@ -42,13 +42,13 @@ module Distem
         if @resource.shared
           sharedfspath = File.join(PATH_DEFAULT_ROOTFS_SHARED,
             Lib::FileManager.file_hash(rootfsfile))
-          sharedfspath = Lib::FileManager.extract(rootfsfile,sharedfspath,false)
+          sharedfspath = Lib::FileManager.extract(rootfsfile,sharedfspath,false,false)
           raise InvalidResourceError 'rootfs_image' unless sharedfspath
 
           @resource.sharedpath = sharedfspath
           @resource.path = uniquefspath
         else
-          uniquefspath = Lib::FileManager.extract(rootfsfile,uniquefspath)
+          uniquefspath = Lib::FileManager.extract(rootfsfile,uniquefspath,true,vnode.filesystem.cow)
           raise InvalidResourceError 'rootfs_image' unless uniquefspath
           @resource.path = uniquefspath
         end

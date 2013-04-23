@@ -52,7 +52,7 @@ module Distem
             pnode = @daemon_resources.get_pnode_by_address(target)
             pnode = Resource::PNode.new(target) unless pnode
             @daemon_resources.add_pnode(pnode)
-            
+
             block = Proc.new {
               Admin.pnode_run_server(pnode)
               cl = NetAPI::Client.new(target, 4568)
@@ -73,7 +73,7 @@ module Distem
             end
 
             pnode_update(pnode.address.to_s,desc)
-            
+
             return pnode
           rescue Lib::AlreadyExistingResourceError
             raise
@@ -82,7 +82,7 @@ module Distem
             raise
           end
         }
-      
+
         if targets.is_a?(Array) then
           threads_info = {}
           targets.each { |target|
@@ -92,7 +92,7 @@ module Distem
             }
           }
           ret = []
-          threads_info.each_value { |host| 
+          threads_info.each_value { |host|
             host['tid'].join
             ret << host['ret']
           }
@@ -101,7 +101,7 @@ module Distem
           return [l.call(targets)]
         end
       end
-      
+
 
       # Update PNode properties
       def pnode_update(target,desc)
@@ -177,7 +177,7 @@ module Distem
                   vnodes << vnode
                 end
               end
-              vnodes_stop(vnodes)              
+              vnodes_stop(vnodes)
             }
           end
         end
@@ -191,7 +191,7 @@ module Distem
       #
       # ==== Attributes
       #
-      def pnode_get(hostname, raising = true) 
+      def pnode_get(hostname, raising = true)
         pnode = nil
 
         hostname = '' unless hostname
@@ -215,13 +215,13 @@ module Distem
       end
 
       # Get the description of the cpu of a physical node
-      def pcpu_get(hostname, raising = true) 
+      def pcpu_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.cpu
       end
 
       # Get the description of the memory of a physical node
-      def pmemory_get(hostname, raising = true) 
+      def pmemory_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.memory
       end
@@ -918,7 +918,8 @@ module Distem
         raise Lib::MissingParameterError, "filesystem/image" unless \
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'])
+        desc['cow'] = parse_bool(desc['cow'])
+        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'])
         return vnode.filesystem
       end
 
@@ -928,6 +929,7 @@ module Distem
         vnode.filesystem
         vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
         vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
+        vnode.filesystem.cow = parse_bool(desc['cow']) if desc['cow']
         return vnode.filesystem
       end
 
@@ -969,7 +971,7 @@ module Distem
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             # Adding VNetwork on the pnode
             cl.vnetwork_create(vnet.name,vnet.address.to_string)
-            
+
             # Adding VRoutes to the new VNetwork
             vnet.vroutes.values.each do |vroute|
               vnetwork_sync(vroute.dstnet,pnode,false)
@@ -977,13 +979,13 @@ module Distem
             end
           end
         end
-        
+
         if lock
           @@lockslock.synchronize {
             @@locks[:vnetsync][pnode] = Mutex.new unless \
             @@locks[:vnetsync][pnode]
           }
-          
+
           @@locks[:vnetsync][pnode].synchronize do
             block.call
             end
@@ -991,7 +993,7 @@ module Distem
           block.call
         end
       end
-      
+
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
       # ==== Attributes
       # * +name+ the -unique- name of the virtual network (it will be used in a lot of methods)
@@ -1211,7 +1213,7 @@ module Distem
           desc['vplatform']['vnetworks'].each do |vnetdesc|
             vnetwork_create(vnetdesc['name'],vnetdesc['address'])
           end
-        end        
+        end
         # Creating the vnodes
         starting_vnodes = []
         if desc['vplatform']['vnodes']
@@ -1377,7 +1379,7 @@ module Distem
       def updateobj_vnode(vnode,hash)
         vnode.filesystem.sharedpath = hash['vfilesystem']['sharedpath']
         vnode.filesystem.path = hash['vfilesystem']['path']
-        
+
         # Commented since the coordinator view of the VCpu should not be modified by the Pnode view
         # if vnode.vcpu
         #   #vnode.vcpu.pcpu = vnode.host.cpu if vnode.host
