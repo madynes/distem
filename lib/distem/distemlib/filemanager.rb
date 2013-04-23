@@ -33,7 +33,8 @@ module Distem
       @@hashcachelocklock = Mutex.new # :nodoc:
       @@hashcache = {}
       @@archivecache = [] # :nodoc:
-      
+      @@cowcache = [] # :nodoc:
+
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
       # * +uri_str+ The URI of the file to download
@@ -75,9 +76,9 @@ module Distem
       # * +ResourceNotFoundError+ if can't reach the specified archive file
       # * +NotImplementedError+ if the archive file format is not supported (available: tar, gzip, bzip, zip, (tgz,...))
       #
-      def self.extract(archivefile,targetdir="",override=true)
+      def self.extract(archivefile,targetdir="",override=true,cow=false)
         raise Lib::ResourceNotFoundError, archivefile unless File.exists?(archivefile)
-        
+
         if targetdir.empty?
           targetdir = File.dirname(archivefile)
         end
@@ -87,15 +88,19 @@ module Distem
         @@extractlocklock.synchronize {
           @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
         }
-        
+
         @@extractlock[targethash].synchronize {
-          cachedir,new = cache_archive(archivefile,filehash)
+          cachedir,new = cache_archive(archivefile,filehash,cow)
           exists = File.exists?(targetdir)
           if !exists or override or new
             @@extractsem.synchronize do
               Lib::Shell.run("rm -Rf #{targetdir}") if exists
-              Lib::Shell.run("mkdir -p #{targetdir}")
-              Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+              if cow
+                Lib::Shell.run("btrfs subvolume snapshot #{cachedir} #{targetdir}")
+              else
+                Lib::Shell.run("mkdir -p #{targetdir}")
+                Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+              end
             end
           end
         }
@@ -134,21 +139,35 @@ module Distem
       # ==== Returns
       # String value describing the path to the directory (on the local machine) the file was cached to
       #
-      def self.cache_archive(archivefile,filehash)
+      def self.cache_archive(archivefile,filehash,cow)
+        Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CACHE}") if !File.exists?(PATH_DEFAULT_CACHE)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
         newcache = false
 
         @@archivecachelock.synchronize {
           unless @@archivecache.include?(filehash)
-            @@archivecache << filehash 
+            @@archivecache << filehash
             if File.exists?(cachedir)
               Lib::Shell.run("rm -R #{cachedir}")
+            end
+            if cow
+              Lib::Shell.run("btrfs subvolume create #{cachedir}")
+              @@cowcache << cachedir
             end
             extract!(archivefile,cachedir)
             newcache = true
           end
         }
         return cachedir,newcache
+      end
+
+
+      def self.clean_cache
+        @@archivecachelock.synchronize {
+          @@cowcache.each { |path|
+            Lib::Shell.run("btrfs subvolume delete #{path}")
+          }
+        }
       end
 
       # Compress a file using TGZ archive format.
@@ -204,6 +223,6 @@ module Distem
         return @@hashcache[filename][:hash]
       end
     end
-    
+
   end
 end

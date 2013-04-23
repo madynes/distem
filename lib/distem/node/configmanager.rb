@@ -27,7 +27,7 @@ module Distem
       def get_vnode(name)
         return @vplatform.get_vnode(name)
       end
-      
+
       # Gets the Container object associated to a virtual node
       # ==== Attributes
       # * +name+ The name of the virtual node (String)
@@ -96,7 +96,7 @@ module Distem
 
         @containers[vnode.name].reconfigure()
       end
-      
+
       # Update a virtual node (apply/undo changes to the abstract virtual resources to the physical node settings)
       # ==== Attributes
       # * +vnode+ The VNode object

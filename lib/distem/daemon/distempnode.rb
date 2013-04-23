@@ -89,7 +89,7 @@ module Distem
         pnode.status = Resource::Status::CONFIGURING
         vnodes_remove()
         vnetworks_remove()
-        
+        Lib::FileManager::clean_cache
         Node::Admin.quit_node()
         pnode.status = Resource::Status::READY
         return pnode
@@ -99,7 +99,7 @@ module Distem
       #
       # ==== Attributes
       #
-      def pnode_get(hostname, raising = true) 
+      def pnode_get(hostname, raising = true)
         pnode = nil
 
         if hostname and Lib::NetTools.localaddr?(hostname)
@@ -128,13 +128,13 @@ module Distem
       end
 
       # Get the description of the cpu of a physical node
-      def pcpu_get(hostname, raising = true) 
+      def pcpu_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.cpu
       end
 
       # Get the description of the memory of a physical node
-      def pmemory_get(hostname, raising = true) 
+      def pmemory_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.memory
       end
@@ -173,7 +173,7 @@ module Distem
       def vnodes_stop()
         vnodes = vnodes_get()
         tids = []
-        vnodes.each_value { |vnode| 
+        vnodes.each_value { |vnode|
           tids << Thread.new {
             vnode_status_update(vnode.name, Resource::Status::READY)
           }
@@ -375,9 +375,9 @@ module Distem
       def vnodes_remove()
         vnodes = vnodes_get()
         tids = []
-        vnodes.each_value { |vnode| 
+        vnodes.each_value { |vnode|
           tids << Thread.new {
-            vnode_remove(vnode.name) 
+            vnode_remove(vnode.name)
           }
         }
         tids.each { |tid| tid.join }
@@ -727,35 +727,9 @@ module Distem
           desc['image']
 
         desc['shared'] = parse_bool(desc['shared'])
+        desc['cow'] = parse_bool(desc['cow'])
 
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'])
-
-        return vnode.filesystem
-      end
-
-      def vfilesystem_update(vnodename,desc)
-        vnode = vnode_get(vnodename)
-
-        raise Lib::UninitializedResourceError, "filesystem" unless \
-          vnode.filesystem
-
-        vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
-
-        vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
-
-        return vnode.filesystem
-      end
-
-      # Retrieve informations about the virtual node filesystem
-      # ==== Returns
-      # Resource::FileSystem object
-      # ==== Exceptions
-      #
-      def vfilesystem_get(vnodename)
-        vnode = vnode_get(vnodename)
-
-        raise Lib::UninitializedResourceError, "filesystem" unless \
-          vnode.filesystem
+        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'])
 
         return vnode.filesystem
       end

@@ -48,7 +48,6 @@ if g5k?
   GIT_REPOSITORY  = "git://beaujolais.nancy.grid5000.fr/distem/distem.git"
   GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
   STATS_SERV      = "carol.nancy.grid5000.fr"
-  
 else
   GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
   GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
@@ -140,7 +139,7 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
       if @options[:debug] or showout
         msg("[#{chtmp.connection.host}] #{data.strip}")
       end
-    end  
+    end
     channel.on_request("exit-status") do |chtmp, data|
       status = data.read_long
       if status != 0
@@ -157,7 +156,7 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
     end
   end
   channel.wait
-  
+
   return outs
 end
 
@@ -179,6 +178,7 @@ options[:stats]       = true
 options[:git_url]     = GIT_REPOSITORY
 options[:verbose]     = false
 options[:max_vifaces] = nil
+options[:cow] = nil
 
 args = ARGV.dup
 
@@ -202,7 +202,7 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '--max-vifaces <nb>', 'Set the maximum number of vifaces on a physical node (used only without --no-init-pnodes)' ) do |n|
     options[:max_vifaces] = n
-  end        
+  end
   opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
     options[:debug] = true
   end
@@ -232,6 +232,9 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
     options[:stats] = false
+  end
+  opts.on( '--use-cow <tmp_device>', 'Use copy on write for Vnodes filesystem (this requires btrfs support)' ) do |d|
+    options[:cow] = d
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -315,7 +318,7 @@ if options[:ssh_key]
   end
 else
   sshkeyfiles = []
-  begin 
+  begin
     sshkeyfiles = Dir.entries(SSH_KEYS_PATH).select do |v|
       v =~ /^id.*$/ and File.extname(v) =~  /^(?!\.pub)$/
     end if File.directory?(SSH_KEYS_PATH)
@@ -337,7 +340,7 @@ allnodes.each do |node|
 end
 if File.exists?("#{sshkeyfile}.pub")
   allnodes.each do |node|
-    `scp #{sshkeyfile}.pub root@#{node}:/root/.ssh/` 
+    `scp #{sshkeyfile}.pub root@#{node}:/root/.ssh/`
   end
 else
   msg("Public key file for '#{sshkeyfile}' key not found",MSG_WARNING)
@@ -375,7 +378,9 @@ Net::SSH::Multi.start do |session|
     msg("NFS do not seems to be mounted on #{node} (check that you have deployed with NFS env)",MSG_WARNING)
   end
 
-
+  if options[:cow]
+    exec(session, "(umount /tmp || true) && mkfs.btrfs #{options[:cow]} && mount -o compress=lzo #{options[:cow]} /tmp && chmod 1777 /tmp")
+  end
   #setting up ulimit-open_files, to be removed
   rule="root hard nofile"
   exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")

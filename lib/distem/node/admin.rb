@@ -18,7 +18,7 @@ module Distem
 
       # The maximal number of virtual network interfaces that can be created on this machine
       @@vifaces_max=MAX_VIFACES
-      
+
       # Initialize a physical node (set cgroups, bridge, ifb, fill the PNode cpu and memory informations, ...)
       # ==== Attributes
       # * +pnode+ The PNode object that will be filled with different informations
