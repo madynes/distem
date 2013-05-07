@@ -23,15 +23,20 @@ module Distem
           #/\s*Core\s*p#([0-9]+)\s*\+\s*PU\s*p#([0-9]+)\s*/
             core['physicalid'] = Regexp.last_match(2)
             core['coreid'] = Regexp.last_match(1)
-            strcpufreq = Shell.run(
-              "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_max_freq"
-            )
-            core['frequency'] = strcpufreq.strip.to_i
-            strcpufreq = Shell.run(
-              "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_available_frequencies"
-            )
-            core['frequencies'] = strcpufreq.strip.split.collect{ |val| val.to_i }
-            core['frequencies'].sort!
+            if File.exists?("/sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq")
+              strcpufreq = Shell.run(
+                "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_max_freq"
+              )
+              core['frequency'] = strcpufreq.strip.to_i
+              strcpufreq = Shell.run(
+                "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_available_frequencies"
+              )
+              core['frequencies'] = strcpufreq.strip.split.collect{ |val| val.to_i }
+              core['frequencies'].sort!
+            else
+              core['frequency'] = 1000000
+              core['frequencies'] = [ 1000000 ]
+            end
           end
 
           if core['physicalid'] and core['coreid'] \
