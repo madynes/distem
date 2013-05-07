@@ -472,7 +472,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       
   	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
   	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-  	  exec(session,"distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
+  	  exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')} &",
         :coord)
   	  
       launched = []
