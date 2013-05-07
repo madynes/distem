@@ -77,7 +77,7 @@ module Distem
         unless str.include?("#{NAME_BRIDGE}")
           # needs to be done before we break eth0
           gw = self.get_default_gateway
-          Shell.run("ethtool -G #{self.get_default_iface()} rx 4096 tx 4096")
+          Shell.run("ethtool -G #{self.get_default_iface()} rx 4096 tx 4096 || true")
 
           Shell.run("brctl addbr #{NAME_BRIDGE}")
           Shell.run("brctl setfd #{NAME_BRIDGE} 0")
