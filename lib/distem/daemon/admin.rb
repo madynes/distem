@@ -60,7 +60,7 @@ module Distem
                   sleep(0.1)
                 end
                 retries = 20
-                cl = NetAPI::Client.new(pnode.address)
+                cl = NetAPI::Client.new(pnode.address, 4568)
                 begin
                   cl.pnode_info()
                 rescue Lib::UnavailableResourceError
