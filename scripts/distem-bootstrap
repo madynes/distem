@@ -489,7 +489,7 @@ Net::SSH::Multi.start do |session|
     end
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-    exec(session,"distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+    exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
          :coord)
     [ '4567', '4568' ].each { |port|
       launched = []

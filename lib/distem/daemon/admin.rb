@@ -53,7 +53,7 @@ module Distem
               ssh.exec!("echo '' > #{Lib::Shell::PATH_DISTEMD_LOG_CMD}")
               str = ssh.exec!("lsof -Pnl -i4 | grep ':4568 '")
               if !str || (str == "")
-                ssh.exec!("distemd &>#{PATH_DISTEMD_LOG} &")
+                ssh.exec!("LANG=C distemd &>#{PATH_DISTEMD_LOG} &")
                 launched = []
                 until launched and !launched.empty?
                   launched = ssh.exec!("lsof -Pnl -i4 | grep ':4568 '")
