@@ -1,4 +1,3 @@
-require 'distem/distem'
 require 'distem/node/admin'
 require 'distem/node/ifballocator'
 require 'distem/distemlib/semaphore'
