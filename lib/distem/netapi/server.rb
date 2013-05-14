@@ -733,6 +733,8 @@ module Distem
             @body = tmpbody.to_s
           end
         elsif @body.is_a?(String)
+        elsif @body.is_a?(NilClass)
+          azlmakeazmlkezamzaezalaekazmlkezamldsqdsqdqs:k
         else
           raise Lib::InvalidParameterError, "INTERNAL #{@body.class.name}"
         end
