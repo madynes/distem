@@ -148,7 +148,7 @@ module Distem
               Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
               vtraffic.viface.ifb = @@ifballocator.get_ifb if vtraffic.viface.ifb.nil?
               iface = vtraffic.viface.ifb
-              tmproot = TCWrapper::QdiscRoot.new(iface)            
+              tmproot = TCWrapper::QdiscRoot.new(iface)
             end
             direction = 'output'
           else
@@ -176,7 +176,9 @@ module Distem
               # buffer size = rate * latency (here latency is 50ms)
               # warning, the buffer size should be at least equal to the MTU (plus some bytes...)
               'buffer' => [Integer(bwlim.to_bytes * 0.05), Lib::NetTools::get_iface_mtu(vtraffic.viface.vnode, vtraffic.viface) + 20].max,
-              'latency' => '50ms'
+              'latency' => '50ms',
+              #mtu parameter fixed because of a kernel bug, see http://comments.gmane.org/gmane.linux.network/252860
+              'mtu' => '65536'
             }
             if existing_root
               tmproot = existing_root
@@ -224,9 +226,9 @@ module Distem
             primroot = tmproot unless primroot
             Lib::Shell.run(tmproot.get_cmd(action))
           end
-          
-          if (vtraffic.direction == Resource::VIface::VTraffic::Direction::OUTPUT) && 
-              !(limited_bw_output || limited_lat_output) 
+
+          if (vtraffic.direction == Resource::VIface::VTraffic::Direction::OUTPUT) &&
+              !(limited_bw_output || limited_lat_output)
             filter = TCWrapper::FilterU32.new(baseiface,tcroot,primroot)
             filter.add_match_u32('0','0')
             filter.add_param("action","mirred egress")
