@@ -228,7 +228,8 @@ module Distem
           end
 
           if (vtraffic.direction == Resource::VIface::VTraffic::Direction::OUTPUT) &&
-              !(limited_bw_output || limited_lat_output)
+              !(limited_bw_output || limited_lat_output) &&
+              ((bwlim && bwlim.rate) || (latlim && latlim.delay))
             filter = TCWrapper::FilterU32.new(baseiface,tcroot,primroot)
             filter.add_match_u32('0','0')
             filter.add_param("action","mirred egress")
