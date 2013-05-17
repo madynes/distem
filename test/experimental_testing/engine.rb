@@ -12,12 +12,15 @@ require 'rubygems'
 require 'net/ssh'
 require 'net/ssh/multi'
 
-REFFILE = ARGV[0]
-GITREPO = ARGV[1]
+DISTEMROOT = ARGV[0]
+GIT = (ARGV[1] == 'true')
+GITREPO = ARGV[2]
 
-KADEPLOY_ENVIRONMENT = 'squeeze-x64-nfs'
-IMAGE = 'file:///home/ejeanvoine/distem-fs-v3.tar.gz'
-ROOT = '/home/ejeanvoine/distem/test/experimental_testing'
+KADEPLOY_ENVIRONMENT = 'wheezy-x64-nfs'
+IMAGE = 'file:///home/ejeanvoine/distem-fs-wheezy.tar.gz'
+DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
+ROOT = "#{DISTEMROOT}/test/experimental_testing"
+REFFILE = "#{ROOT}/ref.yml"
 USER = `id -nu`.strip
 NET = '10.144.0.0/18'
 MIN_PNODES = 2
@@ -54,7 +57,7 @@ class CommonTools
     }
     return (nb_rebooted_nodes == pnodes.length)
   end
-  
+
   def CommonTools::deploy_nodes(pnodes, vlan, environment)
     deployed_pnodes = nil
     10.times.each { |i|
@@ -72,7 +75,7 @@ class CommonTools
   def CommonTools::clean_nodes(pnodes)
     msg("Cleaning #{pnodes.join(',')}")
     Net::SSH::Multi.start { |session|
-      pnodes.each { |pnode| 
+      pnodes.each { |pnode|
         session.use("root@#{pnode}")
       }
       session.exec('rm -rf /tmp/distem')
@@ -107,7 +110,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     @@pnodes = nodes
     @@initialized = true
   end
-  
+
   def clean_env
     CommonTools::reboot_nodes(@@deployed_nodes, @@vlan)
     CommonTools::clean_nodes(@@pnodes)
@@ -123,11 +126,14 @@ class ExperimentalTesting < Test::Unit::TestCase
       f.puts(pnode)
     }
     f.close
+    distemcmd = ''
     if GITREPO
-      system("/grid5000/code/bin/distem-bootstrap -c #{@@coordinator} -f #{f.path} -U #{GITREPO}")
+      distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -U #{GITREPO}"
     else
-      system("/grid5000/code/bin/distem-bootstrap -c #{@@coordinator} -f #{f.path}")
+      distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
     end
+    distemcmd += ' -g' if GIT
+    system(distemcmd)
   end
 
   def launch_vnodes(ssh, opts)
@@ -138,7 +144,7 @@ class ExperimentalTesting < Test::Unit::TestCase
 
     case pf_kind
     when '1node_cpu'
-      if cli 
+      if cli
         return false
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{NET} /tmp/ip #{IMAGE}")
@@ -188,10 +194,15 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def setup
     plateform_init if not @@initialized
-    clean_env
+#    clean_env
     install_distem
   end
 
+  def teardown
+    Net::SSH.start(@@coordinator, USER) { |session|
+      session.exec!('distem -q')
+    }
+  end
   ##############################
   #####   Tests start here #####
   ##############################
@@ -216,23 +227,39 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A3_latency
+  def test_A3_latency_input
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input"))
     }
   end
 
-  def test_A4_bandwidth
+  def test_A4_latency_output
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output"))
     }
   end
 
-  def test_A5_hpcc_gov
+  def test_A5_bandwidth_input
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input"))
+    }
+  end
+
+  def test_A6_bandwidth_output
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output"))
+    }
+  end
+
+  def test_A7_hpcc_gov
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
@@ -245,7 +272,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A6_hpcc_hogs
+  def test_A8_hpcc_hogs
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
