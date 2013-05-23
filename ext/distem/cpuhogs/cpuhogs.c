@@ -1,7 +1,7 @@
 #include <ruby.h>
 #include <signal.h>
 #include <unistd.h>
-#include <ruby/st.h>
+#include <st.h>
 #include <sys/wait.h>
 #include "main.h"
 
