@@ -1,7 +1,8 @@
 #include <ruby.h>
 #include <signal.h>
 #include <unistd.h>
-#include <st.h>
+#include <ruby/st.h>
+#include <sys/wait.h>
 #include "main.h"
 
 #define MAX_CPUS 128
@@ -9,7 +10,6 @@
 static VALUE m_cpu;
 static VALUE c_cpuhogs;
 cpu_cmds *cmds;
-
 
 static VALUE cpuhogs_init(VALUE self)
 {
@@ -46,15 +46,16 @@ static VALUE cpuhogs_run(VALUE self, VALUE hash)
 		close(STDERR_FILENO);
 
 		cmds->ratios = ALLOC_N(cpu_ratio,MAX_CPUS);
-		
+
 		rb_hash_foreach(hash,parse_hash,Qnil);
 
 		run(cmds);
                 exit(0);
 	}
 	else
+  {
 		rb_iv_set(self, "@pid", INT2NUM(pid));
-
+  }
 	return Qnil;
 }
 
@@ -62,8 +63,8 @@ static VALUE cpuhogs_stop(VALUE self)
 {
 	int pid;
 	pid = NUM2INT(rb_iv_get(self, "@pid"));
-	kill(pid,SIGTERM);
-        waitpid(pid,NULL,NULL);
+	kill(pid,SIGKILL);
+  waitpid(pid,NULL,0);
 	rb_iv_set(self, "@pid", INT2NUM(0));
 
 	return Qnil;

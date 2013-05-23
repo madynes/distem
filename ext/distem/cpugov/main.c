@@ -18,8 +18,79 @@ unsigned int finished = 0;
 while(!finished) \
   sleep(2);
 
+
+__inline__ void set_frequency_low()
+{
+  static unsigned int corei;
+
+  corei = corenb;
+
+  while (corei--)
+    if (write(corefds[corei],lowfreqstr,lowfreqstr_size) <= 0)
+      exit(1);
+}
+
+__inline__ void set_frequency_high()
+{
+  static unsigned int corei;
+
+  corei = corenb;
+
+  while (corei--)
+    if (write(corefds[corei],highfreqstr,highfreqstr_size) <= 0)
+      exit(1);
+}
+
+__inline__ void set_frequency(unsigned int frequency)
+{
+  unsigned int corei, strbuff_size;
+  char strbuff[STRBUFF_SIZE];
+
+  strbuff_size = snprintf(strbuff,sizeof(strbuff),"%d",frequency);
+
+  corei = corenb;
+
+  while (corei--)
+    if (write(corefds[corei],strbuff,strbuff_size) <= 0)
+      exit(1);
+}
+
+__inline__ void reset_frequency()
+{
+  char filenamebuff[STRBUFF_SIZE];
+  unsigned int tmp;
+
+  tmp = corenb;
+
+  while (tmp--)
+  {
+    snprintf(filenamebuff,sizeof(filenamebuff),
+      "cpufreq-set -c %d -f %d",cores[tmp],freq_max);
+    if (system(filenamebuff) == -1)
+      exit(1);
+  }
+}
+
+__inline__ void cgroup_freeze()
+{
+  if (write(cgroupfreezefd,CGROUP_FREEZE,sizeof(CGROUP_FREEZE)) <= 0)
+  {
+        perror(__func__);
+        exit(1);
+  }
+}
+
+__inline__ void cgroup_thaw()
+{
+  if (write(cgroupfreezefd,CGROUP_THAW,sizeof(CGROUP_THAW)) <= 0)
+  {
+        perror(__func__);
+        exit(1);
+  }
+}
+
 /* Using of cores and corenb global var (see cpugov.h) */
-int init_cores()
+void init_cores()
 {
   unsigned int tmp;
   char filenamebuff[STRBUFF_SIZE];
@@ -33,87 +104,9 @@ int init_cores()
     corefds[tmp] = open(filenamebuff,O_WRONLY);
   }
   reset_frequency();
-
-  return 0;
 }
 
-__inline__ int set_frequency_low()
-{
-  static unsigned int corei;
-
-  corei = corenb;
-
-  while (corei--)
-    write(corefds[corei],lowfreqstr,lowfreqstr_size);
-
-  return 0;
-}
-
-__inline__ int set_frequency_high()
-{
-  static unsigned int corei;
-
-  corei = corenb;
-
-  while (corei--)
-    write(corefds[corei],highfreqstr,highfreqstr_size);
-
-  return 0;
-}
-
-__inline__ int set_frequency(unsigned int frequency)
-{
-  unsigned int corei, strbuff_size;
-  char strbuff[STRBUFF_SIZE];
-  
-  strbuff_size = snprintf(strbuff,sizeof(strbuff),"%d",frequency);
-
-  corei = corenb;
-
-  while (corei--)
-    write(corefds[corei],strbuff,strbuff_size);
-
-  return 0;
-}
-
-__inline__ int reset_frequency()
-{
-  char filenamebuff[STRBUFF_SIZE];
-  unsigned int tmp;
-
-  tmp = corenb;
-
-  while (tmp--)
-  {
-    snprintf(filenamebuff,sizeof(filenamebuff),
-      "cpufreq-set -c %d -f %d",cores[tmp],freq_max);
-    system(filenamebuff);
-  }
-}
-
-__inline__ int cgroup_freeze()
-{
-  if (write(cgroupfreezefd,CGROUP_FREEZE,sizeof(CGROUP_FREEZE)) <= 0)
-  {
-        perror(__func__);
-        exit(1);
-  }
-
-  return 0;
-}
-
-__inline__ int cgroup_thaw()
-{
-  if (write(cgroupfreezefd,CGROUP_THAW,sizeof(CGROUP_THAW)) <= 0)
-  {
-        perror(__func__);
-        exit(1);
-  }
-
-  return 0;
-}
-
-int cycle()
+void cycle()
 {
   if (lowfreq == 0)
     cgroup_freeze();
@@ -128,8 +121,6 @@ int cycle()
     set_frequency_high();
 
   usleep(hightime);
-
-  return 0;
 }
 
 void stop(int num)
@@ -155,7 +146,7 @@ int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh
   lowfreqstr_size = snprintf(lowfreqstr,sizeof(lowfreqstr),"%d",lowfreq);
   highfreq = freqhigh;
   highfreqstr_size = snprintf(highfreqstr,sizeof(highfreqstr),"%d",highfreq);
-  
+
   if (ratelow == 0.0f)
   {
     set_frequency_high();
@@ -174,7 +165,7 @@ int extrun(unsigned long long pitch, unsigned int freqlow, unsigned int freqhigh
     snprintf(strbuff,sizeof(strbuff),"%s/freezer.state",cgroup_path);
     cgroupfreezefd = open(strbuff,O_WRONLY);
 
-    printf("pitch: %dus, freqlow: %d kHz, freqhigh: %d KHz, timelow: %dus, timehigh: %dus\n",pitch,lowfreq,highfreq,lowtime,hightime);
+    printf("pitch: %lluus, freqlow: %u kHz, freqhigh: %u KHz, timelow: %lluus, timehigh: %lluus\n",pitch,lowfreq,highfreq,lowtime,hightime);
 
     set_frequency_high();
     while (!finished)

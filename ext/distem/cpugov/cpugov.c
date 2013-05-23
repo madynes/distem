@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "cpugov.h"
 #include "main.h"
 
@@ -46,8 +47,6 @@ static VALUE cpugov_run(
 )
 {
   int pid;
-  char strbuff[STRBUFF_SIZE];
-  char *ptr;
 
   pid = fork();
   if (pid < 0)
@@ -80,8 +79,8 @@ static VALUE cpugov_stop(VALUE self)
 	int pid;
 
 	pid = NUM2INT(rb_iv_get(self, "@pid"));
-	kill(pid,SIGTERM);
-        waitpid(pid,NULL,NULL);
+	kill(pid,SIGKILL);
+  waitpid(pid,NULL,0);
 
 	rb_iv_set(self, "@pid", INT2NUM(0));
 
