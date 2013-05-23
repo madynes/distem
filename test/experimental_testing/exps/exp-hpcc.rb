@@ -14,7 +14,7 @@ hpl_ref = ARGV[6].to_f
 
 ERROR = error / 100.0
 IPFILE = '/tmp/ip'
-ITER = 3
+ITER = 2
 
 ip = IO.readlines(IPFILE).collect { |line| line.strip }
 
@@ -47,21 +47,21 @@ Distem.client { |cl|
 tmp_file = '/tmp/hpcc_output'
 system("rm -fr #{tmp_file}; /usr/bin/distem --copy-from vnode=node1,user=root,src=/root/hpccoutf.txt,dest=#{tmp_file}")
 
-benchs = { 
-  'hpl' => 
-  { 
+benchs = {
+  'hpl' =>
+  {
     'str' => 'HPL_Tflops',
     'coef' => 1000,
     'ref' => hpl_ref
   },
-  'dgemm' => 
-  { 
+  'dgemm' =>
+  {
     'str' => 'StarDGEMM_Gflops',
     'coef' => 1,
     'ref' => dgemm_ref
   },
-  'fft' => 
-  { 
+  'fft' =>
+  {
     'str' => 'MPIFFT_Gflops',
     'coef' => 1,
     'ref' => fft_ref

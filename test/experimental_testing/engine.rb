@@ -14,13 +14,14 @@ require 'net/ssh/multi'
 
 DISTEMROOT = ARGV[0]
 GIT = (ARGV[1] == 'true')
-GITREPO = ARGV[2]
+CLUSTER = ARGV[2]
+GITREPO = ARGV[3]
 
 KADEPLOY_ENVIRONMENT = 'wheezy-x64-nfs'
 IMAGE = 'file:///home/ejeanvoine/distem-fs-wheezy.tar.gz'
 DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
-REFFILE = "#{ROOT}/ref.yml"
+REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
 USER = `id -nu`.strip
 NET = '10.144.0.0/18'
 MIN_PNODES = 2
