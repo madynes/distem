@@ -39,6 +39,7 @@ module Distem
           'vfilesystem' => visit(vnode.filesystem),
           'vifaces' => visit(vnode.vifaces),
           'vcpu' => visit(vnode.vcpu),
+          'vmem' => visit(vnode.vmem),
           'mode' => (vnode.gateway ? Resource::VNode::MODE_GATEWAY : Resource::VNode::MODE_NORMAL),
         }
 
@@ -145,6 +146,13 @@ module Distem
         return {
           'capacity' => memory.capacity.to_s + ' MB',
           'swap' => memory.swap.to_s + ' MB',
+        }
+      end
+
+      def visit_vmem(vmem)
+        return {
+          'mem' => vmem.mem.to_s,
+          'swap' => vmem.swap.to_s,
         }
       end
 

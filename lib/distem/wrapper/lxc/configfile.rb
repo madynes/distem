@@ -15,11 +15,11 @@ module LXCWrapper # :nodoc: all
       "lxc.cgroup.devices.allow = c 1:9 rwm  # /dev/urandom\n" \
       "lxc.cgroup.devices.allow = c 136:* rwm  # /dev/pts/*\n" \
       "lxc.cgroup.devices.allow = c 5:2 rwm  #  /dev/pts/ptmx\n" \
-      "lxc.cgroup.devices.allow = c 254:0 rwm  # rtc\n"  
+      "lxc.cgroup.devices.allow = c 254:0 rwm  # rtc\n"
 
     def self.generate(vnode,filepath)
       # Write lxc config file
-      File.open(filepath, 'w') do |f| 
+      File.open(filepath, 'w') do |f|
         f.puts DEFAULT_DEV_RULES
         f.puts "lxc.utsname = #{vnode.name}"
         if vnode.filesystem.shared
@@ -57,6 +57,13 @@ module LXCWrapper # :nodoc: all
           vnode.vcpu.vcores.each_value { |vcore| cores += "#{vcore.pcore.physicalid}," }
           cores.chop! unless cores.empty?
           f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
+        end
+
+        # Warning, this is working only since Wheezy, and the cgroup_enable=memory kernel parameter must be added on the kernel command line
+        if vnode.vmem
+          f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
+          # This is not working on Debian wheezy, even with the swapaccount=1 kernel paramater. Mayber LXC 0.9 is required
+          #if.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
         end
       end
     end

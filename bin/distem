@@ -58,6 +58,8 @@ options['gateway' ] = nil
 options['configfile'] = nil
 options['sshprivkey'] = nil
 options['sshpubkey'] = nil
+options['mem'] = nil
+options['swap'] = nil
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on('-h', '--help', 'Display this screen' ) do
@@ -224,6 +226,16 @@ optparse = OptionParser.new(USAGE) do |opts|
     exit 1 if not check_opts('config-viface', h, ['vnode','iface'], ['bw','latency','direction'])
     options.update(h)
   end
+  opts.separator "Memory management:"
+  opts.on(
+    '--set-vmem vnode=VNODE,mem=SIZE,swap=SIZE',
+    'Set a memory limitation'
+  ) do |str|
+    options['f_options'] << 'set_vmem'
+    h = sub_opts_to_hash(str)
+    exit 1 if not check_opts('set_vmem', h, ['vnode'], ['mem','swap'])
+    options.update(h)
+  end
   opts.separator "CPU management:"
   opts.on(
     '--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited',
@@ -326,7 +338,7 @@ options['f_options'].each { |option|
     props['host'] = options['pnode'] if options['pnode']
     ssh_key = {}
     ssh_key['private'] = IO.readlines(options['sshprivkey']).join() if options['sshprivkey']
-    ssh_key['public'] = IO.readlines(options['sshpubkey']).join() if options['sshpubkey']                               
+    ssh_key['public'] = IO.readlines(options['sshpubkey']).join() if options['sshpubkey']
     pp cl.vnode_create(options['vnode'], props, ssh_key)
   when 'start_vnode'
     pp cl.vnode_start(options['vnode'])
@@ -346,7 +358,7 @@ options['f_options'].each { |option|
   when 'copy_to','copy_from'
     vnode = cl.vnode_info(options['vnode'])
     pnode = vnode['host']
-    rootfs = vnode['vfilesystem']['shared'] ? 
+    rootfs = vnode['vfilesystem']['shared'] ?
       vnode['vfilesystem']['sharedpath'] : vnode['vfilesystem']['path']
     vfile = (option == 'copy_to') ? vfile = options['dest'] : vfile = options['src']
     path = Pathname.new(vfile)
@@ -429,6 +441,8 @@ options['f_options'].each { |option|
   when 'update_vcpu'
     speed = (options['cpu_speed'] == 'unlimited') ? 1.0 : options['cpu_speed'].to_f
     pp cl.vcpu_update(options['vnode'], speed)
+  when 'set_vmem'
+    pp cl.vmem_create(options['vmem'], options['mem'], options['swap'])
   when 'get_pnode_info'
     if options['pnode']
       pp cl.pnode_info(options['pnode'])
