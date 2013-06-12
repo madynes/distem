@@ -198,6 +198,7 @@ module Distem
             vcpu_create(vnode.name,desc['vcpu'])
           end
         end
+        vnode.vmem = desc['vmem'] if desc['vmem']
         if desc['vifaces']
           desc['vifaces'].each do |ifdesc|
             if vnode.get_viface_by_name(ifdesc['name'])

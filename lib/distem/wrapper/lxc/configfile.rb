@@ -58,6 +58,11 @@ module LXCWrapper # :nodoc: all
           cores.chop! unless cores.empty?
           f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
         end
+
+        if vnode.vmem
+          f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnodes.vmem.mem}M" if vnodes.vmem.mem
+          f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnodes.vmem.swap}M" if vnodes.vmem.swap
+        end
       end
     end
   end

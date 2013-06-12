@@ -30,6 +30,7 @@ module Distem
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
+        @daemon_resources_lock = Mutex.new
         @vnet_id = 0
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
@@ -282,6 +283,7 @@ module Distem
             end
           end
         end
+        vmem_create(vnode.name, desc['vmem'] if desc['vmem']
         vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
         vnode_status_update(vnode.name,desc['status'],async) if desc['status']
         return vnode
@@ -300,8 +302,11 @@ module Distem
 
         ret = vnode.dup
 
-        vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
-        vnode.remove_vcpu()
+        @daemon_resources_lock.synchronize {
+          vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
+          vnode.remove_vcpu()
+          vnode.remove_vmem() if vnode.vmem
+        }
 
         pnode = @daemon_resources.get_pnode_by_address(vnode.host)
         @daemon_resources.remove_vnode(vnode)
@@ -394,17 +399,19 @@ module Distem
 
         vnode.status = Resource::Status::CONFIGURING
         unless vnode_down
+          @daemon_resources_lock.synchronize {
           if vnode.host
             if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
               raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+              else
+                vnode.host.local_vifaces += vnode.vifaces.length
+              end
             else
-              vnode.host.local_vifaces += vnode.vifaces.length
+              vnode.host = @daemon_resources.get_pnode_available(vnode)
             end
-          else
-            vnode.host = @daemon_resources.get_pnode_available(vnode)
-          end
-
-          vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
+            vnode.host.memory.allocate({:mem => vnode.vmem.mem, :swap => vnode.vmem.swap}) if vnode.vmem
+            vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
+          }
         end
 
         block = Proc.new {
@@ -616,7 +623,9 @@ module Distem
       #
       def viface_remove(vnodename,vifacename)
         vnode = vnode_get(vnodename)
-        vnode.host.local_vifaces -= 1 if vnode.host
+        @daemon_resources_lock.synchronize {
+          vnode.host.local_vifaces -= 1 if vnode.host
+        }
         viface = viface_get(vnodename,vifacename)
         viface_detach(vnode.name,viface.name)
         vnode.remove_viface(viface)
@@ -1336,6 +1345,12 @@ module Distem
           }
           tids.each { |tid| tid.join }
         }
+      end
+
+      def vmem_create(vnodename, opts)
+        vnode = vnode_get(name)
+        vnode.add_vmem(opts)
+        return opts
       end
 
       protected

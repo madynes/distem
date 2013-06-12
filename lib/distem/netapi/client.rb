@@ -552,6 +552,16 @@ module Distem
         post_json("/global_etchosts", params)
       end
 
+      # Create a new memory limitation
+      #
+      # @param [String] mem The required amount of RAM
+      # @param [String] swap The required amount of swap
+      # @return [Hash] The memory limitation)
+      def vmem_create(mem, swap)
+        desc = { :mem => mem, :swap => swap }
+        post_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { :desc => desc })
+      end
+
       protected
 
       # Check if there was an error in the REST request

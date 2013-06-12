@@ -692,7 +692,7 @@ module Distem
       end
 
       post '/peers_matrix_latencies/?' do
-        check do 
+        check do
           vnodes = (params['vnodes'] == "") ? nil : JSON.parse(params['vnodes'])
           @body = @daemon.set_peers_latencies(vnodes, JSON.parse(params['matrix']))
         end
@@ -703,6 +703,14 @@ module Distem
           data = params.has_key?('data') ? JSON.parse(params['data']) : nil
           @daemon.set_global_etchosts(data)
           @body = ""
+        end
+      end
+
+      post '/vnodes/:vnodename/vmem/?' do
+        check do
+          desc = {}
+          desc = JSON.parse(params['desc']) if params['desc']
+          @body = @daemon.vmem_create(params['vnodename']),desc)
         end
       end
 
