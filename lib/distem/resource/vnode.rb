@@ -23,6 +23,8 @@ module Distem
       attr_reader  :vifaces
       # The VCPU resource object associated to this virtual node
       attr_reader  :vcpu
+      # The memory limitation object associated to this virtual node
+      attr_accessor :vmem
       # The FileSystem resource object associated to this virtual node
       attr_accessor :filesystem
       # The status of the Virtual node (see Status)
@@ -62,6 +64,7 @@ module Distem
         @gateway = false
         @vifaces = []
         @vcpu = nil
+        @vmem = nil
         @status = Status::INIT
         @@ids += 1
       end
@@ -161,6 +164,23 @@ module Distem
       def remove_vcpu()
         @vcpu.detach if @vcpu and @vcpu.attached?
         @vcpu = nil
+      end
+
+      def add_vmem(opts)
+        @vmem = VMem.new(opts)
+      end
+
+      def update_vmem(opts)
+        remove_vmem if @vmem
+        add_vmem(opts)
+      end
+
+      def remove_vmem
+        if @vmem
+          @host.memory.deallocate({@vmem => mem, @vmem => swap})
+          @vmem.remove()
+          @vmem = nil
+        end
       end
 
       # Compare two virtual nodes

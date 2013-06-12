@@ -28,7 +28,7 @@ module Distem
         raise Lib::AlreadyExistingResourceError, pnode.address.to_s \
           if @pnodes[pnode.address]
 
-        @pnodes[pnode.address] = pnode 
+        @pnodes[pnode.address] = pnode
       end
 
       # Remove physical node from the platform
@@ -80,14 +80,15 @@ module Distem
       #
       def get_pnode_available(vnode)
         availables = []
+        # Might lead to race condition, must be executed inside a critical section
         @pnodes.each_value do |pnode|
-          next if (vnode.vcpu and pnode.cpu.get_free_cores.size < vnode.vcpu.vcores.size) ||
-            ((pnode.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
+          next if (vnode.vcpu && pnode.cpu.get_free_cores.size < vnode.vcpu.vcores.size) ||
+            ((pnode.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max) ||
+            (vnode.vmem && ((vnode.vmem.mem && (pnode.memory.get_free_capacity < vnode.vmem.mem)) &&
+                             (vnode.vmem.swap && (pnode.memory.get_free_swap < vnode.vmem.swap))))
           availables << pnode
         end
-
-        raise Lib::UnavailableResourceError, 'pnode/cpu or pnode/iface' if availables.empty?
-
+        raise Lib::UnavailableResourceError, 'pnode/cpu, pnode/iface, or pnode/memory' if availables.empty?
         pnode = availables[rand(availables.size)]
         pnode.local_vifaces += vnode.vifaces.length
         return pnode
