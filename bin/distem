@@ -273,6 +273,12 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'set_global_etchosts'
   end
   opts.on(
+    '--set-global-arptable',
+    'Set a global ARP table on every virtual nodes'
+  ) do
+    options['f_options'] << 'set_global_arptable'
+  end
+  opts.on(
     '--save-config format=JSON|XML[,configfile=FILE]',
     'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
   ) do |str|
@@ -326,7 +332,7 @@ options['f_options'].each { |option|
     props['host'] = options['pnode'] if options['pnode']
     ssh_key = {}
     ssh_key['private'] = IO.readlines(options['sshprivkey']).join() if options['sshprivkey']
-    ssh_key['public'] = IO.readlines(options['sshpubkey']).join() if options['sshpubkey']                               
+    ssh_key['public'] = IO.readlines(options['sshpubkey']).join() if options['sshpubkey']
     pp cl.vnode_create(options['vnode'], props, ssh_key)
   when 'start_vnode'
     pp cl.vnode_start(options['vnode'])
@@ -469,6 +475,8 @@ options['f_options'].each { |option|
     pp cl.vplatform_create(str,options['format'],options['rootfs'])
   when 'set_global_etchosts'
     cl.set_global_etchosts()
+  when 'set_global_arptable'
+    cl.set_global_arptable(nil,nil)
   when 'quit'
     if options['pnode']
       pp cl.pnode_quit(options['pnode'])
