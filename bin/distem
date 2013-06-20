@@ -285,6 +285,12 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'set_global_etchosts'
   end
   opts.on(
+    '--set-global-arptable',
+    'Set a global ARP table on every virtual nodes'
+  ) do
+    options['f_options'] << 'set_global_arptable'
+  end
+  opts.on(
     '--save-config format=JSON|XML[,configfile=FILE]',
     'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
   ) do |str|
@@ -483,6 +489,8 @@ options['f_options'].each { |option|
     pp cl.vplatform_create(str,options['format'],options['rootfs'])
   when 'set_global_etchosts'
     cl.set_global_etchosts()
+  when 'set_global_arptable'
+    cl.set_global_arptable(nil,nil)
   when 'quit'
     if options['pnode']
       pp cl.pnode_quit(options['pnode'])

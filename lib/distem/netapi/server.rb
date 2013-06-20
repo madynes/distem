@@ -711,6 +711,14 @@ module Distem
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
           @body = @daemon.vmem_create(params['vnodename'],desc)
+      end
+
+      post '/global_arptable/?' do
+        check do
+          data = params.has_key?('data') ? JSON.parse(params['data']) : nil
+          arp_file = params.has_key?('arp_file') ? params['arp_file'] : nil
+          @daemon.set_global_arptable(data, arp_file)
+          @body = ""
         end
       end
 
