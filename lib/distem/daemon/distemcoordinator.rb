@@ -670,7 +670,8 @@ module Distem
            and (!desc['vnetwork'] or desc['vnetwork'].empty?))
 
           vplatform = @daemon_resources
-
+          
+          address = ''
           if desc['address'] and !desc['address'].empty?
             begin
               address = IPAddress.parse(desc['address'])
@@ -694,7 +695,6 @@ module Distem
               raise Lib::InvalidParameterError, desc['macaddress']
             end
           end
-
           if desc['vnetwork'] and !desc['vnetwork'].empty?
             prop = desc['vnetwork']
             vnetwork = vplatform.get_vnetwork_by_name(prop)
@@ -1353,6 +1353,31 @@ module Distem
           }
           tids.each { |tid| tid.join }
         }
+      end
+
+      def set_global_arptable(param = nil, arp_file = nil)
+        results = []
+        @daemon_resources.vnodes.each_value {|vnode|
+          vnode.vifaces.each {|viface|
+            if viface.vnetwork
+              results << [viface.macaddress, viface.address.address.to_s]
+            end
+          }
+        }
+        arp_file = '/tmp/fullarptable'
+        @daemon_resources.pnodes.each_value {|pnode|
+          tids = []
+          tids << Thread.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.set_global_arptable(results, arp_file)
+          }
+          tids.each { |tid| tid.join }
+        }
+        w = Distem::Lib::Synchronization::SlidingWindow.new(50)
+        @daemon_resources.vnodes.each_value {|vnode|
+          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
+        }
+        w.run
       end
 
       protected

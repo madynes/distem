@@ -552,6 +552,13 @@ module Distem
         post_json("/global_etchosts", params)
       end
 
+      def set_global_arptable(data = nil, arp_file = nil)
+        params = {}
+        params['data'] = data if data
+        params['arp_file'] = arp_file if arp_file
+        post_json("/global_arptable", params)
+      end
+
       protected
 
       # Check if there was an error in the REST request

@@ -187,15 +187,21 @@ module Distem
       end
 
       def set_global_etchosts(data)
-        if @vnode.filesystem.shared
-          rootfspath = @vnode.filesystem.sharedpath
-        else
-          rootfspath = @vnode.filesystem.path
-        end
+        rootfspath = @vnode.filesystem.shared ? @vnode.filesystem.sharedpath : @vnode.filesystem.path
         etcpath = File.join(rootfspath,'etc')
         File.open(File.join(etcpath,'hosts'),'w') {|f|
           data.each {|entry|
             f.puts("#{entry[1]}\t#{entry[0]}")
+          }
+        }
+      end
+
+      def set_global_arptable(data, file)
+        rootfspath = @vnode.filesystem.shared ? @vnode.filesystem.sharedpath : @vnode.filesystem.path
+        path = File.join(rootfspath, file)
+        File.open(path,'w') {|f|
+          data.each {|entry|
+            f.puts("#{entry[0]} #{entry[1]}")
           }
         }
       end

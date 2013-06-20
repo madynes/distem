@@ -899,6 +899,22 @@ module Distem
         } if !private_fs.empty?
       end
 
+      def set_global_arptable(data, arp_file)
+        shared_fs = []
+        private_fs = []
+        @node_config.vplatform.vnodes.each_value { |vnode|
+          if vnode.filesystem.shared
+            shared_fs << vnode
+          else
+            private_fs << vnode
+          end
+        }
+        arp_file = '/tmp/fullarptable'
+        @node_config.set_global_arptable(shared_fs.first, data, arp_file) if !shared_fs.empty?
+        private_fs.each {|vnode|
+          @node_config.set_global_arptable(vnode, data, arp_file)
+        } if !private_fs.empty?
+      end
       protected
 
 
