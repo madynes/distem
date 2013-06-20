@@ -96,6 +96,8 @@ module Distem
       attr_reader :vnode
       # The IP address of the network interface
       attr_reader :address
+      # The mac address of the network interface
+      attr_accessor :macaddress
       # The VNetwork this interface is attached to (nil if none)
       attr_reader :vnetwork
       # The output VTraffic description
@@ -119,6 +121,7 @@ module Distem
         @name = name
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
+        @macaddress = nil
         @vnetwork = nil
         @vinput = nil
         @voutput = nil
