@@ -177,6 +177,10 @@ module Distem
       def set_global_etchosts(vnode, data)
         @containers[vnode.name].set_global_etchosts(data)
       end
+
+      def set_global_arptable(vnode, data, file)
+        @containers[vnode.name].set_global_arptable(data, file)
+      end
     end
 
   end
