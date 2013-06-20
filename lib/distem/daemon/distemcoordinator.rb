@@ -25,6 +25,9 @@ module Distem
         :vnode_start => {},
         :vnode_stop => {},
       }
+      MAC_PREFIX = "fe:ff:ff"
+      @@mac_id = 0
+      @@mac_id_lock = Mutex.new
 
       def initialize
         #Thread::abort_on_exception = true
@@ -597,8 +600,8 @@ module Distem
           vifacename = vifacename.gsub(' ','_')
           vnode = vnode_get(vnodename)
           viface = Resource::VIface.new(vifacename,vnode)
-          vnode.add_viface(viface)
           downkeys(desc)
+          vnode.add_viface(viface)
           viface_update(vnode.name,viface.name,desc)
           return viface
         rescue Lib::AlreadyExistingResourceError
@@ -665,7 +668,7 @@ module Distem
           raise Lib::MissingParameterError, "address|vnetwork" if \
           ((!desc['address'] or desc['address'].empty?) \
            and (!desc['vnetwork'] or desc['vnetwork'].empty?))
-          
+
           vplatform = @daemon_resources
 
           if desc['address'] and !desc['address'].empty?
@@ -676,6 +679,20 @@ module Distem
             end
             prop = desc['address']
             vnetwork = vplatform.get_vnetwork_by_address(prop)
+          end
+
+          if (!desc.has_key?('macaddress')) || (desc['macaddress'] == nil) || (desc['macaddress'] == '')
+            @@mac_id_lock.synchronize {
+              mac_suffix = [@@mac_id/65536, @@mac_id%65536/256, @@mac_id%65536%256].map {|i| i.to_s(16).rjust(2,"0")}.join(":")
+              viface.macaddress = "#{MAC_PREFIX}:#{mac_suffix}"
+              @@mac_id += 1
+            }
+          else
+            if desc['macaddress'].match /^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/
+              viface.macaddress = desc['macaddress']
+            else
+              raise Lib::InvalidParameterError, desc['macaddress']
+            end
           end
 
           if desc['vnetwork'] and !desc['vnetwork'].empty?

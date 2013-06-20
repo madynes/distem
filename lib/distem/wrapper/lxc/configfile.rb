@@ -48,6 +48,7 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.network.link = #{Distem::Lib::NetTools::NAME_BRIDGE}"
           f.puts "lxc.network.name = #{viface.name}"
           f.puts "lxc.network.flags = up"
+          f.puts "lxc.network.hwaddr = #{viface.macaddress}"
           f.puts "lxc.network.veth.pair = #{Distem::Lib::NetTools.get_iface_name(vnode,viface)}"
           f.puts "lxc.network.ipv4 = #{viface.address.to_string}"
         end

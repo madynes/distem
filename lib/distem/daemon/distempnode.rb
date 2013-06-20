@@ -460,11 +460,12 @@ module Distem
 
           desc['vnetwork'] = desc['vnetwork'].gsub(' ','_') if desc['vnetwork']
 
-          raise Lib::MissingParameterError, "address&vnetwork" if \
+          raise Lib::MissingParameterError, "address&macaddress&vnetwork" if \
           ((!desc['address'] or desc['address'].empty?) \
+           or (!desc['macaddress'] or desc['macaddress'].empty?) \
            or (!desc['vnetwork'] or desc['vnetwork'].empty?))
           vplatform = @node_config.vplatform
-
+          viface.macaddress = desc['macaddress']
           if desc['address'] and !desc['address'].empty?
             begin
               address = IPAddress.parse(desc['address'])
