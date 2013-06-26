@@ -1,0 +1,8 @@
+Change-Id: I9b6e024bfdf8d5f7e1f79ef765f997847dddf73f
+Code-Review+2: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Verified+1: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-by: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-at: Wed, 26 Jun 2013 13:07:15 +0200
+Reviewed-on: https://helpdesk.grid5000.fr/gerrit/1070
+Project: distem
+Branch: refs/heads/master
