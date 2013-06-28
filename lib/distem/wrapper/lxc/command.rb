@@ -12,7 +12,14 @@ module LXCWrapper # :nodoc: all
     end
 
     def self.destroy(contname,wait=true)
-      lxc_safe_run("lxc-destroy -n #{contname}",true) if ls().include?(contname)
+      if ls().include?(contname)
+        cycles = 0
+        begin
+          sleep(LS_WAIT_TIME) if (cycles > 1)
+          out = lxc_safe_run("lxc-destroy -n #{contname};true",true)
+          cycles += 1
+        end while (out.include?('does not exist') && (cycles < MAX_WAIT_CYCLES))
+      end
       wait_disapear(contname) if wait
     end
 

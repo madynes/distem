@@ -10,12 +10,6 @@ module Distem
       # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
       attr_reader  :node_config
 
-      MAX_VNODES_SIMULT_START_ON_PNODE = 40
-      @@semvnodestart_pnodelock = Mutex.new
-      @@semvnodestart_pnode = {}
-
-
-
       @@lockslock = Mutex.new
       @@locks = {
         :vnetsync => {},
@@ -23,8 +17,6 @@ module Distem
 
       @@threads = {
         :pnode_init => {},
-        :vnode_start => {},
-        :vnode_stop => {},
       }
 
       def initialize
@@ -87,7 +79,7 @@ module Distem
         raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
         pnode = pnode_get(target,false)
         pnode.status = Resource::Status::CONFIGURING
-        vnodes_remove()
+        vnodes_remove(nil)
         vnetworks_remove()
         Lib::FileManager::clean_cache
         Node::Admin.quit_node()
@@ -139,78 +131,86 @@ module Distem
         return pnode.memory
       end
 
-      # Create a virtual node using a compressed file system image.
+      # Create virtual nodes using a compressed file system image.
       #
       # ==== Attributes
-      # * +name+ the -unique- name of the virtual node to create (it will be used in a lot of methods)
+      # * +names+ the -unique- name of the virtual nodes to create (it will be used in a lot of methods)
       # * +properties+ target,image,async,fs_shared,ssh_key
       # ==== Returns
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_create(name,desc,ssh_key={},async=false)
+      def vnode_create(names,descs,ssh_key={},async=false)
+        async = parse_bool(async)
         begin
-          async = parse_bool(async)
-          if name
+          raise Lib::ArgumentMissingError "names" if !names
+          vnodes = []
+          names.each_index { |i|
+            name = names[i]
             name = name.gsub(' ','_')
-          else
-            raise Lib::ArgumentMissingError "name"
-          end
-          downkeys(desc)
-          vnode = Resource::VNode.new(name,ssh_key)
-          @node_config.vnode_add(vnode)
-          vnode_update(vnode.name,desc,async)
-          return vnode
+            desc = descs[i]
+            downkeys(desc)
+            vnode = Resource::VNode.new(name,ssh_key)
+            @node_config.vnode_add(vnode)
+            vnodes << vnode
+          }
+          vnode_update(names,descs,async)
+          return vnodes
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
-          destroy(vnode) if vnode
           raise
         end
 
       end
 
-      def vnodes_stop()
-        vnodes = vnodes_get()
+      def vnodes_stop(names,async=false)
+        vnodes = names ? names.map { |name| vnode_get(name)} : vnodes_get().values
         tids = []
-        vnodes.each_value { |vnode|
+        vnodes.each{ |vnode|
           tids << Thread.new {
             vnode_status_update(vnode.name, Resource::Status::READY)
           }
         }
-        tids.each { |tid| tid.join }
+        tids.each { |tid| tid.join } if !async
         return vnodes
       end
 
       # Update the vnode resource
-      def vnode_update(name,desc,async=false)
+      def vnode_update(names,descs,async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
-        downkeys(desc)
-        vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
-        (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-        vnode_attach(vnode.name,desc['host']) if desc['host']
-        vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
-        if desc['vcpu']
-          if vnode.vcpu
-            vcpu_update(vnode.name,desc['vcpu'])
-          else
-            vcpu_create(vnode.name,desc['vcpu'])
-          end
-        end
-        vnode.vmem = desc['vmem'] if desc['vmem']
-        if desc['vifaces']
-          desc['vifaces'].each do |ifdesc|
-            if vnode.get_viface_by_name(ifdesc['name'])
-              viface_update(vnode.name,ifdesc['name'],ifdesc)
+        vnodes = []
+        names.each_index { |i|
+          name = names[i]
+          vnode = vnode_get(name)
+          desc = descs.is_a?(Array) ? descs[i] : Marshal.load(Marshal.dump(descs))
+          downkeys(desc)
+          vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
+          (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
+          vnode_attach(vnode.name,desc['host']) if desc['host']
+          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+          if desc['vcpu']
+            if vnode.vcpu
+              vcpu_update(vnode.name,desc['vcpu'])
             else
-              viface_create(vnode.name,ifdesc['name'],ifdesc)
+              vcpu_create(vnode.name,desc['vcpu'])
             end
           end
-        end
-        vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
-        vnode_status_update(vnode.name,desc['status'],async) if desc['status']
-        return vnode
+          vnode.vmem = desc['vmem'] if desc['vmem']
+          if desc['vifaces']
+            desc['vifaces'].each do |ifdesc|
+              if vnode.get_viface_by_name(ifdesc['name'])
+                viface_update(vnode.name,ifdesc['name'],ifdesc)
+              else
+                viface_create(vnode.name,ifdesc['name'],ifdesc)
+              end
+            end
+          end
+          vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
+          vnode_status_update(vnode.name,desc['status'],async) if desc['status']
+          vnodes << vnode
+        }
+        return vnodes
       end
 
       # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
@@ -227,6 +227,23 @@ module Distem
         vnode.remove_vcpu()
         @node_config.vnode_remove(vnode)
         return ret
+      end
+
+      # Remove the given virtual nodes, or every if names is nil
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
+      def vnodes_remove(names)
+        vnodes = names ? names.map { |name| vnode_get(name) } : vnodes_get().values
+        tids = []
+        vnodes.each { |vnode|
+            tids << Thread.new {
+              vnode_remove(vnode.name)
+            }
+        }
+        tids.each { |tid| tid.join }
+        return vnodes
       end
 
       def vnode_attach(name,host)
@@ -302,7 +319,7 @@ module Distem
         @node_config.vnode_start(vnode)
         vnode.status = Resource::Status::RUNNING
 
-        return vnode
+        return [vnode]
       end
 
       # Same as vnode_set_status(name,Resource::Status::READY,properties)
@@ -366,23 +383,6 @@ module Distem
       #
       def vnodes_get()
         return @node_config.vplatform.vnodes
-      end
-
-      # Remove every virtual nodes
-      # ==== Returns
-      # Array of Resource::PNode objects
-      # ==== Exceptions
-      #
-      def vnodes_remove()
-        vnodes = vnodes_get()
-        tids = []
-        vnodes.each_value { |vnode|
-          tids << Thread.new {
-            vnode_remove(vnode.name)
-          }
-        }
-        tids.each { |tid| tid.join }
-        return vnodes
       end
 
       # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
