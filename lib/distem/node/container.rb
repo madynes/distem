@@ -57,8 +57,8 @@ module Distem
         @curname = ""
         @configfile = ""
         @id = 0
-
         setup()
+        @stopped = false
       end
 
       # Setup the virtual node container (copy ssh keys, ...)
@@ -151,6 +151,7 @@ module Distem
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
         end
+        @stopped = false
       end
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
@@ -160,23 +161,20 @@ module Distem
           @networkforges.each_value { |netforge| netforge.undo }
           LXCWrapper::Command.stop(@vnode.name)
         end
+        @stopped = true
       end
 
       # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
         LXCWrapper::Command.destroy(@vnode.name,true)
-        unless @vnode.filesystem.shared
-          if @vnode.filesystem.cow
-            Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
-          else
-            Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
-          end
+        if !@vnode.filesystem.shared && @vnode.filesystem.cow
+          Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
         end
       end
 
       # Remove and shutdown the virtual node, remove it's filesystem, ...
       def destroy
-        stop()
+        stop() if !@stopped
         remove()
       end
 

@@ -11,10 +11,6 @@ module Distem
       attr_reader :daemon_resources
       @vnet_id = nil
 
-      MAX_VNODES_SIMULT_START_ON_PNODE = 40
-      @@semvnodestart_pnodelock = Mutex.new
-      @@semvnodestart_pnode = {}
-
       @@lockslock = Mutex.new
       @@locks = {
         :vnetsync => {},
@@ -22,7 +18,6 @@ module Distem
 
       @@threads = {
         :pnode_init => {},
-        :vnode_start => {},
         :vnode_stop => {},
       }
       MAC_PREFIX = "fe:ff:ff"
@@ -143,11 +138,11 @@ module Distem
             pnode.status = Resource::Status::CONFIGURING
             vnodes = []
             @daemon_resources.vnodes.each_value do |vnode|
-              if vnode.host == pnode
+              if vnode.host.address.to_s == pnode.address.to_s
                 vnodes << vnode
               end
             end
-            vnodes_stop(vnodes)
+            vnodes_stop(vnodes.map { |vnode| vnode.name },false)
           end
           cl = NetAPI::Client.new(target, 4568)
           cl.pnode_quit(target)
@@ -169,18 +164,18 @@ module Distem
         @daemon_resources.pnodes.each_value do |pnode|
           if pnode.address.to_s != first_node
             tids << Thread.new {
-              pnode_quit(pnode.address.to_s)
+              pnode_quit(pnode.address.to_s, false)
             }
           else
             tids << Thread.new {
               pnode.status = Resource::Status::CONFIGURING
               vnodes = []
               @daemon_resources.vnodes.each_value do |vnode|
-                if vnode.host == pnode
+                if vnode.host.address.to_s == pnode.address.to_s
                   vnodes << vnode
                 end
               end
-              vnodes_stop(vnodes)
+              vnodes_stop(vnodes.map { |vnode| vnode.name}, false)
             }
           end
         end
@@ -238,57 +233,64 @@ module Distem
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_create(name,desc,ssh_key={},async=false)
+      def vnode_create(names,desc,ssh_key={},async=false)
         begin
           async = parse_bool(async)
-          if name
-            name = name.gsub(' ','_')
-          else
-            raise Lib::ArgumentMissingError "name"
-          end
           downkeys(desc)
-          vnode = Resource::VNode.new(name,ssh_key)
-          @daemon_resources.add_vnode(vnode)
-          vnode_update(vnode.name,desc,async)
-          return vnode
+          raise Lib::ArgumentMissingError "names" if !names
+          names = [names] if !names.is_a?(Array)
+          names = names.map { |name| name.gsub(' ','_') }
+          vnodes = []
+          names.each { |name|
+            vnode = Resource::VNode.new(name,ssh_key)
+            @daemon_resources.add_vnode(vnode)
+            vnodes << vnode
+          }
+          vnode_update(names,desc,async)
+          return vnodes
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
-          destroy(vnode) if vnode
           raise
         end
 
       end
 
       # Update the vnode resource
-      def vnode_update(name,desc,async=false)
+      def vnode_update(names,description,async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
-        downkeys(desc)
-        vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
-        (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-        vnode_attach(vnode.name,desc['host']) if desc['host']
-        vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
-        if desc['vcpu']
-          if vnode.vcpu
-            vcpu_update(vnode.name,desc['vcpu'])
-          else
-            vcpu_create(vnode.name,desc['vcpu'])
-          end
-        end
-        if desc['vifaces']
-          desc['vifaces'].each do |ifdesc|
-            if vnode.get_viface_by_name(ifdesc['name'])
-              viface_update(vnode.name,ifdesc['name'],ifdesc)
+        names = [names] if !names.is_a?(Array)
+        vnodes = []
+        downkeys(description)
+        names.each { |name|
+          desc = Marshal.load(Marshal.dump(description))
+          vnode = vnode_get(name)
+          vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
+          (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
+          vnode_attach(vnode.name,desc['host']) if desc['host']
+          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+          if desc['vcpu']
+            if vnode.vcpu
+              vcpu_update(vnode.name,desc['vcpu'])
             else
-              viface_create(vnode.name,ifdesc['name'],ifdesc)
+              vcpu_create(vnode.name,desc['vcpu'])
             end
           end
-        end
-        vmem_create(vnode.name, desc['vmem']) if desc['vmem']
-        vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
-        vnode_status_update(vnode.name,desc['status'],async) if desc['status']
-        return vnode
+          if desc['vifaces']
+            desc['vifaces'].each do |ifdesc|
+              if vnode.get_viface_by_name(ifdesc['name'])
+                viface_update(vnode.name,ifdesc['name'],ifdesc)
+              else
+                viface_create(vnode.name,ifdesc['name'],ifdesc)
+              end
+            end
+          end
+          vmem_create(vnode.name, desc['vmem']) if desc['vmem']
+          vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
+          vnodes << vnode
+        }
+        vnode_status_update(names,description['status'],async) if description['status']
+        return vnodes
       end
 
       # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
@@ -296,28 +298,47 @@ module Distem
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_remove(name)
-        vnode = vnode_get(name)
-
-        raise Lib::BusyResourceError, "#{vnode.name}/running" if \
-        vnode.status == Resource::Status::RUNNING
-
+      def vnode_remove(names)
+        names = [names] if !names.is_a?(Array)
+        vnodes = names.map { |name| vnode_get(name) }
         ret = vnode.dup
-
-        @daemon_resources_lock.synchronize {
-          vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
-          vnode.remove_vcpu()
-          vnode.remove_vmem() if vnode.vmem
+        vnodes_to_remove = []
+        vnodes.each { |vnode|
+          raise Lib::BusyResourceError, "#{vnode.name}/running" if vnode.status == Resource::Status::RUNNING
+          @daemon_resources_lock.synchronize {
+            vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
+            vnode.remove_vcpu()
+            vnode.remove_vmem() if vnode.vmem
+          }
+          pnode = @daemon_resources.get_pnode_by_address(vnode.host)
+          vnodes_to_remove << vnode if vnode.host and (pnode.status == Resource::Status::RUNNING)
+          @daemon_resources.remove_vnode(vnode)
         }
-
-        pnode = @daemon_resources.get_pnode_by_address(vnode.host)
-        @daemon_resources.remove_vnode(vnode)
-        if vnode.host and (pnode.status == Resource::Status::RUNNING)
-          cl = NetAPI::Client.new(vnode.host.address, 4568)
-          cl.vnode_remove(vnode.name)
-        end
-
+        vnodesperpnode = Hash.new
+        vnodes_to_remove.each { |vnode|
+          vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+          vnodesperpnode[vnode.host.address.to_s] << vnode
+        }
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        vnodesperpnode.each { |address,vn|
+          block = Proc.new {
+            cl = NetAPI::Client.new(address, 4568)
+            cl.vnodes_remove(vn)
+          }
+          w.add(block)
+        }
+        w.run
         return ret
+      end
+
+      # Remove the given virtual nodes, or every if names is nil
+      # ==== Returns
+      # Array of Resource::PNode objects
+      # ==== Exceptions
+      #
+      def vnodes_remove(names)
+        names = @daemon_resources.vnodes.map { |vnode| vnode.name } if !names
+        return vnode_remove(names)
       end
 
       def vnode_attach(name,host)
@@ -338,13 +359,6 @@ module Distem
         end
 
         return vnode
-      end
-
-      def vnode_wait(name)
-        vnode = vnode_get(name)
-
-        @@threads[:vnode_start][vnode.name].join if @@threads[:vnode_start][vnode.name]
-        @@threads[:vnode_stop][vnode.name].join if @@threads[:vnode_stop][vnode.name]
       end
 
       # Get the description of a virtual node
@@ -368,112 +382,154 @@ module Distem
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_status_update(name,status,async=false)
+      def vnode_status_update(names,status,async=false)
         async = parse_bool(async)
-        vnode = nil
+        vnodes = []
         raise Lib::InvalidParameterError, status unless \
         Resource::Status.valid?(status)
         if status.upcase == Resource::Status::RUNNING
-          vnode = vnode_start(name,async)
+          vnodes = vnodes_start(names,async)
         elsif status.upcase == Resource::Status::READY
-          vnode = vnode_stop(name,async)
+          vnodes = vnodes_stop(names,async)
         elsif status.upcase == Resource::Status::DOWN
-          vnode = vnode_shutdown(name,async)
+          vnodes = vnodes_shutdown(names,async)
         else
           raise Lib::InvalidParameterError, status
         end
 
-        return vnode
+        return vnodes
       end
 
       # Same as vnode_set_status(name,Resource::Status::RUNNING,properties)
-      def vnode_start(name,async=false)
+      def vnode_start(names,async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
+        vnodes = []
+        names.each { |name|
+          vnode = vnode_get(name)
+          raise Lib::BusyResourceError, vnode.name if \
+          vnode.status == Resource::Status::CONFIGURING
 
-        raise Lib::BusyResourceError, vnode.name if \
-        vnode.status == Resource::Status::CONFIGURING
+          raise Lib::ResourceError, "#{vnode.name} already running" if \
+          vnode.status == Resource::Status::RUNNING
 
-        raise Lib::ResourceError, "#{vnode.name} already running" if \
-        vnode.status == Resource::Status::RUNNING
+          vnode_down = (vnode.status ==  Resource::Status::DOWN)
 
-        vnode_down = (vnode.status ==  Resource::Status::DOWN)
-
-        vnode.status = Resource::Status::CONFIGURING
-        unless vnode_down
-          @daemon_resources_lock.synchronize {
-            if vnode.host
-              if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
-                raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+          vnode.status = Resource::Status::CONFIGURING
+          unless vnode_down
+            @daemon_resources_lock.synchronize {
+              if vnode.host
+                if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
+                  raise Lib::UnavailableResourceError, "Maximum ifaces number of #{Node::Admin.vifaces_max} reached"
+                else
+                  vnode.host.local_vifaces += vnode.vifaces.length
+                end
               else
-                vnode.host.local_vifaces += vnode.vifaces.length
+                vnode.host = @daemon_resources.get_pnode_available(vnode)
               end
-            else
-              vnode.host = @daemon_resources.get_pnode_available(vnode)
-            end
-            vnode.host.memory.allocate({:mem => vnode.vmem.mem, :swap => vnode.vmem.swap}) if vnode.vmem
-            vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-          }
-        end
-
-        block = Proc.new {
-          @@semvnodestart_pnodelock.synchronize {
-            if not @@semvnodestart_pnode[vnode.host.address.to_s]
-              @@semvnodestart_pnode[vnode.host.address.to_s] = Lib::Semaphore.new(MAX_VNODES_SIMULT_START_ON_PNODE)
-            end
-          }
-          @@semvnodestart_pnode[vnode.host.address.to_s].synchronize {
-            cl = NetAPI::Client.new(vnode.host.address.to_s, 4568)
-            if vnode_down
+              vnode.host.memory.allocate({:mem => vnode.vmem.mem, :swap => vnode.vmem.swap}) if vnode.vmem
+              vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
+            }
+          end
+          vnodes << vnode
+        }
+        vnodesperpnode = Hash.new
+        vnodes.each { |vnode|
+          vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+          vnodesperpnode[vnode.host.address.to_s] << vnode
+        }
+        blocks = []
+        vnodesperpnode.each { |address,vn|
+          blocks << Proc.new {
+            vnodes_to_start = vn.map { |vnode| vnode if (vnode.status == Resource::Status::DOWN) }.compact
+            vnodes_to_create = vn.map { |vnode| vnode if (vnode.status != Resource::Status::DOWN) }.compact
+            cl = NetAPI::Client.new(address, 4568)
+            ret = nil
+            if vnodes_to_start
               # Just restart the node
-              ret = cl.vnode_start(vnode.name,async)
-            else
-              # Create VNetworks on remote PNode
-              vnode.get_vnetworks.each do |vnet|
-                vnetwork_sync(vnet,vnode.host)
-              end
-              desc = TopologyStore::HashWriter.new.visit(vnode)
-
-              # we want the node to be runned
-              desc['status'] = Resource::Status::RUNNING
-              ret = cl.vnode_create(vnode.name,desc)
+              n = vnodes_to_start.map { |vnode| vnode.name }
+              ret = cl.vnodes_start(n, async)
+              vnodes_to_start.each_index { |i|
+                updateobj_vnode(vnodes_to_start[i],ret[i])
+                vnodes_to_start[i].status = Resource::Status::RUNNING
+              }
             end
-            updateobj_vnode(vnode,ret)
-            vnode.status = Resource::Status::RUNNING
+            if vnodes_to_create
+              descs = []
+              # Create VNetworks on remote PNode
+              # TODO: vectorize vnetwork_sync
+              vnodes_to_create.each { |vnode|
+                vnode.get_vnetworks.each do |vnet|
+                  vnetwork_sync(vnet,vnode.host)
+                end
+                desc = TopologyStore::HashWriter.new.visit(vnode)
+                desc['status'] = Resource::Status::RUNNING
+                descs << desc
+              }
+
+              n = vnodes_to_create.map { |vnode| vnode.name }
+              # we want the node to be runned
+              ret = cl.vnodes_create(n,descs)
+              vnodes_to_create.each_index { |i|
+                updateobj_vnode(vnodes_to_create[i],ret[i])
+                vnodes_to_create[i].status = Resource::Status::RUNNING
+              }
+            end
           }
         }
 
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         if async
-          thr = @@threads[:vnode_start][vnode.name] = Thread.new {
-            block.call
+          thr = Thread.new {
+            blocks.each { |block|
+              w.add(block)
+            }
+            w.run
           }
           thr.abort_on_exception = true
         else
-          block.call
+          blocks.each { |block|
+            w.add(block)
+          }
+          w.run
         end
 
-        return vnode
+        return vnodes
       end
 
-      def vnodes_stop(vnodes, async=false)
+      def vnodes_start(names, async=false)
         async = parse_bool(async)
+        return vnode_start(names, async)
+      end
+
+      # Same as vnode_set_status(name,Resource::Status::READY,properties)
+      def vnode_stop(names, async=false)
+        async = parse_bool(async)
+        names = [names] if !names.is_a?(Array)
+        vnodes = names.map { |name| vnode_get(name) }
+
         vnodes.each { |vnode|
           raise Lib::BusyResourceError, vnode.name if vnode.status == Resource::Status::CONFIGURING
           raise Lib::UninitializedResourceError, vnode.name if vnode.status == Resource::Status::INIT
           vnode.status = Resource::Status::CONFIGURING
         }
         block = Proc.new {
-          tids = []
-          hosts = vnodes.collect { |vnode| vnode.host.address }
-          hosts.uniq.each { |address|
-            tids << Thread.new {
+          vnodesperpnode = Hash.new
+          vnodes.each { |vnode|
+            vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+            vnodesperpnode[vnode.host.address.to_s] << vnode
+          }
+          w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+          vnodesperpnode.each { |address,vn|
+            sub_block = Proc.new {
+              n = vn.map { |vnode| vnode.name }
               Distem.client(address, 4568) do |cl|
-                cl.vnodes_stop
-                cl.vnodes_remove
+                cl.vnodes_stop(n,false)
+                cl.vnodes_remove(n)
               end
             }
+            w.add(sub_block)
           }
-          tids.each { |tid| tid.join }
+          w.run
           vnodes.each { |vnode|
             vnode.status = Resource::Status::READY
             vnode.vcpu.detach if vnode.vcpu
@@ -481,7 +537,7 @@ module Distem
           }
         }
         if async
-          thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
+          thr = Thread.new {
             block.call
           }
           thr.abort_on_exception = true
@@ -491,57 +547,49 @@ module Distem
         return vnodes
       end
 
-      # Same as vnode_set_status(name,Resource::Status::READY,properties)
-      def vnode_stop(name, async=false)
+      def vnodes_stop(names, async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
-        raise Lib::BusyResourceError, vnode.name if \
-        vnode.status == Resource::Status::CONFIGURING
-        raise Lib::UninitializedResourceError, vnode.name if \
-        vnode.status == Resource::Status::INIT
-
-        block = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          Distem.client(vnode.host.address, 4568) do |cl|
-            cl.vnode_stop(vnode.name)
-            cl.vnode_remove(vnode.name)
-          end
-          vnode.status = Resource::Status::READY
-          vnode.vcpu.detach if vnode.vcpu
-          vnode.host = nil
-        }
-
-        if async
-          thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
-            block.call
-          }
-          thr.abort_on_exception = true
-        else
-            block.call
-        end
-        
-        return vnode
+        names = @daemon_resources.vnodes if !names
+        return vnode_stop(names,async)
       end
 
       # Same as vnode_set_status(name,Resource::Status::DOWN,properties)
-      def vnode_shutdown(name, async=false)
+      def vnode_shutdown(names, async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
-        raise Lib::BusyResourceError, vnode.name if \
-        vnode.status == Resource::Status::CONFIGURING
-        raise Lib::UninitializedResourceError, vnode.name if \
-        vnode.status == Resource::Status::INIT
+
+        names = [names] if !names.is_a?(Array)
+        vnodes = names.map { |name| vnode_get(name) }
+        vnodes.each { |vnode|
+          raise Lib::BusyResourceError, vnode.name if vnode.status == Resource::Status::CONFIGURING
+          raise Lib::UninitializedResourceError, vnode.name if vnode.status == Resource::Status::INIT
+          vnode.status = Resource::Status::CONFIGURING
+        }
 
         block = Proc.new {
-          vnode.status = Resource::Status::CONFIGURING
-          Distem.client(vnode.host.address, 4568) do |cl|
-            cl.vnode_shutdown(vnode.name)
-          end
+          vnodesperpnode = Hash.new
+          vnodes.each { |vnode|
+            vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+            vnodesperpnode[vnode.host.address.to_s] << vnode
+          }
+          w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+          vnodesperpnode.each { |address,vn|
+            sub_block = Proc.new {
+              n = vn.map { |vnode| vnode.name }
+              Distem.client(address, 4568) do |cl|
+                cl.vnodes_shutdown(n, async)
+              end
+            }
+            w.add(sub_block)
+          }
+          w.run
+        }
+
+        vnodes.each { |vnode|
           vnode.status = Resource::Status::DOWN
         }
 
         if async
-          thr = @@threads[:vnode_stop][vnode.name] = Thread.new {
+          thr = Thread.new {
             block.call
           }
           thr.abort_on_exception = true
@@ -549,7 +597,13 @@ module Distem
           block.call
         end
 
-        return vnode
+        return vnodes
+      end
+
+      def vnodes_shutdown(names, async=false)
+        async = parse_bool(async)
+        names = @daemon_resources.vnodes if !names
+        return vnode_shutdown(names, async)
       end
 
       # Change the mode of a virtual node (normal or gateway)
@@ -583,17 +637,6 @@ module Distem
         return @daemon_resources.vnodes
       end
 
-      # Remove every virtual nodes
-      # ==== Returns
-      # Array of Resource::PNode objects
-      # ==== Exceptions
-      #
-      def vnodes_remove()
-        vnodes = @daemon_resources.vnodes
-        vnodes.each_value { |vnode| vnode_remove(vnode.name) }
-
-        return vnodes
-      end
 
       # Create a new virtual interface on the targeted virtual node (without attaching it to any network -> no ip address)
       # ==== Attributes
@@ -679,7 +722,7 @@ module Distem
            and (!desc['vnetwork'] or desc['vnetwork'].empty?))
 
           vplatform = @daemon_resources
-          
+
           address = ''
           if desc['address'] and !desc['address'].empty?
             begin
@@ -698,7 +741,7 @@ module Distem
               @@mac_id += 1
             }
           else
-            if desc['macaddress'].match /^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/
+            if desc['macaddress'].match(/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/)
               viface.macaddress = desc['macaddress']
             else
               raise Lib::InvalidParameterError, desc['macaddress']
@@ -1244,7 +1287,7 @@ module Distem
         starting_vnodes = []
         if desc['vplatform']['vnodes']
           desc['vplatform']['vnodes'].each do |vnodedesc|
-            ret = vnode_create(vnodedesc['name'], vnodedesc)
+            ret = vnode_create([vnodedesc['name']], vnodedesc).first
             starting_vnodes << ret if \
             vnodedesc['status'] == Resource::Status::RUNNING
           end
@@ -1387,7 +1430,7 @@ module Distem
           }
           tids.each { |tid| tid.join }
         }
-        w = Distem::Lib::Synchronization::SlidingWindow.new(50)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         @daemon_resources.vnodes.each_value {|vnode|
           w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
         }
