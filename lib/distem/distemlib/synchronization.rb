@@ -53,6 +53,9 @@ module Distem
         end
 
         def run
+          @lock.synchronize {
+            @queue = @queue.reverse
+          }
           tids = []
           (1..@size).each {
             tids << Thread.new {
