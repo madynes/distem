@@ -165,12 +165,8 @@ module Distem
       # Stop and Remove every physical resources that should be associated to the virtual node associated with this container (cgroups,lxc,...)
       def remove
         LXCWrapper::Command.destroy(@vnode.name,true)
-        unless @vnode.filesystem.shared
-          if @vnode.filesystem.cow
-            Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
-          else
-            Lib::Shell.run("rm -R #{@vnode.filesystem.path}")
-          end
+        if !@vnode.filesystem.shared && @vnode.filesystem.cow
+          Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
         end
       end
 
