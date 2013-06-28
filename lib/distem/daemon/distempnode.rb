@@ -149,9 +149,10 @@ module Distem
       # ==== Exceptions
       #
       def vnode_create(name,desc,ssh_key={},async=false)
+        async = parse_bool(async)
         begin
-          async = parse_bool(async)
           if name
+            name = name.first
             name = name.gsub(' ','_')
           else
             raise Lib::ArgumentMissingError "name"
