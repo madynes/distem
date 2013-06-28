@@ -149,9 +149,10 @@ module Distem
       # ==== Exceptions
       #
       def vnode_create(name,desc,ssh_key={},async=false)
+        async = parse_bool(async)
         begin
-          async = parse_bool(async)
           if name
+            name = name.first
             name = name.gsub(' ','_')
           else
             raise Lib::ArgumentMissingError "name"
@@ -160,7 +161,7 @@ module Distem
           vnode = Resource::VNode.new(name,ssh_key)
           @node_config.vnode_add(vnode)
           vnode_update(vnode.name,desc,async)
-          return vnode
+          return [vnode]
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
@@ -302,7 +303,7 @@ module Distem
         @node_config.vnode_start(vnode)
         vnode.status = Resource::Status::RUNNING
 
-        return vnode
+        return [vnode]
       end
 
       # Same as vnode_set_status(name,Resource::Status::READY,properties)
