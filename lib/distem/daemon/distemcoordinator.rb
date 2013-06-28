@@ -238,57 +238,62 @@ module Distem
       # Resource::VNode object
       # ==== Exceptions
       #
-      def vnode_create(name,desc,ssh_key={},async=false)
+      def vnode_create(names,desc,ssh_key={},async=false)
         begin
           async = parse_bool(async)
-          if name
-            name = name.gsub(' ','_')
-          else
-            raise Lib::ArgumentMissingError "name"
-          end
           downkeys(desc)
-          vnode = Resource::VNode.new(name,ssh_key)
-          @daemon_resources.add_vnode(vnode)
-          vnode_update(vnode.name,desc,async)
-          return vnode
+          raise Lib::ArgumentMissingError "names" if !names
+          names = names.map { |name| name.gsub(' ','_') }
+          vnodes = []
+          names.each { |name|
+            vnode = Resource::VNode.new(name,ssh_key)
+            @daemon_resources.add_vnode(vnode)
+            vnodes << vnode
+          }
+          vnode_update(names,desc,async)
+          return vnodes
         rescue Lib::AlreadyExistingResourceError
           raise
         rescue Exception
-          destroy(vnode) if vnode
           raise
         end
 
       end
 
       # Update the vnode resource
-      def vnode_update(name,desc,async=false)
+      def vnode_update(names,description,async=false)
         async = parse_bool(async)
-        vnode = vnode_get(name)
-        downkeys(desc)
-        vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
-        (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-        vnode_attach(vnode.name,desc['host']) if desc['host']
-        vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
-        if desc['vcpu']
-          if vnode.vcpu
-            vcpu_update(vnode.name,desc['vcpu'])
-          else
-            vcpu_create(vnode.name,desc['vcpu'])
-          end
-        end
-        if desc['vifaces']
-          desc['vifaces'].each do |ifdesc|
-            if vnode.get_viface_by_name(ifdesc['name'])
-              viface_update(vnode.name,ifdesc['name'],ifdesc)
+        vnodes = []
+        downkeys(description)
+        names.each { |name|
+          desc = Marshal.load(Marshal.dump(description))
+          vnode = vnode_get(name)
+          vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
+          (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
+          vnode_attach(vnode.name,desc['host']) if desc['host']
+          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+          if desc['vcpu']
+            if vnode.vcpu
+              vcpu_update(vnode.name,desc['vcpu'])
             else
-              viface_create(vnode.name,ifdesc['name'],ifdesc)
+              vcpu_create(vnode.name,desc['vcpu'])
             end
           end
-        end
-        vmem_create(vnode.name, desc['vmem']) if desc['vmem']
-        vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
-        vnode_status_update(vnode.name,desc['status'],async) if desc['status']
-        return vnode
+          if desc['vifaces']
+            desc['vifaces'].each do |ifdesc|
+              if vnode.get_viface_by_name(ifdesc['name'])
+                viface_update(vnode.name,ifdesc['name'],ifdesc)
+              else
+                viface_create(vnode.name,ifdesc['name'],ifdesc)
+              end
+            end
+          end
+          vmem_create(vnode.name, desc['vmem']) if desc['vmem']
+          vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
+          vnode_status_update(vnode.name,desc['status'],async) if desc['status']
+          vnodes << vnode
+        }
+        return vnodes
       end
 
       # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
@@ -1244,7 +1249,7 @@ module Distem
         starting_vnodes = []
         if desc['vplatform']['vnodes']
           desc['vplatform']['vnodes'].each do |vnodedesc|
-            ret = vnode_create(vnodedesc['name'], vnodedesc)
+            ret = vnode_create([vnodedesc['name']], vnodedesc).first
             starting_vnodes << ret if \
             vnodedesc['status'] == Resource::Status::RUNNING
           end
@@ -1387,7 +1392,7 @@ module Distem
           }
           tids.each { |tid| tid.join }
         }
-        w = Distem::Lib::Synchronization::SlidingWindow.new(50)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         @daemon_resources.vnodes.each_value {|vnode|
           w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
         }

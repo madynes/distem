@@ -132,7 +132,11 @@ module Distem
       # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_create(name, desc = {}, ssh_key={}, async=false)
-        post_json('/vnodes', { :name => name , :desc => desc, :ssh_key => ssh_key, :async => async })
+        post_json("/vnodes/#{CGI.escape(name)}", { :desc => desc, :ssh_key => ssh_key, :async => async })
+      end
+
+      def vnodes_create(names, desc = {}, ssh_key={}, async=false)
+        post_json('/vnodes', { :names => names , :desc => desc, :ssh_key => ssh_key, :async => async })
       end
 
       # Remove the virtual node
@@ -151,7 +155,17 @@ module Distem
       # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_update(vnodename, desc = {}, async=false)
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'update' })
+      end
+
+      # Update several virtual node descriptions
+      #
+      # @param [Array] names The names of the virtual node
+      # @param [Hash] desc Hash structured as described in {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes}.
+      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
+      # @return [Hash] The virtual nodes description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnodes_update(name, desc = {}, async=false)
+        put('/vnodes', { :name => name, :desc => desc, :async => async, :type => 'update' })
       end
 
       # Retrieve informations about a virtual node
@@ -173,7 +187,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_start(vnodename, async=false)
         desc = { :status => Resource::Status::RUNNING }
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'update' })
       end
 
       # Same as {#vnode_start} but in asynchronious mode
@@ -181,6 +195,27 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_start!(vnodename)
         return vnode_start(vnodename,true)
+      end
+
+      # Start several virtual nodes
+      #
+      # @note A physical node (that have enought physical resources (CPU,...)) will be automatically allocated if there is none set as +host+ at the moment
+      # @note The filesystem archive will be copied on the hosting physical node.
+      # @note A filesystem image *must* have been set (see {#vnode_create} or {#vfilesystem_create}/{#vfilesystem_update}).
+      #
+      # @param [Array] names The names of the virtual nodes
+      # @param [Boolean] async Asynchronious mode, check virtual nodes status to know when node is configured (see {#vnode_info})
+      # @return [Hash] The virtual nodes description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnodes_start(names, async=false)
+        desc = { :status => Resource::Status::RUNNING }
+        put_json('/vnodes', { :names => names , :desc => desc, :async => async, :type => 'update' })
+      end
+
+      # Same as {#vnodes_start} but in asynchronious mode
+      #
+      # @return [Hash] The virtual nodes description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnodes_start!(names)
+        return vnodes_start(names,true)
       end
 
       # Stopping a virtual node, deleting it's data from the hosting physical node.
@@ -191,7 +226,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_stop(vnodename, async=false)
         desc = { :status => Resource::Status::READY }
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'stop' })
       end
 
       # Same as {#vnode_stop} but in asynchronious mode
@@ -203,7 +238,7 @@ module Distem
 
       # Stop every virtal nodes (must not be called directly)
       def vnodes_stop()
-        put_json("/vnodes", {})
+        put_json("/vnodes", { :type => 'stop' })
       end
 
       # Stopping a virtual node, but without deleting its data
@@ -213,7 +248,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_shutdown(vnodename, async=false)
         desc = { :status => Resource::Status::DOWN }
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'update'})
       end
 
       # Set the mode of a virtual node
@@ -222,7 +257,7 @@ module Distem
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_mode(vnodename,gateway=true)
         desc = { :mode => gateway ? Resource::VNode::MODE_GATEWAY : Resource::VNode::MODE_NORMAL }
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc })
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :type => 'update' })
       end
 
       # Remove all vnodes
