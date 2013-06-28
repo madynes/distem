@@ -206,14 +206,32 @@ module Distem
       # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
       # * *ssh_key* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_sshkey Resource Description - SSH Key}.
       # * *async* -- Asynchronious mode, check virtual node status to know when node is configured (see GET /vnodes/:vnode)
+      post '/vnodes/:vnodename/?' do
+        check do
+          desc = {}
+          ssh_key = {}
+          desc = JSON.parse(params['desc']) if params['desc']
+          ssh_key = JSON.parse(params['ssh_key']) if params['ssh_key']
+          @body = @daemon.vnode_create(CGI.unescape(params['vnodename']), desc, ssh_key, params['async']).first
+        end
+
+        return result!
+      end
+
+      # Create several virtual node
+      #
+      # ==== Query parameters:
+      # * *names* -- _mandatory_, _unique_ -- The names of the virtual nodes to create (it will be used in a lot of methods)
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
+      # * *ssh_key* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode_sshkey Resource Description - SSH Key}.
+      # * *async* -- Asynchronious mode, check virtual node status to know when node is configured (see GET /vnodes/:vnode)
       post '/vnodes/?' do
         check do
           desc = {}
           ssh_key = {}
           desc = JSON.parse(params['desc']) if params['desc']
           ssh_key = JSON.parse(params['ssh_key']) if params['ssh_key']
-          @body = @daemon.vnode_create(params['name'],desc,ssh_key,
-            params['async'])
+          @body = @daemon.vnode_create(JSON.parse(params['names']), desc, ssh_key, params['async'])
         end
 
         return result!
@@ -240,16 +258,8 @@ module Distem
       # Remove every virtual nodes
       delete '/vnodes/?' do
         check do
-          @body = @daemon.vnodes_remove()
-        end
-
-        return result!
-      end
-
-      # Stop every virtal nodes (must not be called directly)
-      put '/vnodes/?' do
-        check do
-          @body = @daemon.vnodes_stop()
+          names = params['names'] ? JSON.parse(params['names']) : nil
+          @body = @daemon.vnodes_remove(names)
         end
 
         return result!
@@ -264,16 +274,41 @@ module Distem
         return result!
       end
 
-      # Update the virtual node following a new description
+      # Update or stop the virtual node following a new description
       #
       # ==== Query parameters:
       # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
+      # * *type* -- Type of operation: update or stop
       # * *async* -- Asynchronious mode, check the physical node status to know when the configuration is done (see GET /vnodes/:vnodename)
       put '/vnodes/:vnodename/?' do
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          @body = @daemon.vnode_update(CGI.unescape(params['vnodename']),desc,params['async'])
+          if params['type'] == 'update'
+            @body = @daemon.vnode_update([CGI.unescape(params['vnodename'])],desc,params['async']).first
+          else
+            @body = @daemon.vnode_stop(CGI.unescape(params['vnodename']),params['async'])
+          end
+        end
+
+        return result!
+      end
+
+      # Update or stop the virtual nodes following a new description
+      #
+      # ==== Query parameters:
+      # * *desc* --  JSON Hash structured as described in {file:files/resources_desc.md#vnode Resource Description - VNode}.
+      # * *type* -- Type of operation: update or stop
+      # * *async* -- Asynchronious mode, check the physical node status to know when the configuration is done (see GET /vnodes/:vnodename)
+      put '/vnodes/?' do
+        check do
+          desc = params['desc'] ? JSON.parse(params['desc']) : {}
+          names = params['names'] ? JSON.parse(params['names']) : nil
+          if params['type'] == 'update'
+            @body = @daemon.vnode_update(names,desc,params['async'])
+          else
+            @body = @daemon.vnodes_stop(names,params['async'])
+          end
         end
 
         return result!
