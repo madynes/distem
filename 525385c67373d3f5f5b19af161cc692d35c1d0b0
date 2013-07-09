@@ -1,0 +1,9 @@
+Change-Id: I525385c67373d3f5f5b19af161cc692d35c1d0b0
+Code-Review+2: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Verified+1: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Verified+1: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Submitted-by: Luc Sarzyniec <luc.sarzyniec@inria.fr>
+Submitted-at: Tue, 09 Jul 2013 14:01:04 +0200
+Reviewed-on: https://helpdesk.grid5000.fr/gerrit/1082
+Project: distem
+Branch: refs/heads/master
