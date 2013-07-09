@@ -20,7 +20,8 @@ module Distem
         :pnode_init => {},
         :vnode_stop => {},
       }
-      MAC_PREFIX = "fe:ff:ff"
+      # See https://en.wikipedia.org/wiki/MAC_address#Address_details for allowed addresses
+      MAC_PREFIX = "fe:#{Random.rand(256).to_s(16)}:#{Random.rand(256).to_s(16)}"
       @@mac_id = 0
       @@mac_id_lock = Mutex.new
 
