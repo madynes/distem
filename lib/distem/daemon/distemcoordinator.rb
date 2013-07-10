@@ -1433,17 +1433,13 @@ module Distem
           }
         }
         arp_file = '/tmp/fullarptable'
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         @daemon_resources.pnodes.each_value {|pnode|
-          tids = []
-          tids << Thread.new {
+          block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             cl.set_global_arptable(results, arp_file)
           }
-          tids.each { |tid| tid.join }
-        }
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
-        @daemon_resources.vnodes.each_value {|vnode|
-          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
+          w.add(block)
         }
         w.run
       end

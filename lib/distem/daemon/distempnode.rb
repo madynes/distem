@@ -929,6 +929,12 @@ module Distem
         private_fs.each {|vnode|
           @node_config.set_global_arptable(vnode, data, arp_file)
         } if !private_fs.empty?
+
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        (shared_fs + private_fs).each { |vnode|
+          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
+        }
+        w.run
       end
       protected
 
