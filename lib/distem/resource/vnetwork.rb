@@ -21,7 +21,8 @@ module Distem
       # ==== Attributes
       # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
       # * +name+ The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
-      def initialize(address,name)
+      # * +nb_pnodes* The number of physical nodes
+      def initialize(address,name,nb_pnodes)
         @id = 0
         @name = name
         if address.is_a?(IPAddress)
@@ -38,7 +39,7 @@ module Distem
         @visibility = []
 
         # Address used by the coordinator
-        @alreadyusedaddr = [@address.last.to_s]
+        @alreadyusedaddr = @address.hosts.last(nb_pnodes).map { |address| address.to_s }
 
         @curaddress = @address.first
       end

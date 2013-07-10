@@ -1039,7 +1039,7 @@ module Distem
             vnet.visibility << pnode
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             # Adding VNetwork on the pnode
-            cl.vnetwork_create(vnet.name,vnet.address.to_string)
+            cl.vnetwork_create(vnet.name,vnet.address.to_string,@daemon_resources.pnodes.length)
 
             # Adding VRoutes to the new VNetwork
             vnet.vroutes.values.each do |vroute|
@@ -1071,7 +1071,7 @@ module Distem
       # Resource::VNetwork object
       # ==== Exceptions
       #
-      def vnetwork_create(name,address)
+      def vnetwork_create(name,address,nb_pnodes=nil)
         begin
           if name
             name = name.gsub(' ','_')
@@ -1079,11 +1079,22 @@ module Distem
             name = "vnetwork#{@vnet_id}"
             @vnet_id += 1
           end
-          vnetwork = Resource::VNetwork.new(address,name)
+          vnetwork = Resource::VNetwork.new(address,name,@daemon_resources.pnodes.length)
           @daemon_resources.add_vnetwork(vnetwork)
-          #Add a virtual interface connected on the network
-          Lib::NetTools.set_new_nic(Daemon::Admin.get_vnetwork_addr(vnetwork),
-                                      vnetwork.address.netmask)
+          w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+          pnodes = @daemon_resources.pnodes.values
+          hosts = vnetwork.address.hosts
+          mask = vnetwork.address.netmask
+          #Add a virtual interface connected in the network on every Pnode
+          pnodes.each_index { |i|
+            block = Proc.new {
+              cl = NetAPI::Client.new(pnodes[i].address.to_s, 4568)
+              cl.vnetwork_create_routing_interface(hosts[-(i+1)].to_s, mask)
+            }
+            w.add(block)
+          }
+          w.run
+
           return vnetwork
         rescue Lib::AlreadyExistingResourceError
           raise
@@ -1280,7 +1291,7 @@ module Distem
         # Creating vnetworks
         if desc['vplatform']['vnetworks']
           desc['vplatform']['vnetworks'].each do |vnetdesc|
-            vnetwork_create(vnetdesc['name'],vnetdesc['address'])
+            vnetwork_create(vnetdesc['name'],vnetdesc['address'],nil)
           end
         end
         # Creating the vnodes

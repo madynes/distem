@@ -124,6 +124,7 @@ module Distem
         iface = self.get_default_iface()
         Shell.run("ifconfig #{iface}:#{@@nic_count} #{address} netmask #{netmask}")
         @@nic_count += 1
+        return ["#{address}/#{netmask}"]
       end
 
 
