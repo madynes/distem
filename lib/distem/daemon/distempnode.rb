@@ -764,11 +764,12 @@ module Distem
       # Resource::VNetwork object
       # ==== Exceptions
       #
-      def vnetwork_create(name,address)
+      def vnetwork_create(name,address,nb_pnodes)
         begin
           name = name.gsub(' ','_') if name
-          vnetwork = Resource::VNetwork.new(address,name)
+          vnetwork = Resource::VNetwork.new(address,name,nb_pnodes)
           @node_config.vnetwork_add(vnetwork)
+          ip = IPAddress(address)
           return vnetwork
         rescue Lib::AlreadyExistingResourceError
           raise
@@ -776,6 +777,17 @@ module Distem
           destroy(vnetwork) if vnetwork
           raise
         end
+      end
+
+
+      # Add a routing interface in the bridge in order to allow traffic from Pnode to Vnodes
+      # ==== Attributes
+      # * +address+ the address of the interface
+      # * +netmask+ the netmask of the interface
+      # ==== Returns
+      # Array with the address
+      def vnetwork_create_routing_interface(address,netmask)
+        return Lib::NetTools.set_new_nic(address, netmask)
       end
 
       # Delete the virtual network
@@ -917,6 +929,12 @@ module Distem
         private_fs.each {|vnode|
           @node_config.set_global_arptable(vnode, data, arp_file)
         } if !private_fs.empty?
+
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        (shared_fs + private_fs).each { |vnode|
+          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
+        }
+        w.run
       end
       protected
 

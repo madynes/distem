@@ -469,9 +469,19 @@ module Distem
       #
       # @param [String] name The name of the virtual network (unique)
       # @param [String] address The address (CIDR format: 10.0.8.0/24) the virtual network will work with
+      # @param [Integer] Number of pnodes (should not be used directly)
       # @return [Hash] The virtual network description (see {file:files/resources_desc.md#Virtual_Networks Resource Description - VNetworks})
-      def vnetwork_create(name, address)
-        post_json("/vnetworks", { :name => name, :address => address })
+      def vnetwork_create(name, address, nb_pnodes = nil)
+        desc = { :name => name, :address => address }
+        desc[:nb_pnodes] = nb_pnodes if nb_pnodes
+        post_json('/vnetworks', desc)
+      end
+
+      # Create a routing interface on a PNode (Should not be called directly)
+      # @param [String] address The address of the interface
+      # @param [String] netmask The netmask of the interface
+      def vnetwork_create_routing_interface(address, netmask)
+        put_json('/vnetworks', {:address => address, :netmask => netmask})
       end
 
       # Remove a virtual network, that will disconnect every virtual node connected on it and remove it's virtual routes.
@@ -600,6 +610,9 @@ module Distem
         post_json("/peers_matrix_latencies", params)
       end
 
+      # Create a global /etc/hosts on every Vnodes
+      #
+      # @param [Array] data The whole hostname->ip information. Format is [[host1,ip1],[host2,ip2],...]
       def set_global_etchosts(data = nil)
         params = {}
         params['data'] = data if data
@@ -610,12 +623,16 @@ module Distem
       #
       # @param [String] mem The required amount of RAM
       # @param [String] swap The required amount of swap
-      # @return [Hash] The memory limitation)
+      # @return [Hash] The memory limitation
       def vmem_create(mem, swap)
         desc = { :mem => mem, :swap => swap }
         post_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { :desc => desc })
       end
 
+      # Fill the ARP tables of all the Vnodes
+      #
+      # @param [Array] data The whole ip->mac information. Format is [[mac1,ip1],[mac2,ip2],...]
+      # @param [String] arp_file Destination file
       def set_global_arptable(data = nil, arp_file = nil)
         params = {}
         params['data'] = data if data

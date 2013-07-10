@@ -550,7 +550,21 @@ module Distem
       #
       post '/vnetworks/?' do
         check do
-          @body = @daemon.vnetwork_create(params['name'],params['address'])
+          nb_pnodes = params.has_key?('nb_pnodes') ? params['nb_pnodes'].to_i : nil
+          @body = @daemon.vnetwork_create(params['name'],params['address'],nb_pnodes)
+        end
+
+        return result!
+      end
+
+      # Add a routing interface
+      #
+      # ==== Query parameters
+      # * *address* -- the address of the interface to add in the bridge
+      # * *netmask* -- the netmask of the interface to add in the bridge
+      put '/vnetworks/?' do
+        check do
+          @body = @daemon.vnetwork_create_routing_interface(params['address'],params['netmask'])
         end
 
         return result!
