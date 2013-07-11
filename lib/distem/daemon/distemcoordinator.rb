@@ -21,7 +21,7 @@ module Distem
         :vnode_stop => {},
       }
       # See https://en.wikipedia.org/wiki/MAC_address#Address_details for allowed addresses
-      MAC_PREFIX = "fe:#{Random.rand(256).to_s(16)}:#{Random.rand(256).to_s(16)}"
+      MAC_PREFIX = "fe:#{rand(256).to_s(16)}:#{rand(256).to_s(16)}"
       @@mac_id = 0
       @@mac_id_lock = Mutex.new
 
