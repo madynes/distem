@@ -156,6 +156,12 @@ class ExperimentalTesting < Test::Unit::TestCase
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       end
+    when '100nodes'
+      if cli
+        return false
+      else
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_100nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+      end
     else
       raise "Invalid platform kind"
     end
@@ -208,27 +214,27 @@ class ExperimentalTesting < Test::Unit::TestCase
   #####   Tests start here #####
   ##############################
 
-  def test_A0_setup_ok
+  def test_00_setup_ok
     puts "\n\n**** Running #{this_method} ****"
     assert_not_nil(@@coordinator)
     assert_not_nil(@@pnodes)
   end
 
-  def test_A1_platform_api
+  def test_01_platform_api
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
     }
   end
 
-  def test_A2_platform_cli
+  def test_02_platform_cli
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes, 'cli' => true})
     }
   end
 
-  def test_A3_latency_input
+  def test_03_latency_input
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -236,7 +242,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A4_latency_output
+  def test_04_latency_output
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -244,7 +250,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A5_bandwidth_input
+  def test_05_bandwidth_input
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -252,7 +258,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A6_bandwidth_output
+  def test_06_bandwidth_output
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -260,10 +266,10 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A7_hpcc_gov
+  def test_07_hpcc_gov
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+     launch_vnodes(session, {'pf_kind' => '1node_cpu'})
       [1,4].each { |nb_cpu|
         cpu = "#{nb_cpu}cpu"
         (0..(@@ref['hpcc']['freqs'].length - 1)).each { |i|
@@ -273,7 +279,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     }
   end
 
-  def test_A8_hpcc_hogs
+  def test_08_hpcc_hogs
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
@@ -283,6 +289,37 @@ class ExperimentalTesting < Test::Unit::TestCase
           check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-hpcc.rb')} #{nb_cpu} HOGS #{@@ref['hpcc']['freqs'][i]} #{@@ref['hpcc']['error']} #{@@ref['hpcc']['results'][cpu]['dgemm'][i]} #{@@ref['hpcc']['results'][cpu]['fft'][i]} #{@@ref['hpcc']['results'][cpu]['hpl'][i]}"))
         }
       }
+    }
+ end
+
+  def test_09_vectorized_init_and_connectivity
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      @@pnodes.each { |pnode|
+        session.exec!("scp /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
+      }
+    }
+    @@pnodes.each { |pnode|
+      Net::SSH.start(pnode, USER) { |session|
+        check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-connectivity.rb')}"))
+      }
+    }
+ end
+
+  def test_10_set_peers_latency
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-matrix-latencies.rb')}"))
+    }
+  end
+
+  def test_11_set_arptables
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-arp-tables.rb')}"))
     }
   end
 end
