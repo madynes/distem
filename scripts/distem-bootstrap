@@ -29,7 +29,7 @@ require 'socket'
 require 'etc'
 require 'yaml'
 require 'optparse'
-
+require 'timeout'
 
 def g5k?
   `hostname --fqdn`.chomp =~ /grid5000\.fr$/
@@ -90,6 +90,16 @@ def msg(str, type=nil, quit=false)
     puts str
   end
   exit 1 if quit
+end
+
+def timeout(sec)
+  begin
+    Timeout::timeout(sec) {
+      yield
+    }
+  rescue
+    msg("Timeout reached", MSG_ERROR, true)
+  end
 end
 
 def open_channel(session, group = nil)
@@ -156,7 +166,7 @@ def exec(session, cmd, group = nil, critical = true, showerr = true, showout = f
     end
   end
   channel.wait
-
+  session.loop
   return outs
 end
 
@@ -450,7 +460,7 @@ Net::SSH::Multi.start do |session|
     distempkg = options[:distem_version] ? "#{PKG_NAME}=#{options[:distem_version]}":PKG_NAME
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --allow-unauthenticated #{distempkg}")
   end
-  
+
   msg("Installing debian misc packages",MSG_INFO)
   exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_tmp_dependencies * ' '}") unless pkg_tmp_dependencies.empty?
   exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_utils * ' '}") unless pkg_utils.empty?
@@ -463,8 +473,6 @@ Net::SSH::Multi.start do |session|
     exec(session,"export http_proxy=#{HTTP_PROXY}; gem install #{gempkg}",
          :coord)
   end
-
-  session.loop
 
   if options[:init_pnodes] or ARGV[0]
     launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",nil,false,false)
@@ -485,36 +493,38 @@ Net::SSH::Multi.start do |session|
           tokill.collect!{ |node| nodeobjlist[node] }
         end
       end
-      session.loop
     end
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
-    exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
-         :coord)
-    [ '4567', '4568' ].each { |port|
-      launched = []
-      until launched and !launched.empty?
-        launched = exec(session,"lsof -Pnl -i4 | grep ':#{port} '",:coord,false,false)[coordinator]
-        sleep(0.1)
-      end
+    timeout(60) {
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+           :coord)
+      [ '4567', '4568' ].each { |port|
+        launched = []
+        until launched and !launched.empty?
+          launched = exec(session,"lsof -Pnl -i4 | grep ':#{port} '",:coord,false,false)[coordinator]
+          sleep(0.1)
+        end
+      }
     }
-    session.loop
 
     if options[:init_pnodes]
-      msg("Initializing node #{coordinator}",MSG_INFO)
-      if options[:max_vifaces]
-        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
-      else
-        exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
-      end
-      if nodelist.length > 0
-        msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
+      timeout(120) {
+        msg("Initializing node #{coordinator}",MSG_INFO)
         if options[:max_vifaces]
-          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
+          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
         else
-          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,options[:debug_distem],options[:debug_distem])
+          exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator}",:coord,true,options[:debug_distem],options[:debug_distem])
         end
-      end
+        if nodelist.length > 0
+          msg("Initializing nodes #{nodelist.join(',')}",MSG_INFO)
+          if options[:max_vifaces]
+            exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])
+          else
+            exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{nodelist.join(',')}",:coord,true,options[:debug_distem],options[:debug_distem])
+          end
+        end
+      }
     end
 
   end
