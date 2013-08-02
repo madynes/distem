@@ -330,9 +330,6 @@ end
 
 cl = Distem::NetAPI::Client.new(options['host'],options['port'])
 
-plimit_bandwidth = {}
-plimit_latency = {}
-
 options['f_options'].each { |option|
   case option
   when 'init_pnode'

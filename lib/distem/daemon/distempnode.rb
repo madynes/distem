@@ -769,7 +769,6 @@ module Distem
           name = name.gsub(' ','_') if name
           vnetwork = Resource::VNetwork.new(address,name,nb_pnodes)
           @node_config.vnetwork_add(vnetwork)
-          ip = IPAddress(address)
           return vnetwork
         rescue Lib::AlreadyExistingResourceError
           raise
