@@ -43,6 +43,7 @@ module Distem
       set :show_exceptions, false
       set :raise_errors, true
       set :run, true
+      set :bind, '0.0.0.0'
 
       # @private
       def initialize()
