@@ -11,6 +11,10 @@ module Distem
       IFNAMEMAXSIZE=15
       @@nic_count=1
       @@addr_default=nil
+      @@default_iface = nil
+      @@default_iface_ip = nil
+      @@default_iface_netmask = nil
+      @@default_gw = nil
 
       # Gets the name of the default network interface used for network communications
       # ==== Returns
@@ -22,7 +26,17 @@ module Distem
         else
           return defroute[0].gsub(/.* dev ([^\s]+)( .*)?/, '\1')
         end
-      end 
+      end
+
+      # Get the netmask of an interface
+      # ==== Attributes
+      # * +iface+ The network interface name (String)
+      # ==== Returns
+      # String object
+      def self.get_netmask(iface)
+        cmd = Shell.run("ifconfig #{iface}")
+        return cmd.split(/\n/).grep(/Mask/).first.gsub(/.*Mask:(.*)$/,'\1')
+      end
 
       # Gets the IP address of a specified network interface
       # ==== Attributes
@@ -31,7 +45,7 @@ module Distem
       # String object
       #
       def self.get_iface_addr(iface)
-        cmdret = Shell.run("/sbin/ifconfig #{iface}") 
+        cmdret = Shell.run("/sbin/ifconfig #{iface}")
         # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
         ret=""
         cmdret.each_line { |s| ret=s.split[1].split(":")[1] if s.include?("inet addr") }
@@ -66,18 +80,18 @@ module Distem
         cmdret = Shell.run("/bin/ip route list")
         return cmdret.lines.grep(/^default /).first.gsub(/.* via ([0-9.]+).*/, '\1').chomp
       end
-      
+
       # Set up the default bridge that will be used to attach new network interfaces
       def self.set_bridge
-        iface = self.get_default_iface()
-        cfg = self.get_iface_config(iface)
-
         str = Shell.run("ifconfig")
-
         unless str.include?("#{NAME_BRIDGE}")
           # needs to be done before we break eth0
-          gw = self.get_default_gateway
-          Shell.run("ethtool -G #{self.get_default_iface()} rx 4096 tx 4096 || true")
+          @@default_iface = self.get_default_iface()
+          @@default_iface_ip = self.get_iface_addr(@@default_iface)
+          @@default_iface_netmask = self.get_netmask(@@default_iface)
+          cfg = self.get_iface_config(@@default_iface)
+          @@default_gw = self.get_default_gateway
+          Shell.run("ethtool -G #{@@default_iface} rx 4096 tx 4096 || true")
 
           Shell.run("brctl addbr #{NAME_BRIDGE}")
           Shell.run("brctl setfd #{NAME_BRIDGE} 0")
@@ -85,27 +99,38 @@ module Distem
           Shell.run("/bin/ip addr add dev #{NAME_BRIDGE} #{cfg}")
           Shell.run("/bin/ip link set dev #{NAME_BRIDGE} promisc on")
           Shell.run("/bin/ip link set dev #{NAME_BRIDGE} up")
-          Shell.run("brctl addif #{NAME_BRIDGE} #{iface}")
-          Shell.run("ifconfig #{iface} 0.0.0.0 up")
+          Shell.run("brctl addif #{NAME_BRIDGE} #{@@default_iface}")
+          Shell.run("ifconfig #{@@default_iface} 0.0.0.0 up")
           iface = self.get_default_iface()
           unless iface.empty?
             Shell.run("ip route del default dev #{iface}")
           end
-          Shell.run("ip route add default dev #{NAME_BRIDGE} via #{gw}")
+          Shell.run("ip route add default dev #{NAME_BRIDGE} via #{@@default_gw}")
         end
       end
 
-      # >>> TODO: do unset_bridge 
-      # :nodoc:
+      # Unset the bridge and restore the default interface, if possible
       def self.unset_bridge
+        if (@@default_iface && @@default_iface_ip && @@default_iface_netmask && @@default_gw)
+          cmd = ""
+          Dir.glob("/sys/class/net/#{NAME_BRIDGE}/brif/*").each { |i|
+            cmd += "brctl delif #{NAME_BRIDGE} #{File.basename(i)};"
+          }
+          cmd += "ip link set #{NAME_BRIDGE} down;"
+          cmd += "brctl delbr #{NAME_BRIDGE};"
+          cmd += "ifconfig #{@@default_iface} #{@@default_iface_ip} netmask #{@@default_iface_netmask};"
+          cmd += "route add -net 0.0.0.0 gw #{@@default_gw} dev #{@@default_iface}"
+          Shell.run(cmd)
+        end
+        @@default_iface = @@default_iface_ip = @@default_iface_netmask = @@default_gw = nil
       end
 
       # Set up the IFB module
       def self.set_ifb(nb=64)
         Shell.run("modprobe ifb numifbs=#{nb}")
       end
-      
-      # Set up the ARP cache 
+
+      # Set up the ARP cache
       def self.set_arp_cache()
         Shell.run("sysctl -w net.ipv4.neigh.default.base_reachable_time=86400")
         Shell.run("sysctl -w net.ipv4.neigh.default.gc_stale_time=86400")
@@ -153,7 +178,6 @@ module Distem
         ret = "#{vnode.name}-#{viface.name}-#{viface.id}"
         binf = (ret.size >= IFNAMEMAXSIZE ? ret.size-IFNAMEMAXSIZE : 0)
         ret = ret[binf..ret.size]
-        
       end
 
       # Gets the current MTU of a virtual network interface
@@ -204,7 +228,7 @@ module Distem
             ret = false
           end
         end
-         
+
         return ret
       end
     end
