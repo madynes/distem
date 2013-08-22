@@ -12,19 +12,27 @@ require 'rubygems'
 require 'net/ssh'
 require 'net/ssh/multi'
 
-DISTEMROOT = ARGV[0]
-GIT = (ARGV[1] == 'true')
-CLUSTER = ARGV[2]
-GITREPO = ARGV[3]
+MODE = ARGV[0] #ci or g5k
+DISTEMROOT = ARGV[1]
 
-KADEPLOY_ENVIRONMENT = 'wheezy-x64-nfs'
-IMAGE = 'file:///home/ejeanvoine/distem-fs-wheezy.tar.gz'
 DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
-REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
 USER = `id -nu`.strip
 NET = '10.144.0.0/18'
-MIN_PNODES = 2
+
+if MODE == 'g5k'
+  GIT = (ARGV[2] == 'true')
+  CLUSTER = ARGV[3]
+  GITREPO = ARGV[4]
+  KADEPLOY_ENVIRONMENT = 'wheezy-x64-nfs'
+  IMAGE = 'file:///home/ejeanvoine/distem-fs-wheezy.tar.gz'
+  REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
+  MIN_PNODES = 2
+else
+  IMAGE = 'file:///builds/distem-fs-wheezy.tar.gz'
+  REFFILE = "#{ROOT}/ref_ci.yml"
+end
+
 
 module Kernel
 private
@@ -76,7 +84,7 @@ class CommonTools
   def CommonTools::clean_nodes(pnodes)
     msg("Cleaning #{pnodes.join(',')}")
     Net::SSH::Multi.start { |session|
-      pnodes.each { |pnode|
+      pnodes.uniq.each { |pnode|
         session.use("root@#{pnode}")
       }
       session.exec('rm -rf /tmp/distem')
@@ -95,25 +103,29 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def plateform_init
     @@ref = YAML::load_file(REFFILE)
-    CommonTools::error("This script must be run inside an OAR reservation") if not ENV['OAR_JOB_ID']
-    @@vlan = `kavlan -V -j #{ENV['OAR_JOB_ID']}`.strip
-    CommonTools::error("No VLAN found") if @@vlan == 'no vlan found'
-    oar_nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
-    CommonTools::error("Not enough nodes") if oar_nodes.length < MIN_PNODES
-    system("kavlan -e")
-    @@deployed_nodes = CommonTools::deploy_nodes(oar_nodes, @@vlan, KADEPLOY_ENVIRONMENT)
-    CommonTools::error("Not enough nodes after deployment") if @@deployed_nodes.length < oar_nodes.length
-    nodes = @@deployed_nodes.collect { |node|
-      t = node.split('.')
-      t.shift + "-kavlan-#{@@vlan}." + t.join('.')
-    }
+    if MODE == 'g5k'
+      CommonTools::error("This script must be run inside an OAR reservation") if not ENV['OAR_JOB_ID']
+      @@vlan = `kavlan -V -j #{ENV['OAR_JOB_ID']}`.strip
+      CommonTools::error("No VLAN found") if @@vlan == 'no vlan found'
+      oar_nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
+      CommonTools::error("Not enough nodes") if oar_nodes.length < MIN_PNODES
+      system("kavlan -e")
+      @@deployed_nodes = CommonTools::deploy_nodes(oar_nodes, @@vlan, KADEPLOY_ENVIRONMENT)
+      CommonTools::error("Not enough nodes after deployment") if @@deployed_nodes.length < oar_nodes.length
+      nodes = @@deployed_nodes.collect { |node|
+        t = node.split('.')
+        t.shift + "-kavlan-#{@@vlan}." + t.join('.')
+      }
+    else
+      nodes = [ 'distem-n1','distem-n1' ]
+    end
     @@coordinator = nodes.first
     @@pnodes = nodes
     @@initialized = true
   end
 
   def clean_env
-    CommonTools::reboot_nodes(@@deployed_nodes, @@vlan)
+    CommonTools::reboot_nodes(@@deployed_nodes, @@vlan) if MODE == 'g5k'
     CommonTools::clean_nodes(@@pnodes)
   end
 
@@ -123,17 +135,20 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def install_distem
     f = Tempfile.new("distemnodes")
-    @@pnodes.each { |pnode|
+    @@pnodes.uniq.each { |pnode|
       f.puts(pnode)
     }
     f.close
     distemcmd = ''
-    if GITREPO
-      distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -U #{GITREPO}"
+    if (MODE == 'g5k')
+      if GITREPO
+        distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -U #{GITREPO}"
+      end
+      distemcmd += ' -g' if GIT
     else
       distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
     end
-    distemcmd += ' -g' if GIT
+    distemcmd += ' --max-vifaces 120'
     system(distemcmd)
   end
 
@@ -201,7 +216,7 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def setup
     plateform_init if not @@initialized
-#    clean_env
+    clean_env
     install_distem
   end
 
@@ -238,7 +253,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input #{MODE == 'g5k' ? 3:1}"))
     }
   end
 
@@ -246,7 +261,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output #{MODE == 'g5k' ? 3:1}"))
     }
   end
 
@@ -254,7 +269,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input #{MODE == 'g5k' ? 3:1}"))
     }
   end
 
@@ -262,7 +277,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output #{MODE == 'g5k' ? 3:1}"))
     }
   end
 
@@ -296,11 +311,11 @@ class ExperimentalTesting < Test::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '100nodes'})
-      @@pnodes.each { |pnode|
+      @@pnodes.uniq.each { |pnode|
         session.exec!("scp /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
       }
     }
-    @@pnodes.each { |pnode|
+    @@pnodes.uniq.each { |pnode|
       Net::SSH.start(pnode, USER) { |session|
         check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-connectivity.rb')}"))
       }
