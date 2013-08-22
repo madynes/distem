@@ -6,8 +6,8 @@ require File.join(File.dirname(__FILE__), 'helpers')
 
 ERROR = ARGV[0].to_f / 100
 WAY = ARGV[1]
+REPETS = ARGV[2].to_i
 IPFILE = '/tmp/ip'
-REPETS = 5
 
 puts '<<< Bandwidth test >>>'
 
@@ -20,7 +20,7 @@ def run_exp(band, f, ip)
     sleep 1  # wait 1 second for iperf-server to start
     nums = Stats.new
     REPETS.times { |i|  # repeat the measurement repets time
-      data = `distem --execute vnode=node2,command="iperf -t 5 -y c -c #{ip[0]}"`
+      data = `distem --execute vnode=node2,command="iperf -t 10 -y c -c #{ip[0]}"`
       result = data.split(',').last.to_f / 1e6
       nums.push result
     }

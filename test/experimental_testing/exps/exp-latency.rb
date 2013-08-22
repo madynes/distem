@@ -4,9 +4,9 @@ require 'distem'
 require File.join(File.dirname(__FILE__), 'stats')
 require File.join(File.dirname(__FILE__), 'helpers')
 
-REPETS = 5
 ERROR = ARGV[0].to_f / 100
 WAY = ARGV[1]
+REPETS = ARGV[2].to_i
 IPFILE = '/tmp/ip'
 
 puts '<<< Latency test [ ms ] >>>'
