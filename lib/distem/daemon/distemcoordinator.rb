@@ -405,6 +405,7 @@ module Distem
       def vnode_start(names,async=false)
         async = parse_bool(async)
         vnodes = []
+        vnodes_previous_status = {}
         names.each { |name|
           vnode = vnode_get(name)
           raise Lib::BusyResourceError, vnode.name if \
@@ -412,11 +413,10 @@ module Distem
 
           raise Lib::ResourceError, "#{vnode.name} already running" if \
           vnode.status == Resource::Status::RUNNING
-
-          vnode_down = (vnode.status ==  Resource::Status::DOWN)
+          vnodes_previous_status[name] = vnode.status
 
           vnode.status = Resource::Status::CONFIGURING
-          unless vnode_down
+          if (vnodes_previous_status[name] != Resource::Status::DOWN)
             @daemon_resources_lock.synchronize {
               if vnode.host
                 if ((vnode.host.local_vifaces + vnode.vifaces.length) > Node::Admin.vifaces_max)
@@ -441,8 +441,8 @@ module Distem
         blocks = []
         vnodesperpnode.each { |address,vn|
           blocks << Proc.new {
-            vnodes_to_start = vn.map { |vnode| vnode if (vnode.status == Resource::Status::DOWN) }.compact
-            vnodes_to_create = vn.map { |vnode| vnode if (vnode.status != Resource::Status::DOWN) }.compact
+            vnodes_to_start = vn.map { |vnode| vnode if (vnodes_previous_status[vnode.name] == Resource::Status::DOWN) }.compact
+            vnodes_to_create = vn.map { |vnode| vnode if (vnodes_previous_status[vnode.name] != Resource::Status::DOWN) }.compact
             cl = NetAPI::Client.new(address, 4568)
             ret = nil
             if vnodes_to_start
