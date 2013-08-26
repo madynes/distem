@@ -141,12 +141,11 @@ class ExperimentalTesting < Test::Unit::TestCase
     f.close
     distemcmd = ''
     if (MODE == 'g5k')
-      if GITREPO
-        distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -U #{GITREPO}"
-      end
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
+      distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
     else
-      distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
     end
     distemcmd += ' --max-vifaces 120'
     system(distemcmd)
