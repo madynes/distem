@@ -1,9 +1,9 @@
 require 'rubygems'
 require 'rake/testtask'
-require 'rake/rdoctask'
+require 'rdoc/task'
 require 'rake/packagetask'
 
-DISTEM_VERSION='0.7'
+DISTEM_VERSION='0.8'
 
 begin
   require 'rake/extensiontask'
