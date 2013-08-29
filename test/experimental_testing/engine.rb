@@ -145,7 +145,7 @@ class ExperimentalTesting < Test::Unit::TestCase
       distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
     else
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --ci #{DISTEMROOT}"
     end
     distemcmd += ' --max-vifaces 120'
     system(distemcmd)
