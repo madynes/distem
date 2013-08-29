@@ -14,7 +14,7 @@ Architecture: any
 XB-Ruby-Versions: ${ruby:Versions}
 Depends: ${shlibs:Depends}, ${misc:Depends}, ruby | ruby-interpreter, ruby-net-ssh,
  ruby-ipaddress, ruby-rest-client, ruby-sinatra, ruby-json, lxc, bridge-utils, ruby-json,
- hwloc, cpufrequtils, ethtool, lsof
+ hwloc, cpufrequtils, ethtool, lsof, psmisc
 Description: DISTributed system EMulator
  distem is a distributed systems emulator. When doing research on Cloud, P2P,
  High Performance Computing or Grid systems, it can be used to transform an
