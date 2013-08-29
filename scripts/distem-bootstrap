@@ -50,7 +50,7 @@ if g5k?
   STATS_SERV      = "carol.nancy.grid5000.fr"
 else
   GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
-  GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
+  GERRIT_REPOSITORY = "https://helpdesk.grid5000.fr/gerrit/p/distem"
   STATS_SERV      = ""
 end
 
@@ -189,6 +189,7 @@ options[:git_url]     = GIT_REPOSITORY
 options[:verbose]     = false
 options[:max_vifaces] = nil
 options[:cow] = nil
+options[:ci] = nil
 
 args = ARGV.dup
 
@@ -246,6 +247,10 @@ optparse = OptionParser.new do |opts|
   opts.on( '--btrfs-format <tmp_device>', 'Format the device with btrfs support to allow COW on Vnodes (experimental)' ) do |d|
     options[:cow] = d
   end
+  opts.on( '--ci <path>', 'Path to the distem source directory (used only for CI purpose)' ) do |path|
+   options[:ci] = path
+  end
+
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
   end
@@ -417,17 +422,23 @@ Net::SSH::Multi.start do |session|
     exec(session,"mkdir -p #{TMP_DIR}")
     exec(session,"rm -Rf #{gitdir}",:coord, false, false)
     if options[:git]
-      msg("Retrieving '#{options[:git_url]}' repository on #{coordinator}",MSG_INFO)
-      if g5k?
-        exec(session,"https_proxy=#{HTTP_PROXY} GIT_SSL_NO_VERIFY=1 git clone #{options[:git_url]} #{gitdir}",:coord)
+      if options[:ci] != nil
+        msg("Syncing repository on #{coordinator}",MSG_INFO)
+        puts "rsync -rlut --delete #{options[:ci]}/* root@#{options[:coordinator]}:#{gitdir}"
+        system("rsync -rlut --delete #{options[:ci]}/* root@#{options[:coordinator]}:#{gitdir}")
       else
-        exec(session,"GIT_SSL_NO_VERIFY=1 git clone #{options[:git_url]} #{gitdir}",:coord)
-      end
-      unless options[:git] == :git_last
-        msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
-            MSG_INFO)
-        exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
-             :coord)
+        msg("Retrieving '#{options[:git_url]}' repository on #{coordinator}",MSG_INFO)
+        if g5k?
+          exec(session,"https_proxy=#{HTTP_PROXY} GIT_SSL_NO_VERIFY=1 git clone #{options[:git_url]} #{gitdir}",:coord)
+        else
+          exec(session,"GIT_SSL_NO_VERIFY=1 git clone #{options[:git_url]} #{gitdir}",:coord)
+        end
+        unless options[:git] == :git_last
+          msg("Setting up git repository ref:#{options[:git]} on #{coordinator}",
+              MSG_INFO)
+          exec(session,"git --git-dir=#{gitdir}/.git reset --hard #{options[:git]}",
+               :coord)
+        end
       end
     else # gerrit
       msg("Setting up git repository from gerrit ref:#{options[:gerrit]} on #{coordinator}",
