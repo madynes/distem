@@ -29,6 +29,7 @@ if MODE == 'g5k'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
 else
+  GERRIT_REF = ARGV[2]
   IMAGE = 'file:///builds/distem-fs-wheezy.tar.gz'
   REFFILE = "#{ROOT}/ref_ci.yml"
 end
@@ -145,7 +146,7 @@ class ExperimentalTesting < Test::Unit::TestCase
       distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
     else
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -G #{GERRIT_REF}"
     end
     distemcmd += ' --max-vifaces 120'
     system(distemcmd)

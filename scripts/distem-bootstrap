@@ -50,7 +50,7 @@ if g5k?
   STATS_SERV      = "carol.nancy.grid5000.fr"
 else
   GIT_REPOSITORY  = "git://scm.gforge.inria.fr/distem/distem.git"
-  GERRIT_REPOSITORY = "http://localhost:8081/p/distem" # assuming we have a tunnel...
+  GERRIT_REPOSITORY = "https://helpdesk.grid5000.fr/gerrit/p/distem"
   STATS_SERV      = ""
 end
 
