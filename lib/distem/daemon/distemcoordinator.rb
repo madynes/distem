@@ -3,6 +3,7 @@ require 'socket'
 require 'ipaddress'
 require 'json'
 require 'pp'
+require 'resolv'
 
 module Distem
   module Daemon
@@ -211,6 +212,49 @@ module Distem
       #
       def pnodes_get()
         return @daemon_resources.pnodes
+      end
+
+      # Launch a set of probes on every PNode
+      def pnodes_launch_probes(desc,_)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        @daemon_resources.pnodes.each_value {|pnode|
+          block = Proc.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.pnodes_launch_probes(desc, Time.now.to_f)
+          }
+          w.add(block)
+        }
+        w.run
+      end
+
+      # Stop the probes on every PNode
+      def pnodes_stop_probes()
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        @daemon_resources.pnodes.each_value {|pnode|
+          block = Proc.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.pnodes_stop_probes()
+          }
+          w.add(block)
+        }
+        w.run
+      end
+
+      # Get the data collected bu the probes
+      # ==== Returns
+      # Hash with one entry per probe. Every entry is an Array containing a time series
+      def pnodes_get_probes_data()
+        result = {}
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        @daemon_resources.pnodes.each_value {|pnode|
+          block = Proc.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            result[Resolv.getname(pnode.address)] = cl.pnodes_get_probes_data()
+          }
+          w.add(block)
+        }
+        w.run
+        return result
       end
 
       # Get the description of the cpu of a physical node
