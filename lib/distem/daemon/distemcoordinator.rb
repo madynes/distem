@@ -227,6 +227,20 @@ module Distem
         w.run
       end
 
+
+      # Restart the probes on every PNode
+      def pnodes_restart_probes()
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        @daemon_resources.pnodes.each_value {|pnode|
+          block = Proc.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.pnodes_restart_probes()
+          }
+          w.add(block)
+        }
+        w.run
+      end
+
       # Stop the probes on every PNode
       def pnodes_stop_probes()
         w = Distem::Lib::Synchronization::SlidingWindow.new(100)
@@ -234,6 +248,19 @@ module Distem
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             cl.pnodes_stop_probes()
+          }
+          w.add(block)
+        }
+        w.run
+      end
+
+      # Delete the probes on every PNode
+      def pnodes_delete_probes()
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        @daemon_resources.pnodes.each_value {|pnode|
+          block = Proc.new {
+            cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+            cl.pnodes_delete_probes()
           }
           w.add(block)
         }

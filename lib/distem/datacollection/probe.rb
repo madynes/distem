@@ -23,9 +23,14 @@ module Distem
           while !@finished
             sleep(1 / @frequency)
             val = get_value
-            @data << val if val
+            @data << [(@drift + Time.now.to_f).round(3), val] if val
           end
         }
+      end
+
+      def restart
+        @finished = false
+        run
       end
 
       def stop

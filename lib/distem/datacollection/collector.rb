@@ -3,11 +3,11 @@ require 'thread'
 module Distem
   module DataCollection
     class Collector
-      @indicators = nil
+      @probes = nil
       attr_reader :data
 
       def initialize(ref_time, desc)
-        @indicators = []
+        @probes = []
         @data = {}
         drift = ref_time - Time.now.to_f
         desc.each_pair { |k,params|
@@ -21,16 +21,20 @@ module Distem
           raise Lib::ParameterError unless (params.has_key?('frequency') && (params['frequency'].is_a?(Float) || params['frequency'].is_a?(Fixnum)))
           raise Lib::ParameterError unless (params.has_key?('name') && params['name'].is_a?(String))
           @data[params['name']] = []
-          @indicators << klass.new(drift, @data[params['name']], params)
+          @probes << klass.new(drift, @data[params['name']], params)
         }
       end
 
       def run
-        @indicators.each { |i| i.run }
+        @probes.each { |i| i.run }
       end
 
       def stop
-        @indicators.each { |i| i.stop }
+        @probes.each { |i| i.stop }
+      end
+
+      def restart
+        @probes.each { |i| i.restart }
       end
     end
   end

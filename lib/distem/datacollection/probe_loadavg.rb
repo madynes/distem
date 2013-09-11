@@ -8,9 +8,8 @@ module Distem
       end
 
       def get_value
-        time = Time.now.to_f + @drift
         output = `cat /proc/loadavg`.split(' ')
-        return [time, [output[0].to_f, output[1].to_f, output[2].to_f]]
+        return [output[0].to_f, output[1].to_f, output[2].to_f]
       end
     end
   end

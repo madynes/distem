@@ -124,10 +124,14 @@ module Distem
         end
       end
 
-      # Stop the probes
+      # Stop or restart the probes
       put '/pnodes/probes' do
         check do
-          @daemon.pnodes_stop_probes
+          if params['state'] == 'stop'
+            @daemon.pnodes_stop_probes()
+          else
+            @daemon.pnodes_restart_probes()
+          end
           @body = ""
         end
       end
@@ -138,7 +142,14 @@ module Distem
           @body = @daemon.pnodes_get_probes_data().to_json
         end
         return result!
-        #return [@status,@headers,@body]
+      end
+
+      # Delete the probes
+      delete '/pnodes/probes' do
+        check do
+          @daemon.pnodes_delete_probes()
+          @body = ""
+        end
       end
 
       # Initialize a physical machine (launching daemon, creating cgroups, ...)
