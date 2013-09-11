@@ -48,6 +48,10 @@ module Distem
     class NotImplementedError < DistemError
     end
 
+    # The specified probe does not exist
+    class InvalidProbeError < DistemError
+    end
+
     # An error occured during the execution of a shell command
     class ShellError < DistemError
       attr_reader :cmd, :ret, :err, :hostname

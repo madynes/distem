@@ -110,6 +110,37 @@ module Distem
         end
       end
 
+      # Launch a set of probes on the physical nodes. Physical nodes have to initialized
+      # before doing that
+      #
+      # ==== Query parameters:
+      # * *desc* -- JSON Hash structured as follows: { 'probe1_type' => { 'name' => probe1_name, 'frequency' => freq, ...}}}
+      post '/pnodes/probes' do
+        check do
+          desc = JSON.parse(params['desc'])
+          ref_time = params.has_key?('ref_time') ? params['ref_time'] : nil
+          @daemon.pnodes_launch_probes(desc, ref_time)
+          @body = ""
+        end
+      end
+
+      # Stop the probes
+      put '/pnodes/probes' do
+        check do
+          @daemon.pnodes_stop_probes
+          @body = ""
+        end
+      end
+
+      # Get the data collected from the probes
+      get '/pnodes/probes' do
+        check do
+          @body = @daemon.pnodes_get_probes_data().to_json
+        end
+        return result!
+        #return [@status,@headers,@body]
+      end
+
       # Initialize a physical machine (launching daemon, creating cgroups, ...)
       # This step have to be performed to be able to create virtual nodes on a machine
       #
@@ -124,7 +155,6 @@ module Distem
           target = (params['target'] == "") ? nil : JSON.parse(params['target'])
           @body = @daemon.pnode_create(target,desc,params['async'])
         end
-
         return result!
       end
 
@@ -791,7 +821,6 @@ module Distem
           or @body.is_a?(Array) or @body.is_a?(Hash)
           @body = TopologyStore::HashWriter.new.visit(@body)
         end
-
         if @body.is_a?(Array) or @body.is_a?(Hash)
           tmpbody = @body
           begin
