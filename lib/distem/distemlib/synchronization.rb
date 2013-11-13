@@ -46,6 +46,7 @@ module Distem
           @lock = Mutex.new
           @finished = false
           @size = size
+          @tids = []
         end
 
         def add(t)
@@ -56,9 +57,8 @@ module Distem
           @lock.synchronize {
             @queue = @queue.reverse
           }
-          tids = []
           (1..@size).each {
-            tids << Thread.new {
+            @tids << Thread.new {
               while !@finished do
                 task = nil
                 @lock.synchronize {
@@ -78,7 +78,11 @@ module Distem
               end
             }
           }
-          tids.each { |tid| tid.join }
+          @tids.each { |tid| tid.join }
+        end
+
+        def kill
+          @tids.each { |tid| tid.kill }
         end
       end
     end

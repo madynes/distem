@@ -955,6 +955,37 @@ module Distem
         }
         w.run
       end
+
+
+      def wait_vnodes(opts)
+        port = opts['port']
+        timeout = opts['timeout']
+        vnodes = []
+        if opts['vnodes']
+          vnodes = opts['vnodes'].collect { |vnode| vnode_get(vnode).vifaces[0].address.address.to_s }
+        else
+          @node_config.vplatform.vnodes.each_value { |vnode|
+            vnodes << vnode.vifaces[0].address.address.to_s
+          }
+        end
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        vnodes.each { |ip|
+          p = Proc.new {
+            wait_port(ip, port)
+          }
+          w.add(p)
+        }
+        begin
+          Timeout::timeout(timeout) {
+            w.run
+          }
+        rescue Timeout::Error
+          w.kill
+          return ['false']
+        end
+        return ['true']
+      end
+
       protected
 
 
@@ -1052,6 +1083,29 @@ module Distem
       def destroy(resource)
         @node_config.destroy(resource)
       end
+
+      def port_open?(ip, port)
+        begin
+          s = TCPSocket.new(ip, port)
+          s.close
+          return true
+        rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ETIMEDOUT
+          return false
+        end
+      end
+
+      def wait_port(host, port, timeout = 0)
+        def now()
+          return Time.now.to_f
+        end
+        bound = now() + ((timeout == 0) ? 1000000 : timeout)
+        while now() < bound do
+          return true if port_open?(host, port)
+          sleep(0.5)
+        end
+        return false
+      end
+
     end
   end
 end

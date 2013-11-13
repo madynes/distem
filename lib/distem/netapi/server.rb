@@ -814,6 +814,14 @@ module Distem
         end
       end
 
+      post '/wait_vnodes/?' do
+        check do
+          opts = params.has_key?('opts') ? JSON.parse(params['opts']) : {}
+          @body = @daemon.wait_vnodes(opts)
+        end
+        return result!
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})

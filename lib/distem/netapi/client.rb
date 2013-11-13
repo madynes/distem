@@ -671,6 +671,14 @@ module Distem
         post_json("/global_arptable", params)
       end
 
+      # Wait a set of vnodes (or all) by checking that a given port (22 by default) is open. Should not be used directly after vnode_start! or vnodes_start!
+      #
+      # @param [Hash] Options. Format is {'vnodes' => vnodes, 'timeout' => timeout, 'port' => port }. vnodes can be a single node (String) or several nodes (Array), if not specified, all the vnodes are considered. timeout is an integer value specified in seconds, if not specified the default value is 600 seconds. port is an integer value, if not specified the default value is 22 (SSH port).
+      # @return true if the vnodes are ready or false if the timeout has been reached
+      def wait_vnodes(opts = {})
+        return (post_json('/wait_vnodes', {'opts' => opts}) == ['true'])
+      end
+
       protected
 
       # Check if there was an error in the REST request
@@ -709,17 +717,16 @@ module Distem
       # * +InvalidParameterError+ if given path is not available on the server
       # * +UnavailableResourceError+ if for one reason or another the host is unreachable
       def check_net(route)
-        @@semreq.acquire
-        begin
-          yield
-        rescue RestClient::RequestFailed => e
-          raise Lib::InvalidParameterError, "#{e.to_s} ... #{@serverurl}#{route}"
-        rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
-          RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
-          raise Lib::UnavailableResourceError, @serverurl
-        ensure
-          @@semreq.release
-        end
+        @@semreq.synchronize {
+          begin
+            yield
+          rescue RestClient::RequestFailed => e
+            raise Lib::InvalidParameterError, "#{e.to_s} ... #{@serverurl}#{route}"
+          rescue RestClient::Exception, Errno::ECONNREFUSED, Timeout::Error, \
+            RestClient::RequestTimeout, Errno::ECONNRESET, SocketError
+            raise Lib::UnavailableResourceError, @serverurl
+          end
+        }
       end
 
       # Convert a Ruby structure to something that RestClient can digest
