@@ -146,18 +146,13 @@ module Distem
       # Create a virtual CPU on this virtual node specifying it's virtual core number and their frequencies
       # ==== Attributes
       # * +corenb+ The number of virtual cores this virtual CPU have
-      # * +freq+ The frequency the cores should have (if the number is between 0 and 1 it'll be a percentage of the physical core frequency this virtual core will be associated to, if not precised, set to 100% of the physical core, otherwise it should be the wished frequency in KHz)
+      # * +val+ The speed of the virtual CPU defined by a frequency or a ratio (percentage of the physical core frequency
+      # * +unit+ Define if val is a frequency or a ratio (allowed values are mhz and ratio)
       #
-      def add_vcpu(corenb,freq=nil)
+      def add_vcpu(corenb,val,unit)
         raise Lib::AlreadyExistingResourceError, 'VCPU' if @vcpu
         @vcpu = VCPU.new(self)
-        frequency = 0.0
-        if freq and freq.to_f > 0.0
-          frequency = freq.to_f
-        else
-          frequency = 1
-        end
-        corenb.times { @vcpu.add_vcore(frequency) }
+        corenb.times { @vcpu.add_vcore(val,unit) }
       end
 
       # Removes the virtual CPU associated to this virtual node, detach each virtual core from the physical core it was associated with

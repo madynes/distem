@@ -418,21 +418,23 @@ module Distem
       # Set up a virtual CPU on the virtual node
       #
       # @param [String] vnodename The name of the virtual node
+      # @param [Float] val The frequency defined as a value in MHz or as a ratio (percentage of the physical core frequency).
+      # @param [String] unit Tell if val is a frequency or a ratio (allowed values are mhz and ration)
       # @param [Integer] corenb The number of cores to allocate (need to have enough free ones on the physical node)
-      # @param [Float] frequency The frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
-      def vcpu_create(vnodename, corenb=1, frequency=1.0)
-        desc = { :corenb => corenb, :frequency => frequency }
+      def vcpu_create(vnodename, val, unit='mhz', corenb=1)
+        desc = { :corenb => corenb, :val => val, :unit => unit }
         post_json("/vnodes/#{CGI.escape(vnodename)}/cpu", { :desc => desc })
       end
 
       # Update a virtual CPU on the virtual node
       # @note This setting works on-the-fly (i.e. even if the virtual node is already running)
       # @param [String] vnodename The name of the virtual node
-      # @param [Float] frequency The frequency each node have to be set (need to be lesser or equal than the physical core frequency). If the frequency is included in ]0,1] it'll be interpreted as a percentage of the physical core frequency, otherwise the frequency will be set to the specified number
+      # @param [Float] val The frequency defined as a value in MHz or as a ratio (percentage of the physical core frequency).
+      # @param [String] unit Tell if val is a frequency or a ratio (allowed values are mhz and ration)
       # @return [Hash] The virtual CPU description (see {file:files/resources_desc.md#CPU0 Resource Description - VCPU})
-      def vcpu_update(vnodename, frequency)
-        desc = { :frequency => frequency }
+      def vcpu_update(vnodename, val, unit='mhz')
+        desc = { :val => val, :unit => unit }
         put_json("/vnodes/#{CGI.escape(vnodename)}/cpu", { :desc => desc })
       end
 

@@ -975,27 +975,32 @@ module Distem
           downkeys(desc)
 
           corenb = nil
-          freq = nil
+          val = nil
+          unit = 'mhz'
 
           if desc['vcores']
             raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
+            val = desc['vcores'][0]['frequency']
             corenb = desc['vcores'].size
-            freq = desc['vcores'][0]['frequency'].split[0].to_f || 1.0
           else
+            if desc['val']
+              val = desc['val']
+              unit = desc['unit'] if desc.has_key?('unit')
+            else
+              val = 1
+              unit = 'ratio'
+            end
             corenb = desc['corenb'].to_i || 1
-            freq = desc['frequency'].to_f || 1.0
           end
 
-          freq = freq * 1000 if freq > 1
-
-          vnode.add_vcpu(corenb,freq)
+          vnode.add_vcpu(corenb,val,unit)
 
           vnode.vcpu.attach if vnode.host
 
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
             cl = NetAPI::Client.new(vnode.host.address, 4568)
-            cl.vcpu_update(vnode.name,desc['frequency'])
+            cl.vcpu_update(vnode.name,val,unit)
             vnode.status = Resource::Status::RUNNING
           end
 
@@ -1013,25 +1018,30 @@ module Distem
         begin
           vnode = vnode_get(vnodename)
           raise Lib::UninitializedResourceError, 'vcpu' unless vnode.vcpu
-          
           vcpu = vnode.vcpu
           downkeys(desc)
 
+          val = nil
+          unit = 'mhz'
           if desc['vcores']
             raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
-            freq = desc['vcores'][0]['frequency'].split(0).to_f || 1.0
+            val = desc['vcores'][0]['frequency']
           else
-            freq = desc['frequency'].to_f || 1.0
+            if desc['val']
+              val = desc['val']
+              unit = desc['unit'] if desc.has_key?('unit')
+            else
+              val = 1
+              unit = 'ratio'
+            end
           end
 
-          freq = freq * 1000 if freq > 1
-
-          vcpu.update_vcores(freq)
+          vcpu.update_vcores(val,unit)
 
           if vnode.status == Resource::Status::RUNNING
             vnode.status = Resource::Status::CONFIGURING
             cl = NetAPI::Client.new(vnode.host.address, 4568)
-            cl.vcpu_update(vnode.name,desc['frequency'])
+            cl.vcpu_update(vnode.name,val,unit)
             vnode.status = Resource::Status::RUNNING
           end
 

@@ -50,7 +50,8 @@ options['latency'] = nil
 options['bw'] = nil
 options['direction'] = nil
 options['corenb'] = nil
-options['cpu_speed'] = 1
+options['cpu_speed'] = nil
+options['unit'] = nil
 options['rootfs' ] = nil
 options['vnetsrc' ] = nil
 options['vnetdest' ] = nil
@@ -238,21 +239,21 @@ optparse = OptionParser.new(USAGE) do |opts|
   end
   opts.separator "CPU management:"
   opts.on(
-    '--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=SPEED|unlimited',
-    'Set a virtual CPU on VNODE with NB cores clocked at SPEED percent'
+    '--set-vcpu vnode=VNODE,corenb=NB,cpu_speed=VAL|unlimited,unit=mhz|ratio',
+    'Set a virtual CPU on VNODE with NB cores clocked at SPEED mhz or percent (if not specified, unit is mhz)'
   ) do |str|
     options['f_options'] << 'set_vcpu'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], [])
+    exit 1 if not check_opts('set_vcpu', h, ['vnode','corenb','cpu_speed'], ['unit'])
     options.update(h)
   end
   opts.on(
-    '--config-vcpu vnode=VNODE,cpu_speed=SPEED|unlimited',
-    'Update the clock of the virtual CPU on VNODE'
+    '--config-vcpu vnode=VNODE,cpu_speed=VAL|unlimited,unit=mhz|ratio',
+    'Update the clock of the virtual CPU on VNODE (if not specified, unit is mhz)'
   ) do |str|
     options['f_options'] << 'update_vcpu'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('update_vcpu', h, ['vnode','cpu_speed'], [])
+    exit 1 if not check_opts('update_vcpu', h, ['vnode','cpu_speed'], ['unit'])
     options.update(h)
   end
   opts.separator "Getting some information:"
@@ -439,11 +440,23 @@ options['f_options'].each { |option|
       exit 1
     end
   when 'set_vcpu'
-    speed = (options['cpu_speed'] == 'unlimited') ? 1.0 : options['cpu_speed'].to_f
-    pp cl.vcpu_create(options['vnode'], options['corenb'], speed)
+    if options['cpu_speed'] == 'unlimited'
+      val = 1
+      unit = 'ratio'
+    else
+      val = options['cpu_speed']
+      unit = options['unit'] ? options['unit'] : 'mhz'
+    end
+    pp cl.vcpu_create(options['vnode'], val, unit, options['corenb'])
   when 'update_vcpu'
-    speed = (options['cpu_speed'] == 'unlimited') ? 1.0 : options['cpu_speed'].to_f
-    pp cl.vcpu_update(options['vnode'], speed)
+    if options['cpu_speed'] == 'unlimited'
+      val = 1
+      unit = 'ratio'
+    else
+      val = options['cpu_speed']
+      unit = options['unit'] ? options['unit'] : 'mhz'
+    end
+    pp cl.vcpu_update(options['vnode'], val, unit)
   when 'set_vmem'
     pp cl.vmem_create(options['vmem'], options['mem'], options['swap'])
   when 'get_pnode_info'

@@ -31,7 +31,7 @@ Distem.client { |cl|
   cl.vnode_stop('node1')
   cl.vcpu_remove('node1')
   cl.vnode_update('node1', {'host' => pnode})
-  cl.vcpu_create('node1', nb_cpu, freq)
+  cl.vcpu_create('node1', freq, 'mhz', nb_cpu)
   cl.vnode_start('node1')
   wait_ssh(ip[0])
   cl.vnode_execute('node1','rm -rf /root/hpccoutf.txt')

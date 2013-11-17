@@ -16,11 +16,13 @@ module Distem
 
         # Create a new VCore
         # ==== Attributes
-        # * +freq+ The frequency to set to this VCore. If between 0 and 1, taken as a percentage of the frequency of the future physical Core frequency that will be attached to this virtual core, otherwise the frequency in KHz.
-        #
-        def initialize(freq)
+        # * +val+ Frequency or ration to set ti this VCore. If it is a frequency, it has to be specified in KHz, if it is a ratio, it as to be between 0 and 1 (taken as a percentage of the frequency of the future physical Core frequency that will be attached to this virtual core)
+        # * +unit Tell if val is a frequency or a ratio
+        def initialize(val,unit)
           @pcore = nil
-          @frequency = freq
+          @frequency = nil
+          @val = val
+          @unit = unit
           @id = @@ids
           @@ids += 1
         end
@@ -31,7 +33,7 @@ module Distem
         #
         def attach(pcore)
           @pcore = pcore
-          update(@frequency)
+          update(@val,@unit)
         end
 
         def attached?
@@ -40,19 +42,23 @@ module Distem
 
         # Modify the frequency of this virtual one (to be used after attaching the vcore)
         # ==== Attributes
-        # * +freq+ The new frequemcy
-        def update(freq)
+        # * +val+ The new value (frequency or ratio)
+        # * +unit+ The way val is defined (mhz or ration values are allowed)
+        def update(val,unit)
+          val = val.to_f
           if attached?
-            raise Lib::InvalidParameterError, freq if \
-              freq > @pcore.frequency or freq <= 0
-
-            if freq > 0 and freq <= 1
-              @frequency = (@pcore.frequency * freq).to_i
+            case unit
+            when 'mhz'
+              raise Lib::InvalidParameterError, val if val > @pcore.frequency or val <= 0
+              @frequency = (val * 1000).to_i
+            when 'ratio'
+              @frequency = (@pcore.frequency * val).to_i
             else
-              @frequency = freq.to_i
+              raise Lib::InvalidParameterError, unit
             end
           else
-            @frequency = freq
+            @val = val
+            @unit = unit
           end
         end
       end
@@ -96,10 +102,11 @@ module Distem
 
       # Adds a new virtual core to this virtual CPU
       # ==== Attributes
-      # * +freq+ The frequency to set to this new virtual core
+      # * +val+ The value to set on the virtual core, can be a frequency in mhz or a ratio
+      # * +unit+ Tell if val is a frequency in MHz or if it is a ratio (allowed values are mhz or ratio)
       #
-      def add_vcore(freq)
-        vcore = VCore.new(freq)
+      def add_vcore(val,unit)
+        vcore = VCore.new(val,unit)
         @vcores[vcore.id] = vcore
       end
 
@@ -123,10 +130,11 @@ module Distem
 
       # Update every virtual cores of this virtual CPU
       # ==== Attributes
-      # * +freq+ The new frequency to set on the virtual cores
+      # * +val+ The value to set on the virtual cores, can be a frequency in mhz or a ratio
+      # * +unit+ Tell if the val is a frequency in MHz or if it is a ratio (allowed values are mhz or ratio)
       #
-      def update_vcores(freq)
-        @vcores.each_value { |vcore| vcore.update(freq) }
+      def update_vcores(val,unit)
+        @vcores.each_value { |vcore| vcore.update(val,unit) }
       end
     end
 
