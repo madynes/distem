@@ -62,7 +62,10 @@ module Distem
         #
         def undo(vnode)
           super(vnode)
-          @ext.stop if @ext
+          if @ext
+            @ext.stop
+            @ext = nil
+          end
         end
       end
 
