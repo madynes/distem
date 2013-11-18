@@ -1526,6 +1526,57 @@ module Distem
         w.run
       end
 
+      def wait_vnodes(opts)
+        vnodes = nil
+        timeout = 600
+        port = 22
+        if opts
+          if opts.has_key?('vnodes') && (opts['vnodes'] != nil)
+            vnodes = opts['vnodes'].is_a?(Array) ? opts['vnodes'] : [ opts['vnodes'] ]
+          end
+          if opts.has_key?('timeout') && (opts['timeout'] != nil)
+            timeout = opts['timeout']
+          end
+          if opts.has_key?('port') && (opts['port'] != nil)
+            timeout = opts['port']
+          end
+        end
+
+        vnodesbyhost = nil
+        #group vnodes by pnode
+        if vnodes
+          vnodesbyhost = {}
+          vnodes.each { |name|
+            vnode = vnode_get(name)
+            host = vnode.host.address.to_s
+            vnodesbyhost[host] = [] if !vnodesbyhost.has_key?(host)
+            vnodesbyhost[host] << vnode.name
+          }
+        end
+
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        ret = {}
+        if vnodesbyhost
+          vnodesbyhost.each_pair { |pnodeaddress,vn|
+            block = Proc.new {
+              cl = NetAPI::Client.new(pnodeaddress, 4568)
+              ret[pnodeaddress] = cl.wait_vnodes({'port' => port, 'vnodes' => vn, 'timeout' => timeout})
+            }
+            w.add(block)
+          }
+        else
+          @daemon_resources.pnodes.each_value {|pnode|
+            block = Proc.new {
+              cl = NetAPI::Client.new(pnode.address.to_s, 4568)
+              ret[pnode.address.to_s] = cl.wait_vnodes({'port' => port, 'vnodes' => nil, 'timeout' => timeout})
+            }
+            w.add(block)
+          }
+        end
+        w.run
+        return ret.values.include?(false) ? ['false'] : ['true']
+      end
+
       protected
 
       # Get a new version of the hash with downcase keys
