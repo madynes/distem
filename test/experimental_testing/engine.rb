@@ -147,7 +147,7 @@ class ExperimentalTesting < Test::Unit::TestCase
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
-    distemcmd += ' --max-vifaces 120'
+    distemcmd += ' --max-vifaces 250'
     system(distemcmd)
   end
 
@@ -175,6 +175,12 @@ class ExperimentalTesting < Test::Unit::TestCase
         return false
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_100nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+      end
+    when '200nodes'
+      if cli
+        return false
+      else
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_200nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
       end
     else
       raise "Invalid platform kind"
@@ -334,6 +340,13 @@ class ExperimentalTesting < Test::Unit::TestCase
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '100nodes'})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-arp-tables.rb')}"))
+    }
+  end
+
+  def test_12_wait_vnodes
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '200nodes', 'pnodes' => @@pnodes})
     }
   end
 end
