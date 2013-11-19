@@ -43,7 +43,7 @@ Distem.client { |cl|
                     'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet'}]
                   })
   iplist << res['vifaces'][0]['address'].split('/')[0]
-  cl.vcpu_create('node1', 1, 1)
+  cl.vcpu_create('node1', 1, 'ratio', 1)
   cl.vnode_start('node1')
   sleep(10)
   puts "Checking if the node is up"

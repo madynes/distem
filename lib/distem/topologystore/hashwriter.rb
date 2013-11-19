@@ -138,7 +138,7 @@ module Distem
         return {
           'id' => vcore.id.to_s,
           'pcore' => pcorenum,
-          'frequency' => (vcore.frequency / 1000).to_s,
+          'frequency' => vcore.frequency ? (vcore.frequency / 1000).to_s : '0',
         }
       end
 

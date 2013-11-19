@@ -349,4 +349,17 @@ class ExperimentalTesting < Test::Unit::TestCase
       launch_vnodes(session, {'pf_kind' => '200nodes', 'pnodes' => @@pnodes})
     }
   end
+
+  def test_13_cpu_update
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+      max_freq = @@ref['hpcc']['freqs'].last
+      [1,2,4].each { |nb_cpu|
+        ['HOGS','GOV'].each { |policy|
+          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{nb_cpu} #{policy} #{max_freq}"))
+        }
+      }
+    }
+  end
 end
