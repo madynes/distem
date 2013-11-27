@@ -3,6 +3,7 @@ require 'socket'
 require 'ipaddress'
 require 'json'
 require 'pp'
+require 'tempfile'
 
 module Distem
   module Daemon
@@ -24,6 +25,7 @@ module Distem
         @node_name = Socket::gethostname
         @node_config = Node::ConfigManager.new
         @collector = nil
+        @etchosts_updated = nil
       end
 
 
@@ -82,6 +84,19 @@ module Distem
         pnode.status = Resource::Status::CONFIGURING
         vnetworks_remove()
         pnodes_delete_probes() if @collector
+        if @etchosts_updated
+          vnodes = vnodes_get().values
+          tmp = Tempfile.new("distem_etc_hosts")
+          content = IO.readlines('/etc/hosts').each { |line|
+            if !@etchosts_updated.include?(line)
+              tmp.write(line)
+            end
+          }
+          tmp.close
+          FileUtils.mv(tmp.path, '/etc/hosts')
+          File.chmod(0644, '/etc/hosts')
+          tmp.unlink
+        end
         Lib::FileManager::clean_cache
         Node::Admin.quit_node()
         pnode.status = Resource::Status::READY
@@ -941,6 +956,18 @@ module Distem
         private_fs.each {|vnode|
           @node_config.set_global_etchosts(vnode, data)
         } if !private_fs.empty?
+
+        @etchosts_updated = []
+        File.open('/etc/hosts','a') {|f|
+          f.puts("\n")
+          data.each { |entry|
+            line = "#{entry[1]} #{entry[0]}\n"
+            if !@etchosts_updated.include?(line)
+              @etchosts_updated << line
+              f.write(line)
+            end
+          }
+        }
       end
 
       def set_global_arptable(data, arp_file)
