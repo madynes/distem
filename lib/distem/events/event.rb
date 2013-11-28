@@ -38,8 +38,11 @@ module Distem
             end
 
           elsif @change_type == 'power'
-            cl.vcpu_update(@resource_desc['vnodename'], @event_value)
-
+            if @event_value.to_f > 1
+              cl.vcpu_update(@resource_desc['vnodename'], @event_value, 'mhz')
+            else
+              cl.vcpu_update(@resource_desc['vnodename'], @event_value, 'ratio')
+            end
           elsif (@change_type == 'bandwidth' or @change_type == 'latency')
             # we must get the previous state
             desc = { 'input' => {}, 'output' => {} }
