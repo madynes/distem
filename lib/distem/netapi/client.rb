@@ -502,11 +502,11 @@ module Distem
       #
       # @param [String] name The name of the virtual network (unique)
       # @param [String] address The address (CIDR format: 10.0.8.0/24) the virtual network will work with
-      # @param [Integer] Number of pnodes (should not be used directly)
+      # @param [Hash] options used to store vxlan_id and number of pnodes (should not be used directly)
       # @return [Hash] The virtual network description (see {file:files/resources_desc.md#Virtual_Networks Resource Description - VNetworks})
-      def vnetwork_create(name, address, nb_pnodes = nil)
+      def vnetwork_create(name, address, opts = nil)
         desc = { :name => name, :address => address }
-        desc[:nb_pnodes] = nb_pnodes if nb_pnodes
+        desc[:opts] = opts if opts
         post_json('/vnetworks', desc)
       end
 

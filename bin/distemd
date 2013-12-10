@@ -10,6 +10,7 @@ options = {}
 
 options['f_daemon'] = false
 options['f_verbose'] = false
+options['f_network_mode'] = 'classical'
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -19,6 +20,15 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-d', '--daemon', 'Execute the server as a coordinator' ) do
     options['f_daemon'] = true
   end
+  opts.on('-n', '--network-mode MODE', 'Define the network mode (classical or vxlan)') do |mode|
+    case mode
+    when 'classical'
+    when 'vxlan'
+    else
+      puts 'Invalid network mode'
+    end
+    options['f_network_mode'] = mode
+  end
   opts.on( '--verbose', 'Execute the server in verbose mode' ) do
     options['f_verbose'] = true
   end
@@ -27,26 +37,18 @@ optparse.parse!
 
 str = Distem::Lib::Shell.run('pidof lxc-wait || true')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
+opts = {
+  'verbose' => options['f_verbose'],
+  'network_mode' => options['f_network_mode'],
+}
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"
-  if (options['f_verbose'])
-    tid = []
-    tid << Thread.new {Distem::NetAPI::ServerCoordinatorDebug.run!}
-    sleep(2)
-    tid << Thread.new {Distem::NetAPI::ServerPnodeDebug.run!}
-    tid.each { |t| t.join}
-  else
-    tid = []
-    tid << Thread.new {Distem::NetAPI::ServerCoordinator.run!}
-    sleep(2)
-    tid << Thread.new {Distem::NetAPI::ServerPnode.run!}
-    tid.each { |t| t.join}
-  end
+  tid = []
+  tid << Thread.new {Distem::NetAPI::ServerCoordinator.run!(opts)}
+  sleep(2)
+  tid << Thread.new {Distem::NetAPI::ServerPnode.run!(opts)}
+  tid.each { |t| t.join}
 else
   puts "Starting the server in Pnode mode"
-  if options['f_verbose']
-    Distem::NetAPI::ServerPnodeDebug.run!
-  else
-    Distem::NetAPI::ServerPnode.run!
-  end
+  Distem::NetAPI::ServerPnode.run!(opts)
 end

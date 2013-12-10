@@ -108,6 +108,9 @@ module Distem
       attr_accessor :ifb
       # Special rules that override all the virtual traffic
       attr_accessor :latency_filters
+      # Bridge on with the viface is attached
+      attr_accessor :bridge
+
 
       # Create a new VIface
       # ==== Attributes

@@ -26,6 +26,7 @@ module Distem
         @node_config = Node::ConfigManager.new
         @collector = nil
         @etchosts_updated = nil
+        @set_bridge = nil
       end
 
 
@@ -41,6 +42,7 @@ module Distem
       def pnode_create(target,desc={},async=false)
         raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
         begin
+          @set_bridge = (desc['set_bridge'] == true)
           async = parse_bool(async)
           pnode = @node_config.pnode
           Node::Admin.init_node(pnode,desc)
@@ -98,7 +100,7 @@ module Distem
           tmp.unlink
         end
         Lib::FileManager::clean_cache
-        Node::Admin.quit_node()
+        Node::Admin.quit_node(@set_bridge)
         pnode.status = Resource::Status::READY
         return pnode
       end
@@ -501,9 +503,11 @@ module Distem
           raise Lib::MissingParameterError, "address&macaddress&vnetwork" if \
           ((!desc['address'] or desc['address'].empty?) \
            or (!desc['macaddress'] or desc['macaddress'].empty?) \
-           or (!desc['vnetwork'] or desc['vnetwork'].empty?))
+           or (!desc['vnetwork'] or desc['vnetwork'].empty?) \
+           or (!desc['bridge'] or desc['bridge'].empty?))
           vplatform = @node_config.vplatform
           viface.macaddress = desc['macaddress']
+          viface.bridge = desc['bridge']
           if desc['address'] and !desc['address'].empty?
             begin
               address = IPAddress.parse(desc['address'])
@@ -805,14 +809,19 @@ module Distem
       # ==== Attributes
       # * +name+ the -unique- name of the virtual network (it will be used in a lot of methods)
       # * +address+ the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
+      # * +opts+ options that contains the number of pnodes and the vxlan_id
       # ==== Returns
       # Resource::VNetwork object
       # ==== Exceptions
       #
-      def vnetwork_create(name,address,nb_pnodes)
+      def vnetwork_create(name,address,opts)
         begin
           name = name.gsub(' ','_') if name
-          vnetwork = Resource::VNetwork.new(address,name,nb_pnodes)
+          vnetwork = Resource::VNetwork.new(address,name,opts['nb_pnodes'].to_i,opts['vxlan_id'])
+          if opts['vxlan_id'] > 0
+            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address,vnetwork.address.netmask)
+            #Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.address,vnetwork.address.netmask)
+          end
           @node_config.vnetwork_add(vnetwork)
           return vnetwork
         rescue Lib::AlreadyExistingResourceError
@@ -831,7 +840,8 @@ module Distem
       # ==== Returns
       # Array with the address
       def vnetwork_create_routing_interface(address,netmask)
-        return Lib::NetTools.set_new_nic(address, netmask)
+        Lib::NetTools.set_new_nic(address, netmask)
+        return ["#{address}/#{netmask}"]
       end
 
       # Delete the virtual network
@@ -844,6 +854,9 @@ module Distem
 
         vnetwork.vnodes.each_pair do |vnode,viface|
           viface_detach(vnode.name,viface.name)
+        end
+        if vnetwork.vxlan_id > 0
+          Lib::NetTools.remove_vxlan_interface(vnetwork.vxlan_id)
         end
         @node_config.vnetwork_remove(vnetwork)
         return vnetwork

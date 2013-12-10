@@ -45,7 +45,7 @@ module LXCWrapper # :nodoc: all
 
         vnode.vifaces.each do |viface|
           f.puts "lxc.network.type = veth"
-          f.puts "lxc.network.link = #{Distem::Lib::NetTools::NAME_BRIDGE}"
+          f.puts "lxc.network.link = #{viface.bridge}"
           f.puts "lxc.network.name = #{viface.name}"
           f.puts "lxc.network.flags = up"
           f.puts "lxc.network.hwaddr = #{viface.macaddress}"

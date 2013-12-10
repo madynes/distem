@@ -190,6 +190,7 @@ options[:verbose]     = false
 options[:max_vifaces] = nil
 options[:cow] = nil
 options[:ci] = nil
+options[:network_mode] = 'classical'
 
 args = ARGV.dup
 
@@ -250,7 +251,16 @@ optparse = OptionParser.new do |opts|
   opts.on( '--ci <path>', 'Path to the distem source directory (used only for CI purpose)' ) do |path|
    options[:ci] = path
   end
-
+  opts.on( '-n', '--network-mode <mode>', 'Define the network mode (classical or vxlan)') do |mode|
+    case mode
+    when 'classical'
+    when 'vxlan'
+    else
+      puts 'Invalid network mode'
+      exit 1
+    end
+    options[:network_mode] = mode
+  end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
   end
@@ -507,7 +517,7 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     timeout(60) {
-      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} --network-mode #{options[:network_mode]} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|
         launched = []

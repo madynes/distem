@@ -592,8 +592,8 @@ module Distem
       #
       post '/vnetworks/?' do
         check do
-          nb_pnodes = params.has_key?('nb_pnodes') ? params['nb_pnodes'].to_i : nil
-          @body = @daemon.vnetwork_create(params['name'],params['address'],nb_pnodes)
+          opts = params.has_key?('opts') ? JSON.parse(params['opts']) : nil
+          @body = @daemon.vnetwork_create(params['name'],params['address'],opts)
         end
 
         return result!
@@ -869,8 +869,7 @@ module Distem
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new
-
+        @daemon = Daemon::DistemCoordinator.new(settings.network_mode)
       end
     end
 
@@ -883,13 +882,10 @@ module Distem
       end
     end
 
-    # @private
     class ServerCoordinator < CoordinatorServer
-      set :verbose, false
-
       def initialize
         super()
-        Lib::NetTools.set_bridge()
+#        Lib::NetTools.set_bridge()
       end
 
       def run
@@ -897,37 +893,10 @@ module Distem
       end
     end
 
-    # @private
-    class ServerCoordinatorDebug < CoordinatorServer
-      set :verbose, true
-
-      def initialize
-        super()
-        Lib::NetTools.set_bridge()
-      end
-
-      def run
-        ServerCoordinatorDebug.run!
-      end
-    end
-
-    # @private
     class ServerPnode < PnodeServer
-      set :verbose, false
-
       def run
         ServerPnode.run!
       end
     end
-
-    # @private
-    class ServerPnodeDebug < PnodeServer
-      set :verbose, true
-
-      def run
-        ServerPnodeDebug.run!
-      end
-    end
-
   end
 end

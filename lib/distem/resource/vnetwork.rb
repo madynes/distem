@@ -14,17 +14,21 @@ module Distem
       attr_reader  :vnodes
       # An Hash of the VRoutes associated to this virtual network (key: VRoute.destnet, val: VRoute object)
       attr_reader  :vroutes
-      # An Arrayy of physical nodes this virtual network is visible on
+      # An Array of physical nodes this virtual network is visible on
       attr_accessor :visibility
+      # VXLAN number (used to create bridges and vxlan interfaces on pnodes)
+      attr_accessor :vxlan_id
 
       # Create a new VNetwork
       # ==== Attributes
       # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
       # * +name+ The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
-      # * +nb_pnodes* The number of physical nodes
-      def initialize(address,name,nb_pnodes)
+      # * +nb_pnodes+ The number of physical nodes
+      # * +vxlan_id+ Dedicated id to set up bridge and vxlan interfaces (0 means that vxlan interfaces are not used)
+      def initialize(address,name,nb_pnodes,vxlan_id)
         @id = 0
         @name = name
+        @vxlan_id = vxlan_id
         if address.is_a?(IPAddress)
           @address = address.network.clone
         else

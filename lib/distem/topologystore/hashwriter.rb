@@ -72,6 +72,7 @@ module Distem
           'vnetwork' => (viface.vnetwork ? viface.vnetwork.name : nil),
           'input' => (viface.vinput ? visit(viface.vinput) : nil),
           'output' => (viface.voutput ? visit(viface.voutput) : nil),
+          'bridge' => viface.bridge,
         }
       end
 
@@ -176,6 +177,7 @@ module Distem
           'address' => vnetwork.address.to_string,
           'vnodes' => [],
           'vroutes' => visit(vnetwork.vroutes),
+          'vxlan_id' => vnetwork.vxlan_id.to_i,
         }
         vnetwork.vnodes.each_pair do |vnode,viface|
           ret['vnodes'] << vnode.name if viface

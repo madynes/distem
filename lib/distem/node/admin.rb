@@ -28,7 +28,7 @@ module Distem
         @@vifaces_max = properties['max_vifaces'].to_i if properties['max_vifaces']
         set_cgroups()
         set_pty()
-        Lib::NetTools.set_resource(@@vifaces_max)
+        Lib::NetTools.set_resource(@@vifaces_max,properties['set_bridge'])
         Lib::CPUTools.set_resource(pnode.cpu)
         Lib::MemoryTools.set_resource(pnode.memory)
         Lib::FileSystemTools.set_resource()
@@ -45,9 +45,9 @@ module Distem
 
       # Clean and unset all content set by the system (remove cgroups, bridge, ifb, temporary files, ...)
       # ==== Attributes
-      #
-      def self.quit_node
-        Lib::NetTools.unset_bridge()
+      # * +bridge+ Boolean that specifies if a bridge has been created
+      def self.quit_node(bridge = true)
+        Lib::NetTools.unset_bridge() if bridge
         Lib::NetTools.unset_ifb()
         unset_cgroups()
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exists?(PATH_DISTEMTMP)
