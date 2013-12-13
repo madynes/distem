@@ -31,7 +31,7 @@ module Distem
 
       @@network_mode = nil
 
-      def initialize(network_mode)
+      def initialize(network_mode,root_iface)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
@@ -40,6 +40,7 @@ module Distem
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
         @@network_mode = network_mode
+        @@root_iface = root_iface
       end
 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
@@ -1126,7 +1127,7 @@ module Distem
             vnet.visibility << pnode
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             # Adding VNetwork on the pnode
-            cl.vnetwork_create(vnet.name,vnet.address.to_string,{'nb_pnodes' => @daemon_resources.pnodes.length, 'pnode_index' => @daemon_resources.pnodes.keys.index(pnode.address.to_s), 'vxlan_id' => vnet.vxlan_id.to_i})
+            cl.vnetwork_create(vnet.name,vnet.address.to_string,{'nb_pnodes' => @daemon_resources.pnodes.length, 'pnode_index' => @daemon_resources.pnodes.keys.index(pnode.address.to_s), 'vxlan_id' => vnet.vxlan_id.to_i, 'root_iface' => @@root_iface})
 
             # Adding VRoutes to the new VNetwork
             vnet.vroutes.values.each do |vroute|

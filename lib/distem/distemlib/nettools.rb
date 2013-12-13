@@ -241,13 +241,18 @@ module Distem
       # * +id+ identifier of the VXLAN
       # * +address+ address of the related virtual network
       # * +netmask+ netmask of the related virtual network
+      # * +default_interface+ specify a default interface used to plug the VXLAN interface
       #
-      def self.create_vxlan_interface(id,address,netmask)
-        @@default_iface = self.get_default_iface() if !@@default_iface
+      def self.create_vxlan_interface(id,address,netmask,default_interface=nil)
+        if default_interface
+          root_iface = default_interface
+        else
+          root_iface = @@default_iface = self.get_default_iface() if !@@default_iface
+        end
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         # First, we set up the VXLAN interface
-        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{@@default_iface}")
+        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{root_iface}")
         Shell.run("ip link set up dev #{vxlan_iface}")
         # Then, we create a bridge
         Shell.run("brctl addbr #{bridge}")

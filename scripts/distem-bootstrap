@@ -191,6 +191,7 @@ options[:max_vifaces] = nil
 options[:cow] = nil
 options[:ci] = nil
 options[:network_mode] = 'classical'
+options[:network_interface] = nil
 
 args = ARGV.dup
 
@@ -260,6 +261,9 @@ optparse = OptionParser.new do |opts|
       exit 1
     end
     options[:network_mode] = mode
+  end
+  opts.on( '-i', '--network-interface <iface>', 'Define the root network interface for inter-pnode communication (use only with vxlan network mode)') do |iface|
+    options[:network_interface] = iface
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -517,7 +521,8 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     timeout(60) {
-      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} --network-mode #{options[:network_mode]} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+      root_iface_opt = options[:network_interface] ? "--network-interface #{options[:network_interface]}" : ''
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} --network-mode #{options[:network_mode]} #{root_iface_opt} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|
         launched = []
@@ -529,7 +534,7 @@ Net::SSH::Multi.start do |session|
     }
 
     if options[:init_pnodes]
-      timeout(120) {
+      timeout(180) {
         msg("Initializing node #{coordinator}",MSG_INFO)
         if options[:max_vifaces]
           exec(session,"distem --coordinator host=#{coordinator} --init-pnode #{coordinator} --max-vifaces #{options[:max_vifaces]}",:coord,true,options[:debug_distem],options[:debug_distem])

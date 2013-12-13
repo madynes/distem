@@ -869,7 +869,7 @@ module Distem
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new(settings.network_mode)
+        @daemon = Daemon::DistemCoordinator.new(settings.network_mode, settings.network_interface)
       end
     end
 
@@ -885,7 +885,6 @@ module Distem
     class ServerCoordinator < CoordinatorServer
       def initialize
         super()
-#        Lib::NetTools.set_bridge()
       end
 
       def run

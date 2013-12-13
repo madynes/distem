@@ -20,7 +20,7 @@ module Distem
         :pnode_init => {},
       }
 
-      def initialize
+      def initialize(iface = nil)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @node_config = Node::ConfigManager.new
@@ -819,8 +819,7 @@ module Distem
           name = name.gsub(' ','_') if name
           vnetwork = Resource::VNetwork.new(address,name,opts['nb_pnodes'].to_i,opts['vxlan_id'])
           if opts['vxlan_id'] > 0
-            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address,vnetwork.address.netmask)
-            #Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.address,vnetwork.address.netmask)
+            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address,vnetwork.address.netmask,opts['root_iface'])
           end
           @node_config.vnetwork_add(vnetwork)
           return vnetwork
