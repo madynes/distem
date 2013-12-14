@@ -1555,7 +1555,7 @@ module Distem
             timeout = opts['timeout']
           end
           if opts.has_key?('port') && (opts['port'] != nil)
-            timeout = opts['port']
+            port = opts['port']
           end
         end
 
@@ -1591,6 +1591,7 @@ module Distem
           }
         end
         w.run
+
         return ret.values.include?(false) ? ['false'] : ['true']
       end
 
