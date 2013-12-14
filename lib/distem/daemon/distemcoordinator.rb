@@ -1506,14 +1506,15 @@ module Distem
             end
           end
         }
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         @daemon_resources.pnodes.each_value {|pnode|
-          tids = []
-          tids << Thread.new {
+          block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             cl.set_global_etchosts(results)
           }
-          tids.each { |tid| tid.join }
+          w.add(block)
         }
+        w.run
       end
 
       def vmem_create(vnodename, opts)
