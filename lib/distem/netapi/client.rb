@@ -26,7 +26,7 @@ module Distem
       # @private
       HTTP_STATUS_OK = 200
       # The default timeout
-      TIMEOUT=900
+      TIMEOUT=1800
 
       @@semreq = Lib::Semaphore.new(MAX_SIMULTANEOUS_REQ)
 
