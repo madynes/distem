@@ -1017,19 +1017,25 @@ module Distem
             vnodes << vnode.vifaces[0].address.address.to_s
           }
         end
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
-        vnodes.each { |ip|
-          p = Proc.new {
-            wait_port(ip, port)
-          }
-          w.add(p)
-        }
+        finished = false
         begin
           Timeout::timeout(timeout) {
-            w.run
+            while !finished
+              tmp = []
+              vnodes.each { |ip|
+                if !port_open?(ip,port)
+                  tmp << ip
+                end
+              }
+              if !tmp.empty?
+                vnodes = tmp
+                sleep(10)
+              else
+                finished = true
+              end
+            end
           }
         rescue Timeout::Error
-          w.kill
           return ['false']
         end
         return ['true']
@@ -1142,19 +1148,6 @@ module Distem
           return false
         end
       end
-
-      def wait_port(host, port, timeout = 0)
-        def now()
-          return Time.now.to_f
-        end
-        bound = now() + ((timeout == 0) ? 1000000 : timeout)
-        while now() < bound do
-          return true if port_open?(host, port)
-          sleep(0.5)
-        end
-        return false
-      end
-
     end
   end
 end
