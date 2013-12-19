@@ -156,12 +156,17 @@ module Distem
         return new_iface
       end
 
+      # Disable IPv6
+      def self.disable_ipv6()
+        Shell.run('sysctl -w net.ipv6.conf.all.disable_ipv6=1')
+      end
 
       # Set up a physical machine network properties
       # ==== Attributes
       # * +max_vifaces+ the maximum number of virtual network interfaces that'll be set on this physical machine
       # * +set_bridge+ boolean specifying if a bridge has to be created
       def self.set_resource(max_vifaces,set_bridge)
+        disable_ipv6()
         set_arp_cache()
         set_bridge() if set_bridge
         set_ifb(max_vifaces)
