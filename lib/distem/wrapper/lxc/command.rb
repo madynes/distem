@@ -7,17 +7,52 @@ module LXCWrapper # :nodoc: all
     @@lxc = Mutex.new
 
     def self.create(contname, configfile, wait=true)
-      destroy(contname,wait) if ls().include?(contname)
-      lxc_safe_run("lxc-create -n #{contname} -f #{configfile}",true)
+      @@lxc.synchronize {
+        _destroy(contname,wait)
+        Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
+      }
+    end
+
+    def self.start(contname,daemon=true)
+      debugfile = File.join(Distem::Node::Admin::PATH_DISTEM_LOGS,"lxc","lxc-debug-#{contname}")
+      @@lxc.synchronize {
+        _stop(contname,true) if _status(contname) == Status::RUNNING
+        FileUtils.rm_f(debugfile)
+        Distem::Lib::Shell.run("lxc-start -n #{contname} -o #{debugfile} #{(daemon ? '-d' : '')}",true)
+        _wait(contname,Status::RUNNING)
+      }
+    end
+
+    def self.stop(contname,wait=true)
+      @@lxc.synchronize {
+        _stop(contname,wait)
+      }
+    end
+
+    def self.clean(wait=false)
+      @@lxc.synchronize {
+        _stopall(wait)
+        _destroyall(wait)
+        str = Distem::Lib::Shell.run('pidof lxc-wait || true')
+        Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
+      }
     end
 
     def self.destroy(contname,wait=true)
-      if ls().include?(contname)
+      @@lxc.synchronize {
+        _destroy(contname, wait)
+      }
+    end
+
+    private
+
+    def self._destroy(contname,wait)
+      if _ls().include?(contname)
         cycles = 0
         finished = false
         while !finished
-          out = lxc_safe_run("lxc-destroy -n #{contname};true",true)
-          if out.include?('does not exist') && ls().include?(contname)
+          out = Distem::Lib::Shell.run("lxc-destroy -n #{contname};true",true)
+          if out.include?('does not exist') && _ls().include?(contname)
             cycles += 1
             sleep(LS_WAIT_TIME)
             finished = true if (cycles > MAX_WAIT_CYCLES)
@@ -26,91 +61,54 @@ module LXCWrapper # :nodoc: all
           end
         end
       end
-      wait_disapear(contname) if wait
+      _wait_disapear(contname) if wait
     end
 
-    def self.destroyall(wait=false)
-      ls().each do |cont|
+    def self._destroyall(wait=false)
+      _ls().each do |cont|
         begin
-          destroy(cont,wait)
+          _destroy(cont,wait)
         rescue Distem::Lib::ShellError
         end
       end
     end
 
-    def self.start(contname,daemon=true,wait=true,strict=true)
-      wait_exist(contname) if strict
-      stop(contname,true,strict) if status(contname) == Status::RUNNING
-      lxc_safe_run("lxc-start -n #{contname} #{(daemon ? '-d' : '')}",true)
-      wait(contname,Status::RUNNING) if wait
-    end
-
-    def self.stop(contname,wait=true,strict=true)
-      #wait_exist(contname) if strict
-      unless status(contname) == Status::STOPPED
-        lxc_safe_run("lxc-stop -n #{contname}",true)
-        wait(contname,Status::STOPPED) if wait
+    def self._stop(contname,wait=true)
+      unless _status(contname) == Status::STOPPED
+        Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
+        _wait(contname,Status::STOPPED) if wait
       end
     end
 
-    def self.stopall(wait=false)
-      ls().each do |cont|
+    def self._stopall(wait=false)
+      _ls().each do |cont|
         begin
-          stop(cont,wait,false)
+          _stop(cont,wait)
         rescue Distem::Lib::ShellError
         end
       end
     end
 
-    def self.wait(contname, status)
-      lxc_safe_run("lxc-wait -n #{contname} -s #{status}")
+    def self._wait(contname, status)
+      Distem::Lib::Shell.run("lxc-wait -n #{contname} -s #{status}")
     end
 
-    def self.status(contname)
-      lxc_safe_run("lxc-info -n #{contname}",true).split().last
+    def self._status(contname)
+      Distem::Lib::Shell.run("lxc-info -n #{contname} -s",true).split().last
     end
 
-    def self.ls(cache=true)
-      return lxc_safe_run('lxc-ls',true).split(/\n/)
+    def self._ls(cache=true)
+      return Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
     end
 
-    def self.wait_exist(contname)
+    def self._wait_disapear(contname)
       cycle=0
       begin
         raise Distem::Lib::ResourceNotFoundError.new contname if cycle > MAX_WAIT_CYCLES
-        list = ls()
-        sleep(LS_WAIT_TIME) if cycle > 0
-        cycle += 1
-      end while !(list.include?(contname))
-    end
-
-    def self.wait_disapear(contname)
-      cycle=0
-      begin
-        raise Distem::Lib::ResourceNotFoundError.new contname if cycle > MAX_WAIT_CYCLES
-        list = ls()
+        list = _ls()
         sleep(LS_WAIT_TIME) if cycle > 0
         cycle += 1
       end while list.include?(contname)
     end
-
-    def self.clean(wait=false)
-      stopall(wait)
-      destroyall(wait)
-      str = Distem::Lib::Shell.run('pidof lxc-wait || true')
-      Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
-    end
-    
-    protected
-
-    #LXC is not thread safe, so no simultaneous execution...
-    def self.lxc_safe_run(cmd,simple=false)
-      ret = nil
-      @@lxc.synchronize {
-        ret = Distem::Lib::Shell.run(cmd,simple)
-      }
-      return ret
-    end
   end
-
 end
