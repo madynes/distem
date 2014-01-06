@@ -8,13 +8,6 @@ module Distem
 
     # Class that allow to manage files and archives (extracting, downloading, ...)
     class FileManager
-      # The maximum simultaneous extracting task number
-      MAX_SIMULTANEOUS_EXTRACT = 8
-      # The maximum simultaneous caching archive task number
-      MAX_SIMULTANEOUS_CACHE = 4
-      # The maximum simultaneous hashing task number
-      MAX_SIMULTANEOUS_HASH = 4
-
       # The directory used to store downloaded files
       PATH_DEFAULT_DOWNLOAD='/tmp/distem/downloads/'
       # The directory used to store archive extraction cache
@@ -24,13 +17,7 @@ module Distem
 
       BIN_TAR='tar' # :nodoc:
 
-      @@extractsem = Semaphore.new(MAX_SIMULTANEOUS_EXTRACT) # :nodoc:
-      @@hashsem = Semaphore.new(MAX_SIMULTANEOUS_HASH) # :nodoc:
-      @@extractlock = {} # :nodoc:
-      @@extractlocklock = Mutex.new # :nodoc:
-      @@archivecachelock = Mutex.new # :nodoc:
-      @@hashcachelock = {} # :nodoc:
-      @@hashcachelocklock = Mutex.new # :nodoc:
+      @@lock = Mutex.new # :nodoc:
       @@hashcache = {}
       @@archivecache = [] # :nodoc:
       @@cowcache = [] # :nodoc:
@@ -66,7 +53,7 @@ module Distem
         return ret
       end
 
-      # Extract an archive file in the specified directory using a cache. The cache: if unarchiving two times the same archive, the unarchive cache is used to only have to copy files from the cache (no need to unarchive another time). Only MAX_SIMULTANEOUS_EXTRACT files can be extracted at the same time (semaphore).
+      # Extract an archive file in the specified directory using a cache. The cache: if unarchiving two times the same archive, the unarchive cache is used to only have to copy files from the cache (no need to unarchive another time).
       # ==== Attributes
       # * +archivefile+ The path to the archive file (String)
       # * +targetdir+ The directory to unarchive the file to
@@ -84,23 +71,17 @@ module Distem
         end
 
         filehash = file_hash(archivefile)
-        targethash = targetdir + filehash
-        @@extractlocklock.synchronize {
-          @@extractlock[targethash] = Mutex.new unless @@extractlock[targethash]
-        }
 
-        @@extractlock[targethash].synchronize {
+        @@lock.synchronize {
           cachedir,new = cache_archive(archivefile,filehash,cow)
           exists = File.exists?(targetdir)
           if !exists or override or new
-            @@extractsem.synchronize do
-              Lib::Shell.run("rm -Rf #{targetdir}") if exists
-              if cow
-                Lib::Shell.run("btrfs subvolume snapshot #{cachedir} #{targetdir}")
-              else
-                Lib::Shell.run("mkdir -p #{targetdir}")
-                Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
-              end
+            Lib::Shell.run("rm -Rf #{targetdir}") if exists
+            if cow
+              Lib::Shell.run("btrfs subvolume snapshot #{cachedir} #{targetdir}")
+            else
+              Lib::Shell.run("mkdir -p #{targetdir}")
+              Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
             end
           end
         }
@@ -144,26 +125,24 @@ module Distem
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
         newcache = false
 
-        @@archivecachelock.synchronize {
-          unless @@archivecache.include?(filehash)
-            @@archivecache << filehash
-            if File.exists?(cachedir)
-              Lib::Shell.run("rm -R #{cachedir}")
-            end
-            if cow
-              Lib::Shell.run("btrfs subvolume create #{cachedir}")
-              @@cowcache << cachedir
-            end
-            extract!(archivefile,cachedir)
-            newcache = true
+        unless @@archivecache.include?(filehash)
+          @@archivecache << filehash
+          if File.exists?(cachedir)
+            Lib::Shell.run("rm -R #{cachedir}")
           end
-        }
+          if cow
+            Lib::Shell.run("btrfs subvolume create #{cachedir}")
+            @@cowcache << cachedir
+          end
+          extract!(archivefile,cachedir)
+          newcache = true
+        end
         return cachedir,newcache
       end
 
 
       def self.clean_cache
-        @@archivecachelock.synchronize {
+        @@lock.synchronize {
           @@cowcache.each { |path|
             Lib::Shell.run("btrfs subvolume delete #{path}")
           }
@@ -197,30 +176,26 @@ module Distem
       # String value describing the "unique" hash
       #
       def self.file_hash(filename)
-        @@hashcachelocklock.synchronize {
-          @@hashcachelock[filename] = Mutex.new unless @@hashcachelock[filename]
-        }
-
-        @@hashcachelock[filename].synchronize do
+        ret = nil
+        @@lock.synchronize do
           unless @@hashcache[filename] and @@hashcache[filename][:mtime] == (mtime= File.mtime(filename))
-            @@hashsem.synchronize do
-              unless @@hashcache[filename]
-                mtime = File.mtime(filename) unless mtime
-                sha256 = `sha256sum #{filename}|cut -f1 -d' '`.chomp
-                # if sha256sum is not functional, we use the slower Ruby version
-                if (sha256 == '')
-                  sha256 = Digest::SHA256.file(filename).hexdigest
-                end
-                @@hashcache[filename] = {
-                  :mtime => mtime,
-                  :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{sha256}"
-                }
+            unless @@hashcache[filename]
+              mtime = File.mtime(filename) unless mtime
+              sha256 = `sha256sum #{filename}|cut -f1 -d' '`.chomp
+              # if sha256sum is not functional, we use the slower Ruby version
+              if (sha256 == '')
+                sha256 = Digest::SHA256.file(filename).hexdigest
               end
+              @@hashcache[filename] = {
+                :mtime => mtime,
+                :hash => "#{File.basename(filename)}-#{mtime.to_i.to_s}-#{File.stat(filename).size.to_s}-#{sha256}"
+              }
             end
           end
+          ret = @@hashcache[filename][:hash]
         end
 
-        return @@hashcache[filename][:hash]
+        return ret
       end
     end
 
