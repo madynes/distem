@@ -135,6 +135,8 @@ module Distem
           baseiface = iface
           action = nil
           direction = nil
+          bwlim = vtraffic.get_property(Resource::Bandwidth.name)
+          latlim = vtraffic.get_property(Resource::Latency.name)
           case vtraffic.direction
           when Resource::VIface::VTraffic::Direction::INPUT
             if !(limited_bw_input || limited_lat_input)
@@ -143,7 +145,8 @@ module Distem
             end
             direction = 'input'
           when Resource::VIface::VTraffic::Direction::OUTPUT
-            if !(limited_bw_output || limited_lat_output)
+            if !(limited_bw_output || limited_lat_output) &&
+                ((bwlim && bwlim.rate) || (latlim && latlim.delay))
               tcroot = TCWrapper::QdiscIngress.new(iface)
               Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
               vtraffic.viface.ifb = @@ifballocator.get_ifb if vtraffic.viface.ifb.nil?
@@ -157,7 +160,6 @@ module Distem
 
           primroot = nil
           bandwidth = nil
-          bwlim = vtraffic.get_property(Resource::Bandwidth.name)
           if bwlim && bwlim.rate
             existing_root = nil
             if eval("limited_bw_#{direction}")
@@ -195,7 +197,6 @@ module Distem
             Lib::Shell.run(tmproot.get_cmd(action))
           end
 
-          latlim = vtraffic.get_property(Resource::Latency.name)
           if latlim && latlim.delay
             existing_root = nil
             if eval("limited_lat_#{direction}")
