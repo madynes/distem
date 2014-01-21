@@ -992,7 +992,6 @@ module Distem
             private_fs << vnode
           end
         }
-        arp_file = '/tmp/fullarptable'
         @node_config.set_global_arptable(shared_fs.first, data, arp_file) if !shared_fs.empty?
         private_fs.each {|vnode|
           @node_config.set_global_arptable(vnode, data, arp_file)
@@ -1000,11 +999,10 @@ module Distem
 
         w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         (shared_fs + private_fs).each { |vnode|
-          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file}\"")
+          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file} 2>/dev/null\"")
         }
         w.run
       end
-
 
       def wait_vnodes(opts)
         port = opts['port']
