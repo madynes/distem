@@ -308,6 +308,42 @@ module Distem
         put_json("/vnodes", { :names => names, :desc => desc, :async => async, :type => 'update' })
       end
 
+      # Freeze a virtual node, but without deleting its data
+      #
+      # @param [String] vnodename The name of the virtual node
+      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
+      # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnode_freeze(vnodename, async=false)
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :async => async, :type => 'freeze'})
+      end
+
+      # Freeze some virtual nodes
+      #
+      # @param [Array] names The names of the virtual nodes
+      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
+      # @return [Array] The virtual node descriptions (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnodes_freeze(names = nil, async=false)
+        put_json("/vnodes", { :names => names, :async => async, :type => 'freeze' })
+      end
+
+      # Unfreeze a virtual node, but without deleting its data
+      #
+      # @param [String] vnodename The name of the virtual node
+      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
+      # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnode_unfreeze(vnodename, async=false)
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :async => async, :type => 'unfreeze'})
+      end
+
+      # Unfreeze some virtual nodes
+      #
+      # @param [Array] names The names of the virtual nodes
+      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
+      # @return [Array] The virtual node descriptions (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
+      def vnodes_unfreeze(names = nil, async=false)
+        put_json("/vnodes", { :names => names, :async => async, :type => 'unfreeze' })
+      end
+
       # Set the mode of a virtual node
       # @param [String] vnodename The name of the virtual node
       # @param [Boolean] gateway Gateway mode: add the ability to forward traffic

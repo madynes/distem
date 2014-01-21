@@ -124,6 +124,18 @@ module Distem
         end
       end
 
+      def vnode_freeze(vnode)
+        if @containers[vnode.name]
+          @containers[vnode.name].freeze
+        end
+      end
+
+      def vnode_unfreeze(vnode)
+        if @containers[vnode.name]
+          @containers[vnode.name].unfreeze
+        end
+      end
+
       # Remove a virtual network interface (deprecated)
       # ==== Attributes
       # * +viface+ The VIface object

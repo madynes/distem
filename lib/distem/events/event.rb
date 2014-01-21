@@ -15,7 +15,7 @@ module Distem
         raise "Resource power change must be applied on a vcpu,not a #{@resource_desc['type']}" if @change_type == 'power' and @resource_desc['type'] != 'vcpu'
         raise "Bandwith or latency power change must be applied on a viface,not a #{@resource_desc['type']}" if (@change_type == 'bandwith' or  @change_type == 'latency') and @resource_desc['type'] != 'viface'
         raise "Churn cannot be applied on a vcpu" if (@change_type == 'churn' and @resource_desc['type'] == 'vcpu')
-        raise "A churn event must take an 'up' or 'down' value" if (@change_type == 'churn' and @event_value != 'up' and @event_value != 'down')
+        raise "A churn event must take an 'up' or 'down' value" if (@change_type == 'churn' and @event_value != 'up' and @event_value != 'down' and @event_value != 'freeze' and @event_value != 'unfreeze')
         raise "The direction of the viface must be 'input' or 'output'" if @resource_desc['viface_direction'] and @resource_desc['viface_direction'] != 'output' and @resource_desc['viface_direction'] != 'input'
 
       end
@@ -28,10 +28,15 @@ module Distem
 
           if @change_type == 'churn'
             if @resource_desc['type'] == 'vnode'
-              if @event_value == 'up'
+              case @event_value
+              when 'up'
                 cl.vnode_start(@resource_desc['vnodename'])
-              else
+              when 'down'
                 cl.vnode_shutdown(@resource_desc['vnodename'])
+              when 'freeze'
+                cl.vnode_freeze(@resource_desc['vnodename'])
+              when 'unfreeze'
+                cl.vnode_unfreeze(@resource_desc['vnodename'])
               end
             else
               raise "Not implemented (yet?) : #{@change_type} on #{@resource_desc['type']}"

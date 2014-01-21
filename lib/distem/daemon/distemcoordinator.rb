@@ -662,10 +662,9 @@ module Distem
             w.add(sub_block)
           }
           w.run
-        }
-
-        vnodes.each { |vnode|
-          vnode.status = Resource::Status::DOWN
+          vnodes.each { |vnode|
+            vnode.status = Resource::Status::DOWN
+          }
         }
 
         if async
@@ -684,6 +683,95 @@ module Distem
         async = parse_bool(async)
         names = @daemon_resources.vnodes if !names
         return vnode_shutdown(names, async)
+      end
+
+      def vnodes_freeze(names, async=false)
+        async = parse_bool(async)
+
+        vnodes = names.map { |name| vnode_get(name) }
+        vnodes.each { |vnode|
+          raise Lib::BusyResourceError, vnode.name if vnode.status == Resource::Status::CONFIGURING
+          raise Lib::UninitializedResourceError, vnode.name if vnode.status == Resource::Status::INIT
+          vnode.status = Resource::Status::CONFIGURING
+        }
+
+        block = Proc.new {
+          vnodesperpnode = Hash.new
+          vnodes.each { |vnode|
+            vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+            vnodesperpnode[vnode.host.address.to_s] << vnode
+          }
+          w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
+          vnodesperpnode.each { |address,vn|
+            sub_block = Proc.new {
+              n = vn.map { |vnode| vnode.name }
+              Distem.client(address, 4568) do |cl|
+                cl.vnodes_freeze(n, async)
+              end
+            }
+            w.add(sub_block)
+          }
+          w.run
+
+          vnodes.each { |vnode|
+            vnode.status = Resource::Status::FROZEN
+          }
+        }
+
+        if async
+          thr = Thread.new {
+            block.call
+          }
+          thr.abort_on_exception = true
+        else
+          block.call
+        end
+
+        return vnodes
+      end
+
+      def vnodes_unfreeze(names, async=false)
+        async = parse_bool(async)
+
+        vnodes = names.map { |name| vnode_get(name) }
+        vnodes.each { |vnode|
+          raise Lib::BusyResourceError, vnode.name if vnode.status != Resource::Status::FROZEN
+          vnode.status = Resource::Status::CONFIGURING
+        }
+
+        block = Proc.new {
+          vnodesperpnode = Hash.new
+          vnodes.each { |vnode|
+            vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+            vnodesperpnode[vnode.host.address.to_s] << vnode
+          }
+          w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
+          vnodesperpnode.each { |address,vn|
+            sub_block = Proc.new {
+              n = vn.map { |vnode| vnode.name }
+              Distem.client(address, 4568) do |cl|
+                cl.vnodes_unfreeze(n, async)
+              end
+            }
+            w.add(sub_block)
+          }
+          w.run
+
+          vnodes.each { |vnode|
+            vnode.status = Resource::Status::RUNNING
+          }
+        }
+
+        if async
+          thr = Thread.new {
+            block.call
+          }
+          thr.abort_on_exception = true
+        else
+          block.call
+        end
+
+        return vnodes
       end
 
       # Change the mode of a virtual node (normal or gateway)

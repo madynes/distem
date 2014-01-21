@@ -326,10 +326,17 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          if params['type'] == 'update'
+          case params['type']
+          when 'update'
             @body = @daemon.vnode_update(CGI.unescape(params['vnodename']),desc,params['async']).first
-          else
+          when 'stop'
             @body = @daemon.vnode_stop(CGI.unescape(params['vnodename']),params['async'])
+          when 'freeze'
+            @body = @daemon.vnodes_freeze([CGI.unescape(params['vnodename'])],params['async'])
+          when 'unfreeze'
+            @body = @daemon.vnodes_unfreeze([CGI.unescape(params['vnodename'])],params['async'])
+          else
+            raise Lib::InvalidParameterError, params['type']
           end
         end
 
@@ -346,10 +353,17 @@ module Distem
         check do
           desc = params['desc'] ? JSON.parse(params['desc']) : {}
           names = params['names'] ? JSON.parse(params['names']) : nil
-          if params['type'] == 'update'
+          case params['type']
+          when 'update'
             @body = @daemon.vnode_update(names,desc,params['async'])
-          else
+          when 'stop'
             @body = @daemon.vnodes_stop(names,params['async'])
+          when 'freeze'
+            @body = @daemon.vnodes_freeze(names,params['async'])
+          when 'unfreeze'
+            @body = @daemon.vnodes_unfreeze(names,params['async'])
+          else
+            raise Lib::InvalidParameterError, params['type']
           end
         end
 

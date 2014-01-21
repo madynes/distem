@@ -23,6 +23,18 @@ module LXCWrapper # :nodoc: all
       }
     end
 
+    def self.freeze(contname)
+      @@lxc.synchronize {
+        _freeze(contname)
+      }
+    end
+
+    def self.unfreeze(contname)
+      @@lxc.synchronize {
+        _unfreeze(contname)
+      }
+    end
+
     def self.stop(contname,wait=true)
       @@lxc.synchronize {
         _stop(contname,wait)
@@ -78,6 +90,16 @@ module LXCWrapper # :nodoc: all
         Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
         _wait(contname,Status::STOPPED) if wait
       end
+    end
+
+    def self._freeze(contname)
+      Distem::Lib::Shell.run("lxc-freeze -n #{contname}",true)
+      _wait(contname,Status::FROZEN)
+    end
+
+    def self._unfreeze(contname)
+      Distem::Lib::Shell.run("lxc-unfreeze -n #{contname}",true)
+      _wait(contname,Status::RUNNING)
     end
 
     def self._stopall(wait=false)

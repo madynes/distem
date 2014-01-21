@@ -178,6 +178,14 @@ module Distem
         remove()
       end
 
+      def freeze
+        LXCWrapper::Command.freeze(@vnode.name)
+      end
+
+      def unfreeze
+        LXCWrapper::Command.unfreeze(@vnode.name)
+      end
+
       # Update and reconfigure a virtual node (if the was some changes in the virtual resources description)
       def reconfigure
           @cpuforge.apply

@@ -393,6 +393,35 @@ module Distem
         return vnode
       end
 
+      def vnodes_freeze(names, async)
+        vnodes = []
+        names.each { |name|
+          vnode = vnode_get(name)
+          raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
+          raise Lib::BusyResourceError, vnode.name if vnode.status == Resource::Status::CONFIGURING
+          raise Lib::UninitializedResourceError, vnode.name if vnode.status == Resource::Status::INIT
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_freeze(vnode)
+          vnode.status = Resource::Status::FROZEN
+          vnodes << vnode
+        }
+        return vnodes
+      end
+
+      def vnodes_unfreeze(names, async)
+        vnodes = []
+        names.each { |name|
+          vnode = vnode_get(name)
+          raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
+          raise Lib::BusyResourceError, vnode.name if vnode.status != Resource::Status::FROZEN
+          vnode.status = Resource::Status::CONFIGURING
+          @node_config.vnode_unfreeze(vnode)
+          vnode.status = Resource::Status::RUNNING
+          vnodes << vnode
+        }
+        return vnodes
+      end
+
       # Change the mode of a virtual node (normal or gateway)
       # ==== Attributes
       # * +mode+ "Normal" or "Gateway"
