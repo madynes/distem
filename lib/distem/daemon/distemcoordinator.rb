@@ -31,6 +31,8 @@ module Distem
 
       @@network_mode = nil
 
+      WINDOW_SIZE = 250
+
       def initialize(network_mode,root_iface)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
@@ -222,7 +224,7 @@ module Distem
 
       # Launch a set of probes on every PNode
       def pnodes_launch_probes(desc,_)
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -236,7 +238,7 @@ module Distem
 
       # Restart the probes on every PNode
       def pnodes_restart_probes()
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -249,7 +251,7 @@ module Distem
 
       # Stop the probes on every PNode
       def pnodes_stop_probes()
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -262,7 +264,7 @@ module Distem
 
       # Delete the probes on every PNode
       def pnodes_delete_probes()
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -278,7 +280,7 @@ module Distem
       # Hash with one entry per probe. Every entry is an Array containing a time series
       def pnodes_get_probes_data()
         result = {}
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -397,7 +399,7 @@ module Distem
           vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
           vnodesperpnode[vnode.host.address.to_s] << vnode
         }
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         vnodesperpnode.each { |address,vn|
           block = Proc.new {
             cl = NetAPI::Client.new(address, 4568)
@@ -555,7 +557,7 @@ module Distem
           }
         }
 
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         if async
           thr = Thread.new {
             blocks.each { |block|
@@ -596,7 +598,7 @@ module Distem
             vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
             vnodesperpnode[vnode.host.address.to_s] << vnode
           }
-          w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+          w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
           vnodesperpnode.each { |address,vn|
             sub_block = Proc.new {
               n = vn.map { |vnode| vnode.name }
@@ -649,7 +651,7 @@ module Distem
             vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
             vnodesperpnode[vnode.host.address.to_s] << vnode
           }
-          w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+          w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
           vnodesperpnode.each { |address,vn|
             sub_block = Proc.new {
               n = vn.map { |vnode| vnode.name }
@@ -1182,7 +1184,7 @@ module Distem
             hosts = vnetwork.address.hosts
             mask = vnetwork.address.netmask
             #Add a virtual interface connected in the network on every Pnode
-            w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+            w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
             pnodes.each_index { |i|
               block = Proc.new {
                 cl = NetAPI::Client.new(pnodes[i].address.to_s, 4568)
@@ -1506,7 +1508,7 @@ module Distem
             end
           end
         }
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -1533,7 +1535,7 @@ module Distem
           }
         }
         arp_file = '/tmp/fullarptable'
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -1572,7 +1574,7 @@ module Distem
           }
         end
 
-        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         ret = {}
         if vnodesbyhost
           vnodesbyhost.each_pair { |pnodeaddress,vn|
