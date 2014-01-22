@@ -21,7 +21,6 @@ module Distem
       end
 
       def trigger(event_list = nil, date = 0)
-
         # All that stuff will be launch in a thread
         runblock = Proc.new {
           cl = NetAPI::Client.new
@@ -54,24 +53,12 @@ module Distem
             vnode_desc = cl.vnode_info(@resource_desc['vnodename'])
             vnode_desc['vifaces'].each do |viface_desc|
               if viface_desc['name'] == @resource_desc['vifacename']
-                if viface_desc['output'] and not(@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='input')
-                  viface_desc['output']['properties'].each do |property|
-                    if property['type'] == 'Bandwidth'
-                      desc['output']['bandwidth'] = { 'rate' => property['rate'] }
-                    elsif property['type'] == 'Latency'
-                      desc['output']['latency'] = { 'delay' => property['delay'] }
-                    end
-                  end
+                if viface_desc['output'] and @resource_desc['viface_direction'] and @resource_desc['viface_direction']=='output'
+                  desc['output'] = viface_desc['output']
                 end
 
-                if viface_desc['input'] and not(@resource_desc['viface_direction'] and @resource_desc['viface_direction']=='output')
-                  viface_desc['input']['properties'].each do |property|
-                    if property['type'] == 'Bandwidth'
-                      desc['input']['bandwidth'] = { 'rate' => property['rate'] }
-                    elsif property['type'] == 'Latency'
-                      desc['input']['latency'] = { 'delay' => property['delay'] }
-                    end
-                  end
+                if viface_desc['input'] and @resource_desc['viface_direction'] and @resource_desc['viface_direction']=='input'
+                  desc['input'] = viface_desc['input']
                 end
               end
             end
@@ -105,10 +92,10 @@ module Distem
             raise "Not implemented : #{@change_type}"
           end
         }
-
-        Thread.new {
+        tid = Thread.new {
           runblock.call
         }
+        tid.abort_on_exception=true
 
       end
 
