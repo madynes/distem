@@ -25,8 +25,6 @@ module Distem
       # The HTTP OK status value
       # @private
       HTTP_STATUS_OK = 200
-      # The default timeout
-      TIMEOUT=1800
 
       @@semreq = Lib::Semaphore.new(MAX_SIMULTANEOUS_REQ)
 
@@ -39,7 +37,7 @@ module Distem
         raise unless port.is_a?(Numeric)
         @serveraddr = serveraddr
         @serverurl = 'http://' + @serveraddr + ':' + port.to_s
-        @resource = RestClient::Resource.new(@serverurl, :timeout => TIMEOUT, :open_timeout => (TIMEOUT/2))
+        @resource = RestClient::Resource.new(@serverurl, :timeout => 9999, :open_timeout => 9999)
         @@semreq = Lib::Semaphore.new(semsize) if semsize and @@semreq.size != semsize
       end
 

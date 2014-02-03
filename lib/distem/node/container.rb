@@ -196,9 +196,7 @@ module Distem
         rootfspath = @vnode.filesystem.shared ? @vnode.filesystem.sharedpath : @vnode.filesystem.path
         etcpath = File.join(rootfspath,'etc')
         File.open(File.join(etcpath,'hosts'),'w') {|f|
-          data.each {|entry|
-            f.puts("#{entry[1]}\t#{entry[0]}")
-          }
+          f.write(data + "\n")
         }
       end
 
@@ -206,9 +204,7 @@ module Distem
         rootfspath = @vnode.filesystem.shared ? @vnode.filesystem.sharedpath : @vnode.filesystem.path
         path = File.join(rootfspath, file)
         File.open(path,'w') {|f|
-          data.each {|entry|
-            f.puts("#{entry[0]} #{entry[1]}")
-          }
+          f.write(data + "\n")
         }
       end
 

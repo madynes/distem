@@ -4,6 +4,8 @@ require 'ipaddress'
 require 'json'
 require 'pp'
 require 'tempfile'
+require 'zlib'
+require 'base64'
 
 module Distem
   module Daemon
@@ -983,7 +985,7 @@ module Distem
         return true
       end
 
-      def set_global_etchosts(data)
+      def set_global_etchosts(compressed_data)
         shared_fs = []
         private_fs = []
         @node_config.vplatform.vnodes.each_value { |vnode|
@@ -993,6 +995,7 @@ module Distem
             private_fs << vnode
           end
         }
+        data = Zlib::Inflate.inflate(Base64.decode64(compressed_data))
         @node_config.set_global_etchosts(shared_fs.first, data) if !shared_fs.empty?
         private_fs.each {|vnode|
           @node_config.set_global_etchosts(vnode, data)
@@ -1001,8 +1004,8 @@ module Distem
         @etchosts_updated = []
         File.open('/etc/hosts','a') {|f|
           f.puts("\n")
-          data.each { |entry|
-            line = "#{entry[1]} #{entry[0]}\n"
+          data.split("\n").each { |l|
+            line = "#{l}\n"
             if !@etchosts_updated.include?(line)
               @etchosts_updated << line
               f.write(line)
@@ -1011,7 +1014,7 @@ module Distem
         }
       end
 
-      def set_global_arptable(data, arp_file)
+      def set_global_arptable(compressed_data, arp_file)
         shared_fs = []
         private_fs = []
         @node_config.vplatform.vnodes.each_value { |vnode|
@@ -1021,6 +1024,7 @@ module Distem
             private_fs << vnode
           end
         }
+        data = Zlib::Inflate.inflate(Base64.decode64(compressed_data))
         @node_config.set_global_arptable(shared_fs.first, data, arp_file) if !shared_fs.empty?
         private_fs.each {|vnode|
           @node_config.set_global_arptable(vnode, data, arp_file)

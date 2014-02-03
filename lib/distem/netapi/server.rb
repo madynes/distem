@@ -805,7 +805,7 @@ module Distem
 
       post '/global_etchosts/?' do
         check do
-          data = params.has_key?('data') ? JSON.parse(params['data']) : nil
+          data = params.has_key?('data') ? params['data'] : nil
           @daemon.set_global_etchosts(data)
           @body = ""
         end
@@ -821,7 +821,7 @@ module Distem
 
       post '/global_arptable/?' do
         check do
-          data = params.has_key?('data') ? JSON.parse(params['data']) : nil
+          data = params.has_key?('data') ? params['data'] : nil
           arp_file = params.has_key?('arp_file') ? params['arp_file'] : nil
           @daemon.set_global_arptable(data, arp_file)
           @body = ""

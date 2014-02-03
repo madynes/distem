@@ -4,6 +4,8 @@ require 'ipaddress'
 require 'json'
 require 'pp'
 require 'resolv'
+require 'zlib'
+require 'base64'
 
 module Distem
   module Daemon
@@ -1592,15 +1594,16 @@ module Distem
         @daemon_resources.vnodes.each_value {|vnode|
           vnode.vifaces.each do |viface|
             if viface.vnetwork
-              results << [vnode.name, viface.address.address.to_s]
+              results << viface.address.address.to_s + " " + vnode.name
             end
           end
         }
+        data = Base64.encode64(Zlib::Deflate.deflate(results.join("\n")))
         w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
-            cl.set_global_etchosts(results)
+            cl.set_global_etchosts(data)
           }
           w.add(block)
         }
@@ -1618,16 +1621,17 @@ module Distem
         @daemon_resources.vnodes.each_value {|vnode|
           vnode.vifaces.each {|viface|
             if viface.vnetwork
-              results << [viface.macaddress, viface.address.address.to_s]
+              results << viface.macaddress + " " + viface.address.address.to_s
             end
           }
         }
+        data = Base64.encode64(Zlib::Deflate.deflate(results.join("\n")))
         arp_file = '/tmp/fullarptable'
         w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
         @daemon_resources.pnodes.each_value {|pnode|
           block = Proc.new {
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
-            cl.set_global_arptable(results, arp_file)
+            cl.set_global_arptable(data, arp_file)
           }
           w.add(block)
         }
