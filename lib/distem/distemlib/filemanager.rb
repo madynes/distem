@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 require 'thread'
 require 'uri'
+require 'cgi'
 require 'digest/sha2'
 
 module Distem
@@ -35,7 +36,7 @@ module Distem
       #
       def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
         begin
-          uri = URI.parse(URI.decode(uri_str))
+          uri = URI.parse(CGI.unescape(uri_str))
         rescue URI::InvalidURIError
           raise Lib::InvalidParameterError, uri_str
         end

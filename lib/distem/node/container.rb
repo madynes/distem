@@ -44,7 +44,6 @@ module Distem
         raise Lib::UninitializedResourceError, "vfilesysem/image" unless vnode.filesystem
 
         @vnode = vnode
-
         @fsforge = FileSystemForge.new(@vnode)
         raise Lib::ResourceNotFoundError, @vnode.filesystem.path if \
           !File.exists?(@vnode.filesystem.path) and

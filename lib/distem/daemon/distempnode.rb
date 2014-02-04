@@ -6,6 +6,7 @@ require 'pp'
 require 'tempfile'
 require 'zlib'
 require 'base64'
+require 'cgi'
 
 module Distem
   module Daemon
@@ -229,7 +230,12 @@ module Distem
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
           vnode_attach(vnode.name,desc['host']) if desc['host']
-          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+          if desc['vfilesystem']
+            vfs = desc['vfilesystem']
+            #image has to be unescaped since it was escaped by the coordinator
+            vfs['image'] = CGI.unescape(vfs['image'])
+            vfilesystem_create(vnode.name,vfs)
+          end
           if desc['vcpu']
             if vnode.vcpu
               vcpu_update(vnode.name,desc['vcpu'])

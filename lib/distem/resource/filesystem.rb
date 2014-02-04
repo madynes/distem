@@ -1,4 +1,4 @@
-require 'uri'
+require 'cgi'
 
 module Distem
   module Resource
@@ -21,7 +21,7 @@ module Distem
       # Create a new FileSystem
       def initialize(vnode,image,shared = false,cow = false)
         @vnode = vnode
-        @image = URI.encode(image)
+        @image = CGI.escape(image)
         @shared = shared
         @cow = cow
         @path = nil
@@ -29,7 +29,7 @@ module Distem
       end
 
       def to_s
-        return "vnode: #{@vnode.name}, image: #{@image}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}"
+        return "vnode: #{@vnode.name}, image: #{CGI.unescape(@image)}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}"
       end
     end
 
