@@ -31,7 +31,7 @@ module Distem
               when 'up'
                 cl.vnode_start(@resource_desc['vnodename'])
               when 'down'
-                cl.vnode_shutdown(@resource_desc['vnodename'])
+                cl.vnode_stop(@resource_desc['vnodename'])
               when 'freeze'
                 cl.vnode_freeze(@resource_desc['vnodename'])
               when 'unfreeze'

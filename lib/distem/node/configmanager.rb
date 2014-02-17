@@ -110,17 +110,10 @@ module Distem
       # Stop a virtual node (it have to be started and in the status RUNNING)
       # ==== Attributes
       # * +vnode+ The VNode object
-      # * +destroy+ if false, the associate virtual machine will not be entirely removed
       #
-      def vnode_stop(vnode, destroy = true)
+      def vnode_stop(vnode)
         if @containers[vnode.name]
-          if destroy
-            #@containers[vnode.name].stop()
-            @containers[vnode.name].destroy
-            @containers.delete(vnode.name)
-          else
-            @containers[vnode.name].stop()
-          end
+          @containers[vnode.name].stop()
         end
       end
 

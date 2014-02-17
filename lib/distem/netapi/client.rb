@@ -267,7 +267,7 @@ module Distem
       # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_stop(vnodename, async=false)
-        desc = { :status => Resource::Status::READY }
+        desc = { :status => Resource::Status::DOWN }
         put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'stop' })
       end
 
@@ -284,26 +284,6 @@ module Distem
       # @return [Hash] The description of the virtual nodes
       def vnodes_stop(names = nil, async=false)
         put_json("/vnodes", { :names => names, :async => async, :type => 'stop' })
-      end
-
-      # Stop a virtual node, but without deleting its data
-      #
-      # @param [String] vnodename The name of the virtual node
-      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
-      # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
-      def vnode_shutdown(vnodename, async=false)
-        desc = { :status => Resource::Status::DOWN }
-        put_json("/vnodes/#{CGI.escape(vnodename)}", { :desc => desc, :async => async, :type => 'update'})
-      end
-
-      # Stop some virtual nodes, but without deleting their data
-      #
-      # @param [Array] names The names of the virtual nodes
-      # @param [Boolean] async Asynchronious mode, check virtual node status to know when node is configured (see {#vnode_info})
-      # @return [Array] The virtual node descriptions (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
-      def vnodes_shutdown(names = nil, async=false)
-        desc = { :status => Resource::Status::DOWN }
-        put_json("/vnodes", { :names => names, :desc => desc, :async => async, :type => 'update' })
       end
 
       # Freeze a virtual node, but without deleting its data

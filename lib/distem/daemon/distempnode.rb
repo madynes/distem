@@ -210,7 +210,7 @@ module Distem
         tids = []
         vnodes.each{ |vnode|
           tids << Thread.new {
-            vnode_status_update(vnode.name, Resource::Status::READY)
+            vnode_status_update(vnode.name, Resource::Status::DOWN)
           }
         }
         tids.each { |tid| tid.join } if !async
@@ -282,7 +282,8 @@ module Distem
       # ==== Exceptions
       #
       def vnodes_remove(names)
-        vnodes = names ? names.map { |name| vnode_get(name) } : vnodes_get().values
+        #some vnodes might not be initialized, in this case, they are dropped
+        vnodes = names ? names.map { |name| vnode_get(name, false) }.compact : vnodes_get().values
         tids = []
         vnodes.each { |vnode|
             tids << Thread.new {
@@ -338,10 +339,8 @@ module Distem
           Resource::Status.valid?(status)
         if status.upcase == Resource::Status::RUNNING
           vnode = vnode_start(name,async)
-        elsif status.upcase == Resource::Status::READY
-          vnode = vnode_stop(name,async)
         elsif status.upcase == Resource::Status::DOWN
-          vnode = vnode_shutdown(name,async)
+          vnode = vnode_stop(name,async)
         else
           raise Lib::InvalidParameterError, status
         end
@@ -369,7 +368,7 @@ module Distem
         return [vnode]
       end
 
-      # Same as vnode_set_status(name,Resource::Status::READY,properties)
+      # Same as vnode_set_status(name,Resource::Status::DOWN,properties)
       def vnode_stop(name, async=false)
         async = parse_bool(async)
         vnode = vnode_get(name)
@@ -380,23 +379,7 @@ module Distem
           vnode.status == Resource::Status::INIT
 
         vnode.status = Resource::Status::CONFIGURING
-        @node_config.vnode_stop(vnode, false)
-        vnode.status = Resource::Status::READY
-        return vnode
-      end
-
-       # Same as vnode_set_status(name,Resource::Status::DOWN,properties)
-      def vnode_shutdown(name, async=false)
-        async = parse_bool(async)
-        vnode = vnode_get(name)
-        raise Lib::ResourceError, "Please, contact the good PNode" unless target?(vnode)
-        raise Lib::BusyResourceError, vnode.name if \
-          vnode.status == Resource::Status::CONFIGURING
-        raise Lib::UninitializedResourceError, vnode.name if \
-          vnode.status == Resource::Status::INIT
-
-        vnode.status = Resource::Status::CONFIGURING
-        @node_config.vnode_stop(vnode, false)
+        @node_config.vnode_stop(vnode)
         vnode.status = Resource::Status::DOWN
         return vnode
       end
