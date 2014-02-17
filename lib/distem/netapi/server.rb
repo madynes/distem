@@ -279,29 +279,10 @@ module Distem
         return result!
       end
 
-      # Remove the virtual node ("Cascade" removing -> remove all the vroutes it apears as gateway)
-      delete '/vnodes/:vnodename/?' do
-        check do
-          @body = @daemon.vnode_remove(CGI.unescape(params['vnodename']))
-        end
-
-        return result!
-      end
-
       # Get the description of a virtual node
       get '/vnodes/:vnodename/?' do
         check do
           @body = @daemon.vnode_get(CGI.unescape(params['vnodename']))
-        end
-
-        return result!
-      end
-
-      # Remove every virtual nodes
-      delete '/vnodes/?' do
-        check do
-          names = params['names'] ? JSON.parse(params['names']) : nil
-          @body = @daemon.vnodes_remove(names)
         end
 
         return result!
@@ -331,6 +312,8 @@ module Distem
             @body = @daemon.vnode_update(CGI.unescape(params['vnodename']),desc,params['async']).first
           when 'stop'
             @body = @daemon.vnode_stop(CGI.unescape(params['vnodename']),params['async'])
+          when 'remove'
+            @body = @daemon.vnode_remove(CGI.unescape(params['vnodename']))
           when 'freeze'
             @body = @daemon.vnodes_freeze([CGI.unescape(params['vnodename'])],params['async'])
           when 'unfreeze'
@@ -358,6 +341,8 @@ module Distem
             @body = @daemon.vnode_update(names,desc,params['async'])
           when 'stop'
             @body = @daemon.vnodes_stop(names,params['async'])
+          when 'remove'
+            @body = @daemon.vnodes_remove(names)
           when 'freeze'
             @body = @daemon.vnodes_freeze(names,params['async'])
           when 'unfreeze'

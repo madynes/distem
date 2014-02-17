@@ -180,14 +180,14 @@ module Distem
       # @param [String] vnodename The name of the virtual node
       # @return [Hash] The virtual node description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnode_remove(vnodename)
-        delete_json("/vnodes/#{CGI.escape(vnodename)}")
+        put_json("/vnodes/#{CGI.escape(vnodename)}", { :type => 'remove'})
       end
 
       # Remove the virtual vnodes, or every if names is nil
       #
       # @return [Array] Array of virtual nodes description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
       def vnodes_remove(names)
-        delete_json("/vnodes", { :names => names})
+        put_json("/vnodes", { :names => names, :type => 'remove'})
       end
 
       # Update a virtual node description
