@@ -362,4 +362,13 @@ class ExperimentalTesting < Test::Unit::TestCase
       }
     }
   end
+
+  def test_14_events
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-events.rb')}"))
+    }
+  end
+
 end
