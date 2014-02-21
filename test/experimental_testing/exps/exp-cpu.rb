@@ -15,9 +15,12 @@ pnode = `hostname`.strip
 begin
   Distem.client { |cl|
     cl.pnode_update(pnode, {"algorithms"=>{"cpu"=>algo}})
+    infos = cl.vnode_info('node1')
+    fs = infos['vfilesystem']
+    ifaces = infos['vifaces']
     cl.vnode_stop('node1')
-    cl.vcpu_remove('node1')
-    cl.vnode_update('node1', {'host' => pnode})
+    cl.vnode_remove('node1')
+    cl.vnode_create('node1', {'host' => pnode, 'vfilesystem' => fs, 'vifaces' => ifaces})
     cl.vcpu_create('node1', 1, 'ratio', nb_cpu)
     cl.vnode_start('node1')
     cl.wait_vnodes({'vnodes' => 'node1'})
