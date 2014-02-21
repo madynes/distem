@@ -6,6 +6,7 @@ require 'pp'
 require 'resolv'
 require 'zlib'
 require 'base64'
+require 'cgi'
 
 module Distem
   module Daemon
@@ -308,6 +309,26 @@ module Distem
       def pmemory_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.memory
+      end
+
+      # Get the description of a vnode
+      def vnode_get_info(vnodename)
+        vnode = vnode_get(vnodename).dup
+        if vnode.filesystem && vnode.filesystem.image
+          vnode.filesystem.image = CGI.unescape(vnode.filesystem.image)
+        end
+        return vnode
+      end
+
+      # Get the description of the vnodes
+      def vnodes_get_info()
+        vnodes = vnodes_get().dup
+        vnodes.each_value { |vnode|
+          if vnode.filesystem && vnode.filesystem.image
+            vnode.filesystem.image = CGI.unescape(vnode.filesystem.image)
+          end
+        }
+        return vnodes
       end
 
       # Create a virtual node using a compressed file system image.

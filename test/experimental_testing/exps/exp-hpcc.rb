@@ -24,13 +24,12 @@ puts "<<< HPCC test #{nb_cpu} cpu, #{algo}, #{freq} Mhz >>>"
 pnode = `hostname`.strip
 Distem.client { |cl|
   cl.pnode_update(pnode, {"algorithms"=>{"cpu"=>algo}})
-}
-
-
-Distem.client { |cl|
+  infos = cl.vnode_info('node1')
+  fs = infos['vfilesystem']
+  ifaces = infos['vifaces']
   cl.vnode_stop('node1')
-  cl.vcpu_remove('node1')
-  cl.vnode_update('node1', {'host' => pnode})
+  cl.vnode_remove('node1')
+  cl.vnode_create('node1', {'host' => pnode, 'vfilesystem' => fs, 'vifaces' => ifaces})
   cl.vcpu_create('node1', freq, 'mhz', nb_cpu)
   cl.vnode_start('node1')
   wait_ssh(ip[0])

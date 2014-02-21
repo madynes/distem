@@ -282,7 +282,7 @@ module Distem
       # Get the description of a virtual node
       get '/vnodes/:vnodename/?' do
         check do
-          @body = @daemon.vnode_get(CGI.unescape(params['vnodename']))
+          @body = @daemon.vnode_get_info(CGI.unescape(params['vnodename']))
         end
 
         return result!
@@ -291,7 +291,7 @@ module Distem
       # Get the list of the the currently created virtual nodes
       get '/vnodes/?' do
         check do
-          @body = @daemon.vnodes_get()
+          @body = @daemon.vnodes_get_info()
         end
 
         return result!
