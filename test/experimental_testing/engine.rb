@@ -170,11 +170,11 @@ class ExperimentalTesting < Test::Unit::TestCase
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       end
-    when '100nodes'
+    when '50nodes'
       if cli
         return false
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_100nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_50nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
       end
     when '200nodes'
       if cli
@@ -315,7 +315,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   def test_09_vectorized_init_and_connectivity
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      launch_vnodes(session, {'pf_kind' => '50nodes'})
       @@pnodes.uniq.each { |pnode|
         session.exec!("scp /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
       }
@@ -330,7 +330,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   def test_10_set_peers_latency
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      launch_vnodes(session, {'pf_kind' => '50nodes'})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-matrix-latencies.rb')}"))
     }
   end
@@ -338,7 +338,7 @@ class ExperimentalTesting < Test::Unit::TestCase
   def test_11_set_arptables
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '100nodes'})
+      launch_vnodes(session, {'pf_kind' => '50nodes'})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-arp-tables.rb')}"))
     }
   end

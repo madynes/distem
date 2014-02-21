@@ -56,7 +56,7 @@ Net::SSH::Multi.start { |session|
   ret = ssh_exec(session, 'arp -n|tail -n +2|wc -l')
   session.loop
   do_error if (ret[2] != 0)
-  ret[0].split("\n").each { |i| do_error if (i.to_i < 99) }
+  ret[0].split("\n").each { |i| do_error if (i.to_i < 49) }
 }
 
 puts 'TEST PASSED'

@@ -9,7 +9,7 @@ net,netmask = ARGV[0].split('/')
 ip_file = ARGV[1]
 image = ARGV[2]
 
-nodes = (1..100).to_a.map { |i| "node#{i}" }
+nodes = (1..50).to_a.map { |i| "node#{i}" }
 iplist = []
 
 def port_open?(ip, port)

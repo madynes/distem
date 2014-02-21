@@ -14,11 +14,11 @@ end
 
 puts '<<< Matrix latencies test >>>'
 
-nodes = (1..100).to_a.map { |i| "node#{i}" }
-matrix = (1..100).to_a.map { (1..100).to_a.map { 10 + rand(50) }}
+nodes = (1..50).to_a.map { |i| "node#{i}" }
+matrix = (1..50).to_a.map { (1..50).to_a.map { 10 + rand(50) }}
 random_nodes = []
 while random_nodes.length < 5 do
-  random_nodes << 1 + rand(100)
+  random_nodes << 1 + rand(50)
   random_nodes = random_nodes.uniq
 end
 Distem.client do |cl|
