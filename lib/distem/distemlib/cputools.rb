@@ -23,7 +23,8 @@ module Distem
           #/\s*Core\s*p#([0-9]+)\s*\+\s*PU\s*p#([0-9]+)\s*/
             core['physicalid'] = Regexp.last_match(2)
             core['coreid'] = Regexp.last_match(1)
-            if File.exists?("/sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq")
+            if File.exists?("/sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq") &&
+               !File.exists?("/sys/devices/system/cpu/intel_pstate")
               strcpufreq = Shell.run(
                 "cat /sys/devices/system/cpu/cpu#{core['coreid']}/cpufreq/scaling_max_freq"
               )
