@@ -167,6 +167,7 @@ module Distem
           'path' => filesystem.path,
           'sharedpath' => filesystem.sharedpath,
           'cow' => filesystem.cow,
+          'disk_throttling' => filesystem.disk_throttling,
         }
       end
 

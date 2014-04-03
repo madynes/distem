@@ -1140,7 +1140,15 @@ module Distem
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'])
+        if desc.has_key?('disk_throttling')
+          desc['disk_throttling'].each_key { |k|
+            raise Lib::InvalidParameterError, "filesystem/disk_throttling/#{k}" if !['device','read_limit', 'write_limit'].include?(k)
+          }
+          raise Lib::MissingParameterError, "filesystem/disk_throttling/device" if (desc['disk_throttling'].has_key?('read_limit') || desc['disk_throttling'].has_key?('write_limit')) && !desc['disk_throttling'].has_key?('device')
+        else
+          desc['disk_throttling'] = nil
+        end
+        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
         return vnode.filesystem
       end
 

@@ -150,11 +150,31 @@ module Distem
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
         end
+        if @vnode.filesystem.disk_throttling
+          # On jessie, this does not return a correct value ...
+          #major = File.stat(@vnode.filesystem.disk_throttling['device']).dev_major
+          major = `stat --printf %t #{@vnode.filesystem.disk_throttling['device']}`
+          cgroup_path = File.join(Distem::Node::Admin::PATH_CGROUP, 'lxc', @vnode.name)
+          # In the description, read and write limits are supposed to be specified in bytes
+          if @vnode.filesystem.disk_throttling['read_limit']
+            limit = @vnode.filesystem.disk_throttling['read_limit'].to_i
+            Lib::Shell::run("echo \"#{major}:0 #{limit}\" > #{cgroup_path}/blkio.throttle.read_bps_device")
+          end
+          if @vnode.filesystem.disk_throttling['write_limit']
+            limit = @vnode.filesystem.disk_throttling['write_limit'].to_i
+            Lib::Shell::run("echo \"#{major}:0 #{limit}\" > #{cgroup_path}/blkio.throttle.write_bps_device")
+          end
+        end
         @stopped = false
       end
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
       def stop
+        if @vnode.filesystem.disk_throttling
+          cgroup_path = File.join(Distem::Node::Admin::PATH_CGROUP, 'lxc', @vnode.name)
+          Lib::Shell::run("echo -n > #{cgroup_path}/blkio.throttle.read_bps_device") if @vnode.filesystem.disk_throttling['read_limit']
+          Lib::Shell::run("echo -n > #{cgroup_path}/blkio.throttle.write_bps_device") if @vnode.filesystem.disk_throttling['write_limit']
+        end
         @@contsem.synchronize do
           @cpuforge.undo
           @networkforges.each_value { |netforge| netforge.undo }
