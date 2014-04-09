@@ -90,9 +90,8 @@ module Distem
         vnetworks_remove()
         pnodes_delete_probes() if @collector
         if @etchosts_updated
-          vnodes = vnodes_get().values
           tmp = Tempfile.new("distem_etc_hosts")
-          content = IO.readlines('/etc/hosts').each { |line|
+          IO.readlines('/etc/hosts').each { |line|
             if !@etchosts_updated.include?(line)
               tmp.write(line)
             end
