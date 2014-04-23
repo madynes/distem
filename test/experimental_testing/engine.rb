@@ -59,7 +59,7 @@ class CommonTools
       msg("Rebooting #{pnodes.join(',')} (attempt #{i+1})")
       ok = Tempfile.new("nodes_ok")
       node_list = "-m #{pnodes.join(' -m ')}"
-      system("kareboot3 -V 1 -r simple_reboot #{node_list} -o #{ok.path} --vlan #{vlan}")
+      system("kareboot3 -V 1 -r simple #{node_list} -o #{ok.path} --vlan #{vlan}")
       next if not File.exists?(ok.path)
       nb_rebooted_nodes = IO.readlines(ok.path).length
       break if (nb_rebooted_nodes == pnodes.length)
