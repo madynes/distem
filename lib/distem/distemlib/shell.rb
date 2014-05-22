@@ -26,8 +26,10 @@ module Distem
           error = !$?.success?
         else
           Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) unless File.exists?(Distem::Node::Admin::PATH_DISTEM_LOGS)
-          case RUBY_VERSION.split('.')[1].to_i
-          when 8
+          full_version = RUBY_VERSION.split('.')
+          main_version = full_version[0] + '.' + full_version[1]
+          case main_version
+          when '1.8'
             Open3.popen3(cmd) do |stdin, stdout, stderr|
               ret = stdout.read
               err = stderr.read
@@ -35,7 +37,7 @@ module Distem
               log += "\nError: #{err}" unless err.empty? 
               error = !$?.success? or !err.empty?
             end
-          when 9
+          when '1.9','2.0','2.1'
             Open3.popen3(cmd) do |stdin, stdout, stderr, thr|
               ret = stdout.read
               err = stderr.read
@@ -43,6 +45,8 @@ module Distem
               log += "\nError: #{err}" unless err.empty? 
               error = !thr.value.success? or !err.empty?
             end
+          else
+            raise "Unsupported Ruby version: #{RUBY_VERSION}"
           end
         end
         File.open(PATH_DISTEMD_LOG_CMD,'a+') { |f| f.write(log) }

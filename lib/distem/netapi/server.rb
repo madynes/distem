@@ -828,11 +828,15 @@ module Distem
       # @private
       def result!
         classname = nil
-        case RUBY_VERSION.split('.')[1].to_i
-        when 8
+        full_version = RUBY_VERSION.split('.')
+        main_version = full_version[0] + '.' + full_version[1]
+        case main_version
+        when '1.8'
           classname = @body.class.name.split('::').last
-        when 9
+        when '1.9','2.0','2.1'
           classname = (@body.class.name.split('::').last).to_sym
+        else
+          raise "Unsupported Ruby version: #{RUBY_VERSION}"
         end
         if Distem::Resource.constants.include?(classname) \
           or @body.is_a?(Resource::VIface::VTraffic) \
