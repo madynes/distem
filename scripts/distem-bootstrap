@@ -46,7 +46,7 @@ VAR_DISTEM_COORD  = 'DISTEM_COORDINATOR'
 STATS_PORT        = 12345
 if g5k?
   GIT_REPOSITORY  = "https://gforge.inria.fr/git/distem/distem.git"
-  GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8081/p/distem"
+  GERRIT_REPOSITORY = "http://gerrit.nancy.grid5000.fr:8080/gerrit/p/distem"
   STATS_SERV      = "carol.nancy.grid5000.fr"
 else
   GIT_REPOSITORY  = "https://gforge.inria.fr/git/distem/distem.git"
