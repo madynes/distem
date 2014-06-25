@@ -10,6 +10,8 @@ module Distem
       attr_reader  :dstnet
       # The IPAddress object describing the IP address of the VNode/VIface used to get from source to destination
       attr_reader  :gw
+      # The unique identifier of the virtual route
+      attr_reader :id
 
       # Create a new VRoute
       # === Attributes
