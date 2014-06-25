@@ -274,6 +274,8 @@ module Distem
                 f.puts("exit 0")
               }
             end
+            # Make the file executable even if it was already existing. rc.local is 644 by default.
+            FileUtils.chmod(0755, filename)
           }
 
           if @vnode.filesystem.shared
