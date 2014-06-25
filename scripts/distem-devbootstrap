@@ -310,7 +310,7 @@ optparse = OptionParser.new do |opts|
   opts.separator "# reserve and deploy nodes, configure using distem-bootstrap and distem-devbootstrap"
   opts.separator "oarsub -t deploy -l nodes=10,walltime=1 \\"
   opts.separator " 'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap --git \\"
-  opts.separator "  --no-init-pnodes distem-devbootstrap --update .distem.yml'"
+  opts.separator "  --no-init-pnodes -- distem-devbootstrap --update .distem.yml'"
 end
 begin
   optparse.parse!
