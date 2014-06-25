@@ -1359,7 +1359,7 @@ module Distem
           srcnet.visibility.each do |pnode|
             if (pnode.status == Resource::Status::RUNNING)
               cl = NetAPI::Client.new(pnode.address.to_s, 4568)
-              vnetwork_sync(dstnet,pnode)
+              vnetwork_sync(destnet,pnode)
               cl.vroute_create(srcnet.name,destnet.name,gwaddr.to_s)
             end
           end
