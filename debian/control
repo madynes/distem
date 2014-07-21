@@ -2,7 +2,7 @@ Source: distem
 Section: ruby
 Priority: optional
 Maintainer: Lucas Nussbaum <lucas.nussbaum@loria.fr>
-Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.7~), rubygems1.9.1
+Build-Depends: debhelper (>= 7.0.50~), gem2deb (>= 0.2.7~)
 Standards-Version: 3.9.2
 Vcs-Git: git://scm.gforge.inria.fr/distem/distem.git
 Vcs-Browser: https://gforge.inria.fr/scm/browser.php?group_id=3519
