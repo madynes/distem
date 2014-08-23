@@ -41,7 +41,7 @@ module Distem
       #
       def initialize(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        raise Lib::UninitializedResourceError, "vfilesysem/image" unless vnode.filesystem
+        raise Lib::UninitializedResourceError, "vfilesystem/image" unless vnode.filesystem
 
         @vnode = vnode
         @fsforge = FileSystemForge.new(@vnode)
