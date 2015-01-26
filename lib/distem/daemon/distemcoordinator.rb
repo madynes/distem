@@ -139,34 +139,6 @@ module Distem
         @@threads[:pnode_init][pnode.address.to_s]
       end
 
-      # Quit distem on a physical machine (remove everything that was created)
-      # ==== Returns
-      # Resource::PNode object
-      # ==== Exceptions
-      #
-      def pnode_quit(target, only_distant_quit = false)
-        pnode = pnode_get(target,false)
-        if pnode
-          if !only_distant_quit
-            pnode.status = Resource::Status::CONFIGURING
-            vnodes = []
-            @daemon_resources.vnodes.each_value do |vnode|
-              if vnode.host.address.to_s == pnode.address.to_s
-                vnodes << vnode
-              end
-            end
-            vn = vnodes.map { |vnode| vnode.name }
-            vnodes_stop(vn, false)
-            vnodes_remove(vn)
-          end
-          cl = NetAPI::Client.new(target, 4568)
-          cl.pnode_quit(target)
-          @daemon_resources.remove_pnode(pnode)
-        end
-        pnode.status = Resource::Status::READY
-        return pnode
-      end
-
       # Quit distem on all the physical machines (remove everything that was created)
       # ==== Returns
       # Array of Resource::PNode objects
@@ -176,29 +148,32 @@ module Distem
         ret = @daemon_resources.pnodes.dup
         first_node = Resolv.getaddress(@node_name).to_s
         tids = []
-        @daemon_resources.pnodes.each_value do |pnode|
-          if pnode.address.to_s != first_node
-            tids << Thread.new {
-              pnode_quit(pnode.address.to_s, false)
-            }
-          else
-            tids << Thread.new {
-              pnode.status = Resource::Status::CONFIGURING
-              vnodes = []
-              @daemon_resources.vnodes.each_value do |vnode|
-                if vnode.host.address.to_s == pnode.address.to_s
-                  vnodes << vnode
-                end
-              end
-              vn = vnodes.map { |vnode| vnode.name }
-              vnodes_stop(vn, false)
-              vnodes_remove(vn)
-            }
-          end
-        end
-        tids.each { |tid| tid.join }
 
-        pnode_quit(first_node, true)
+        distant_quit = lambda { |target|
+          pnode = pnode_get(target,false)
+          cl = NetAPI::Client.new(target, 4568)
+          cl.pnode_quit(target)
+          @daemon_resources.remove_pnode(pnode)
+        }
+        @daemon_resources.pnodes.each_value { |pnode|
+          tids << Thread.new {
+            pnode.status = Resource::Status::CONFIGURING
+            vnodes = []
+            @daemon_resources.vnodes.each_value { |vnode|
+              if vnode.host.address.to_s == pnode.address.to_s
+                vnodes << vnode
+              end
+            }
+            vn = vnodes.map { |vnode| vnode.name }
+            vnodes_stop(vn, false)
+            vnodes_remove(vn)
+
+            distant_quit.call(pnode.address.to_s) if pnode.address.to_s != first_node
+            pnode.status = Resource::Status::READY
+          }
+        }
+        tids.each { |tid| tid.join }
+        distant_quit.call(first_node)
         return ret
       end
 
