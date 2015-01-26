@@ -7,6 +7,7 @@ module LXCWrapper # :nodoc: all
       "lxc.tty = 4\n" \
       "lxc.pts = 1024\n" \
       "lxc.cgroup.devices.deny = a\n" \
+      "lxc.cgroup.devices.allow = c 10:232 rwm  # /dev/kvm\n" \
       "lxc.cgroup.devices.allow = c 1:3 rwm  # /dev/null\n" \
       "lxc.cgroup.devices.allow = c 1:5 rwm  # /dev/zero\n" \
       "lxc.cgroup.devices.allow = c 5:1 rwm  # /dev/console\n" \
