@@ -10,7 +10,7 @@ module Distem
       # The directory used to store temporary files
       PATH_DISTEMTMP='/tmp/distem/'
       # The cgroups directory to use
-      PATH_CGROUP='/dev/cgroup'
+      PATH_SYSV_CGROUP='/dev/cgroup'
       # The default maximum number of virual network interfaces (used with ifb)
       MAX_VIFACES=64
       # The default maximum number of PTY creatable on the physical machine
@@ -53,19 +53,23 @@ module Distem
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exists?(PATH_DISTEMTMP)
       end
 
+      def self.has_systemd?
+        return !File.exist?('/sbin/init') || ((File.ftype('/sbin/init') == 'link') && File.readlink('/sbin/init').include?('systemd'))
+      end
+
       # Initialize (mount) the CGroup filesystem that will be used by the system (LXC, ...)
       def self.set_cgroups
-        unless File.exists?("#{PATH_CGROUP}")
-          Lib::Shell.run("mkdir #{PATH_CGROUP}")
-          Lib::Shell.run("mount -t cgroup cgroup #{PATH_CGROUP}")
+        if !has_systemd?
+          Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP}")
+          Lib::Shell.run("mount -t cgroup cgroup #{PATH_SYSV_CGROUP}")
         end
       end
 
       # Clean (umount) the CGroup filesystem used by the system
       def self.unset_cgroups
-        if File.exists?("#{PATH_CGROUP}")
-          Lib::Shell.run("umount #{PATH_CGROUP}")
-          Lib::Shell.run("rmdir #{PATH_CGROUP}")
+        if !has_systemd?
+          Lib::Shell.run("umount #{PATH_SYSV_CGROUP}")
+          Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP}")
         end
       end
 
