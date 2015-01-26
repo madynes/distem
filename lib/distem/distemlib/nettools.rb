@@ -158,7 +158,7 @@ module Distem
 
       # Disable IPv6
       def self.disable_ipv6()
-        Shell.run('sysctl -w net.ipv6.conf.all.disable_ipv6=1')
+        Shell.run('sysctl -w net.ipv6.conf.all.disable_ipv6=1; true')
       end
 
       # Set up a physical machine network properties
