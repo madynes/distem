@@ -63,7 +63,7 @@ module LXCWrapper # :nodoc: all
         cycles = 0
         finished = false
         while !finished
-          out = Distem::Lib::Shell.run("lxc-destroy -n #{contname};true",true)
+          out = Distem::Lib::Shell.run("lxc-destroy -n #{contname};rm -rf /var/lib/lxc/#{contname}",true)
           if out.include?('does not exist') && _ls().include?(contname)
             cycles += 1
             sleep(LS_WAIT_TIME)

@@ -36,7 +36,6 @@ def g5k?
 end
 
 PKG_NAME          = 'distem'
-DEB_REPOSITORY    = 'http://distem.gforge.inria.fr/deb'
 HTTP_PROXY        = 'proxy:3128'
 SSH_KEYS_PATH     = File.join(ENV['HOME'],'.ssh')
 PATH_DISTEMD_LOGS = '/var/log/distem'
@@ -192,6 +191,7 @@ options[:cow] = nil
 options[:ci] = nil
 options[:network_mode] = 'classical'
 options[:network_interface] = nil
+options[:deb_repo] = 'http://distem.gforge.inria.fr/deb'
 
 args = ARGV.dup
 
@@ -264,6 +264,19 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-i', '--network-interface <iface>', 'Define the root network interface for inter-pnode communication (use only with vxlan network mode)') do |iface|
     options[:network_interface] = iface
+  end
+  opts.on( '--debian-version <version>', 'Choose the Debian version (squeeze, wheezy or jessie)') do |v|
+    case v
+    when 'squeeze'
+      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb'
+    when 'wheezy'
+      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb'
+    when 'jessie'
+      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb-jessie'
+    else
+      puts 'Unsupported Debian version'
+      exit 1
+    end
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -418,7 +431,7 @@ Net::SSH::Multi.start do |session|
   exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
 
   # setup Debian repo
-  exec(session,"grep -q '#{DEB_REPOSITORY}' /etc/apt/sources.list || echo 'deb #{DEB_REPOSITORY} ./\ndeb-src #{DEB_REPOSITORY} ./' >> /etc/apt/sources.list")
+  exec(session,"grep -q '#{options[:deb_repo]}' /etc/apt/sources.list || echo 'deb #{options[:deb_repo]} ./\ndeb-src #{options[:deb_repo]} ./' >> /etc/apt/sources.list")
 
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
