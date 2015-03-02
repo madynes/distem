@@ -65,7 +65,7 @@ module LXCWrapper # :nodoc: all
         if vnode.vmem
           f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
           # This is not working on Debian wheezy, even with the swapaccount=1 kernel paramater. Mayber LXC 0.9 is required
-          #if.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+          #f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
         end
       end
     end

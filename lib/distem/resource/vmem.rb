@@ -18,8 +18,8 @@ module Distem
 
       # Set memory to a Vnode
       def set(opts)
-        @mem = opts['mem'] if opts['mem']
-        @swap = opts['swap'] if opts['swap']
+        @mem = opts['mem'].to_i if opts['mem']
+        @swap = opts['swap'].to_i if opts['swap']
       end
 
       def remove

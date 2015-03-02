@@ -172,7 +172,7 @@ module Distem
 
       def remove_vmem
         if @vmem
-          @host.memory.deallocate({@vmem => mem, @vmem => swap})
+          @host.memory.deallocate({:mem => @vmem.mem, :swap => @vmem.swap})
           @vmem.remove()
           @vmem = nil
         end

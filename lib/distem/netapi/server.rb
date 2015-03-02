@@ -802,6 +802,8 @@ module Distem
           desc = JSON.parse(params['desc']) if params['desc']
           @body = @daemon.vmem_create(params['vnodename'],desc)
         end
+
+        return result!
       end
 
       post '/global_arptable/?' do

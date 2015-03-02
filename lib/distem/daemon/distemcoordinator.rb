@@ -160,7 +160,7 @@ module Distem
             pnode.status = Resource::Status::CONFIGURING
             vnodes = []
             @daemon_resources.vnodes.each_value { |vnode|
-              if vnode.host.address.to_s == pnode.address.to_s
+              if vnode.host != nil && (vnode.host.address.to_s == pnode.address.to_s)
                 vnodes << vnode
               end
             }

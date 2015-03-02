@@ -40,7 +40,10 @@ module Distem
           raise Lib::InvalidParameterError, hostname
         end
         @cpu = CPU.new
-        @memory = Memory.new
+        # mem and swap are stored in MB
+        mem = `grep MemTotal /proc/meminfo`.gsub(/[^\d]/, '').to_i / 1024
+        swap = `grep SwapTotal /proc/meminfo`.gsub(/[^\d]/, '').to_i / 1024
+        @memory = Memory.new(mem, swap)
 
         @ssh_user = ssh_user
         @ssh_password = ssh_password

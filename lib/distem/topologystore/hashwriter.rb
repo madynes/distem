@@ -146,8 +146,8 @@ module Distem
       # See the visit_vplatform documentation
       def visit_memory(memory)
         return {
-          'capacity' => memory.capacity.to_s + ' MB',
-          'swap' => memory.swap.to_s + ' MB',
+          'capacity' => memory.capacity.to_s,
+          'swap' => memory.swap.to_s,
         }
       end
 

@@ -230,7 +230,7 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.separator "Memory management:"
   opts.on(
     '--set-vmem vnode=VNODE,mem=SIZE,swap=SIZE',
-    'Set a memory limitation'
+    'Set a memory limitation (SIZE is supposed to be specified in MB)'
   ) do |str|
     options['f_options'] << 'set_vmem'
     h = sub_opts_to_hash(str)
@@ -458,7 +458,7 @@ options['f_options'].each { |option|
     end
     pp cl.vcpu_update(options['vnode'], val, unit)
   when 'set_vmem'
-    pp cl.vmem_create(options['vmem'], options['mem'], options['swap'])
+    pp cl.vmem_create(options['vnode'], options['mem'], options['swap'])
   when 'get_pnode_info'
     if options['pnode']
       pp cl.pnode_info(options['pnode'])
