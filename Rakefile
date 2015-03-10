@@ -134,7 +134,7 @@ task :man do
     # This hack is required so that the executables can find the extension and load them
     ENV['RUBYLIB'] = File.join(File.dirname(__FILE__), 'debian', 'distem', Config::CONFIG['vendorarchdir'])
     system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
-    system("man -Hcat man/#{File.basename(f)}.1 > man/#{File.basename(f)}.html")
+    system("man -Hcat man/#{File.basename(f)}.1 | sed 's/&minus;/-/g' > man/#{File.basename(f)}.html")
   end
   if File::directory?('../distem-private/www/man/')
     # edit *.html and remove footer to avoid the date that will change on each
