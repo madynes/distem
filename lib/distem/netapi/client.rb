@@ -186,8 +186,10 @@ module Distem
       # Remove the virtual vnodes, or every if names is nil
       #
       # @return [Array] Array of virtual nodes description (see {file:files/resources_desc.md#Virtual_Nodes Resource Description - VNodes})
-      def vnodes_remove(names)
-        put_json("/vnodes", { :names => names, :type => 'remove'})
+      def vnodes_remove(names = nil)
+        params = { :type => 'remove'}
+        params[:names] = names if names
+        put_json("/vnodes", params)
       end
 
       # Update a virtual node description

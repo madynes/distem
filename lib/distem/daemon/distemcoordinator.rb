@@ -418,7 +418,7 @@ module Distem
       # ==== Exceptions
       #
       def vnodes_remove(names)
-        names = @daemon_resources.vnodes.map { |vnode| vnode.name } if !names
+        names = @daemon_resources.vnodes.keys if !names
         return vnode_remove(names)
       end
 
