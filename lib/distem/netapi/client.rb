@@ -591,10 +591,10 @@ module Distem
 
       # Get the full description of the platform
       #
-      # @param [String] format The wished output format
       # @return [String] The description in the wished format
-      def vplatform_info(format = 'JSON')
-        get_json("/vplatform/#{format}")
+      def vplatform_info()
+        ret = get_json("/vplatform")
+        return JSON.pretty_generate(ret)
       end
 
       # Add an event trace to a resource

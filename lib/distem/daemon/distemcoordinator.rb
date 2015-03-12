@@ -472,6 +472,8 @@ module Distem
           vnodes = vnodes_start(names,async)
         elsif status.upcase == Resource::Status::DOWN
           vnodes = vnodes_stop(names,async)
+        elsif status.upcase == Resource::Status::INIT
+          #Just do nothing
         else
           raise Lib::InvalidParameterError, status
         end
@@ -1115,7 +1117,7 @@ module Distem
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
-        if desc.has_key?('disk_throttling')
+        if desc.has_key?('disk_throttling') && desc['disk_throttling']
           desc['disk_throttling'].each_key { |k|
             raise Lib::InvalidParameterError, "filesystem/disk_throttling/#{k}" if !['device','read_limit', 'write_limit'].include?(k)
           }
@@ -1314,23 +1316,34 @@ module Distem
       def vroute_create(networksrc,networkdst,nodegw)
         begin
           srcnet = vnetwork_get(networksrc)
+          raise Lib::ResourceNotFoundError, networksrc unless srcnet
           destnet = vnetwork_get(networkdst)
+          raise Lib::ResourceNotFoundError, networkdst unless destnet
+          found = false
+          if IPAddress.valid?(nodegw)
+            @daemon_resources.vnodes.each_value { |vnode|
+              vnode.vifaces.each { |viface|
+                if viface.address.address == nodegw
+                  nodegw = vnode.name
+                  found = true
+                  break
+                end
+              }
+              break if found
+            }
+          end
           gw = vnode_get(nodegw)
+          raise Lib::ResourceNotFoundError, nodegw unless gw
           gwaddr = gw.get_viface_by_network(srcnet)
           gwaddr = gwaddr.address if gwaddr
-          raise Lib::ResourceNotFoundError, networksrc unless srcnet
-          raise Lib::ResourceNotFoundError, networkdst unless destnet
-          raise Lib::ResourceNotFoundError, nodegw unless gw
           raise Lib::InvalidParameterError, nodegw unless gwaddr
           vroute = srcnet.get_vroute(destnet)
           unless vroute
             vroute = Resource::VRoute.new(srcnet,destnet,gwaddr)
             srcnet.add_vroute(vroute)
           end
-          raise Lib::InvalidParameterError, "#{gw.name}->#{srcnet}" unless \
-          gw.connected_to?(srcnet)
-          vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless \
-          gw.gateway
+          raise Lib::InvalidParameterError, "#{gw.name}->#{srcnet}" unless gw.connected_to?(srcnet)
+          vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless gw.gateway
           srcnet.visibility.each do |pnode|
             if (pnode.status == Resource::Status::RUNNING)
               cl = NetAPI::Client.new(pnode.address.to_s, 4568)
@@ -1412,28 +1425,20 @@ module Distem
       # ==== Exceptions
       #
       def vplatform_create(format,data,rootfs=nil)
-        # TODO: /!\ THIS IS PROBABLY BROKEN /!\
-
         # >>> TODO: check if there is already a created vplatform
         raise Lib::MissingParameterError, 'data' unless data
         parser = nil
         desc = {}
         case format.upcase
-        when 'XML'
-          parser = TopologyStore::XMLReader.new
         when 'JSON'
           desc = JSON.parse(data)
         when 'SIMGRID'
           raise Lib::MissingParameterError, 'rootfs' unless rootfs
           parser = TopologyStore::SimgridReader.new(rootfs)
-        else
-          raise Lib::InvalidParameterError, format 
-        end
-        if desc.empty?
           desc = parser.parse(data)
-          #raise PP.pp(hash['vplatform'])
+        else
+          raise Lib::InvalidParameterError, format
         end
-        raise InvalidParameterError, data unless Lib::Validator.validate(hash)
         # Creating vnetworks
         if desc['vplatform']['vnetworks']
           desc['vplatform']['vnetworks'].each do |vnetdesc|
@@ -1444,9 +1449,7 @@ module Distem
         starting_vnodes = []
         if desc['vplatform']['vnodes']
           desc['vplatform']['vnodes'].each do |vnodedesc|
-            ret = vnode_create([vnodedesc['name']], vnodedesc).first
-            starting_vnodes << ret if \
-            vnodedesc['status'] == Resource::Status::RUNNING
+            vnode_create([vnodedesc['name']], vnodedesc).first
           end
         end
         # Creating VRoutes
@@ -1456,48 +1459,30 @@ module Distem
             if vnetdesc['vroutes']
               vnetdesc['vroutes'].each do |vroutedesc|
                 vroute_create(vroutedesc['networksrc'],vroutedesc['networkdst'],
-                              vroutedesc['gateway']
-                              )
+                              vroutedesc['gateway'])
               end
             end
           end
         end
-        starting_vnodes.each do |vnode|
-          while vnode.status != Resource::Status::READY
-            sleep(0.2)
-          end
-        end
-        
         return @daemon_resources
       end
-      
+
       # Get the description file of the current platform in a specified format (JSON if not specified)
-      # ==== Attributes
-      # * +format+ the format of the returned data
       # ==== Returns
       # String value that reprents the platform in the _format_ form
       # ==== Exceptions
       #
-      def vplatform_get(format)
-        format = '' unless format
-        visitor = nil
-        ret = ''
-
-        case format.upcase
-        when 'XML'
-          visitor = TopologyStore::XMLWriter.new
-        when 'JSON', ''
-          visitor = TopologyStore::HashWriter.new
-          ret += JSON.pretty_generate(visitor.visit(@daemon_resources))
-        else
-          raise Lib::InvalidParameterError, format 
+      def vplatform_get()
+        visitor = TopologyStore::HashWriter.new
+        h = visitor.visit(@daemon_resources)
+        if h["vplatform"]["vnodes"] && !h["vplatform"]["vnodes"].empty?
+          h["vplatform"]["vnodes"].each { |vnode|
+            if vnode["vfilesystem"]["image"]
+              vnode["vfilesystem"]["image"] = CGI.unescape(vnode["vfilesystem"]["image"])
+            end
+          }
         end
-
-        if ret.empty?
-          return visitor.visit(@daemon_resources)
-        else
-          return ret
-        end
+        return JSON.pretty_generate(h)
       end
 
       def set_peers_latencies(vnodes, matrix)

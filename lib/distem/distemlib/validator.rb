@@ -61,10 +61,10 @@ module Distem
     #     }
     #   }
 
-    #   # :nodoc:
-    #   def self.validate(object)
-    #     return true
-    #   end
+      # :nodoc:
+      def self.validate(object)
+        return true
+      end
 
     #   # :nodoc:
     #   def self.validate_hash(hash,expected=DEFAULT_DISTEM)

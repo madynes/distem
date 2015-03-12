@@ -292,16 +292,15 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'set_global_arptable'
   end
   opts.on(
-    '--save-config format=JSON|XML[,configfile=FILE]',
-    'Save the virtual platform in the given format (if configfile is not specified, save to STDOUT)'
-  ) do |str|
+    '--save-config [configfile=FILE]',
+    'Save the virtual platform in JSON (if configfile is not specified, save to STDOUT)') do |str|
     options['f_options'] << 'save_config'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('save_config', h, ['format'], ['configfile'])
+    exit 1 if not check_opts('load_config', h, [], ['configfile'])
     options.update(h)
   end
   opts.on(
-    '--load-config format=JSON|XML|SIMGRID[,configfile=FILE,rootfs=FILE]',
+    '--load-config format=JSON|SIMGRID[,configfile=FILE,rootfs=FILE]',
     'Load the virtual platform from the given format(if configfile is not specified, load from STDIN)'
   ) do |str|
     options['f_options'] << 'load_config'
@@ -478,7 +477,7 @@ options['f_options'].each { |option|
       pp cl.vnetworks_info()
     end
   when 'save_config'
-    ret = cl.vplatform_info(options['format'])
+    ret = cl.vplatform_info()
     if options['configfile']
       File.open(options['configfile'],'w') { |f| f.puts(ret) }
     else

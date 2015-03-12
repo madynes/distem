@@ -680,23 +680,12 @@ module Distem
       end
 
       # Get the description file of the current platform in a specified format (JSON if not specified)
-      get '/vplatform/?:format?/?' do
-      end
-
-      # (see GET /vplatform/:format)
-      get '/:format?/?' do
-      end
-
-      ['/vplatform/?:format?/?', '/:format?/?'].each do |path|
-      get path do
+      get '/vplatform' do
         check do
-          @body = @daemon.vplatform_get(params['format'])
-          # >>> TODO: put the right format
-          #send_file(ret, :filename => "vplatform")
+          @body = @daemon.vplatform_get()
         end
 
         return result!
-      end
       end
 
       # Load a configuration
