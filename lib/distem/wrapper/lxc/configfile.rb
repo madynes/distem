@@ -67,6 +67,14 @@ module LXCWrapper # :nodoc: all
           # This is not working on Debian wheezy, even with the swapaccount=1 kernel paramater. Mayber LXC 0.9 is required
           #f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
         end
+
+        #Deal with an issue when using systemd (infinite loop inducing high CPU load)
+        #http://serverfault.com/questions/658052/systemd-journal-in-debian-jessie-lxc-container-eats-100-cpu
+        lxc_major_version = `lxc-start --version`.split('.').first
+        if lxc_major_version == '1'
+          f.puts "lxc.autodev = 1"
+          f.puts "lxc.kmsg = 0"
+        end
       end
     end
   end
