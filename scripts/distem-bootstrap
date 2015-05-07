@@ -484,9 +484,11 @@ Net::SSH::Multi.start do |session|
     nodelist.each {|node| exec(session,"scp -o StrictHostKeyChecking=no #{debarchivefile} root@#{node}:#{TMP_DIR}",:coord)}
     msg("Installing generated debian package #{File.basename(debarchivefile)}",
         MSG_INFO)
-    depends = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'",
-                   :coord)[coordinator][0]
-    depends = depends.split("|").last.gsub!(' ','')
+    res = exec(session,"dpkg -I #{debarchivefile} | grep 'Depends:'", :coord)[coordinator][0]
+    raw_deps = res.sub('Depends:','').split(",")
+    depends = ""
+    raw_deps.each{ |str| depends += str.split(" ")[0]; depends += "," if str != raw_deps.last }
+
     exec(session,"dpkg --ignore-depends #{depends} -i #{TMP_DIR}/#{File.basename(debarchivefile)}")
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y --force-yes -f")
     msg("Cleaning installation files on #{coordinator}",MSG_INFO)
