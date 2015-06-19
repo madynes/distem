@@ -252,7 +252,11 @@ module Distem
         if default_interface
           root_iface = default_interface
         else
-          root_iface = @@default_iface = self.get_default_iface() if !@@default_iface
+          if !@@default_iface
+            root_iface = @@default_iface = self.get_default_iface()
+          else
+            root_iface = @@default_iface
+          end
         end
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
