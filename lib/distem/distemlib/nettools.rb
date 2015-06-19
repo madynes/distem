@@ -261,7 +261,7 @@ module Distem
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         # First, we set up the VXLAN interface
-        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{root_iface}")
+        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{root_iface} dstport 4789")
         Shell.run("ip link set up dev #{vxlan_iface}")
         # Then, we create a bridge
         Shell.run("brctl addbr #{bridge}")
