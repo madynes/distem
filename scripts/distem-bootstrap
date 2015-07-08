@@ -192,6 +192,7 @@ options[:ci] = nil
 options[:network_mode] = 'classical'
 options[:network_interface] = nil
 options[:deb_repo] = 'http://distem.gforge.inria.fr/deb'
+options[:deb_version] = 'wheezy'
 
 args = ARGV.dup
 
@@ -277,6 +278,7 @@ optparse = OptionParser.new do |opts|
       puts 'Unsupported Debian version'
       exit 1
     end
+    options[:deb_version] = v
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -422,7 +424,11 @@ Net::SSH::Multi.start do |session|
 
   if options[:cow]
     msg("Format #{options[:cow]} to Btrfs",MSG_INFO)
-    exec(session, "(umount /tmp || true) && mkfs.btrfs #{options[:cow]} && mount -o compress=lzo #{options[:cow]} /tmp && chmod 1777 /tmp")
+    if options[:deb_version] == 'jessie'
+      exec(session, "(umount /tmp || true) && mkfs.btrfs -f #{options[:cow]} && mount -o compress=lzo #{options[:cow]} /tmp && chmod 1777 /tmp")
+    else
+      exec(session, "(umount /tmp || true) && mkfs.btrfs #{options[:cow]} && mount -o compress=lzo #{options[:cow]} /tmp && chmod 1777 /tmp")
+    end
   end
   #setting up ulimit-open_files, to be removed
   rule="root hard nofile"
