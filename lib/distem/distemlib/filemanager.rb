@@ -82,7 +82,7 @@ module Distem
               Lib::Shell.run("btrfs subvolume snapshot #{cachedir} #{targetdir}")
             else
               Lib::Shell.run("mkdir -p #{targetdir}")
-              Lib::Shell.run("cp -Rf #{File.join(cachedir,'*')} #{targetdir}")
+              Lib::Shell.run("cp -af #{File.join(cachedir,'*')} #{targetdir}")
             end
           end
         }
