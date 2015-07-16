@@ -57,12 +57,12 @@ def test_core(core)
 	
 end
 
-`umount #{PATH_CGROUP}` if File.exists?(PATH_CGROUP)
-`mkdir #{PATH_CGROUP}` unless File.exists?(PATH_CGROUP)
+`umount #{PATH_CGROUP}` if File.exist?(PATH_CGROUP)
+`mkdir #{PATH_CGROUP}` unless File.exist?(PATH_CGROUP)
 `mount -t cgroup -o cpu,cpuset test #{PATH_CGROUP}`
 puts "Failed to mount cgroups" unless $?.success?
 
-`mkdir #{PATH_CGROUP_TEST}` unless File.exists?(PATH_CGROUP_TEST)
+`mkdir #{PATH_CGROUP_TEST}` unless File.exist?(PATH_CGROUP_TEST)
 
 cpu = Distem::Resource::CPU.new
 Distem::Lib::CPUTools.set_resource(cpu)

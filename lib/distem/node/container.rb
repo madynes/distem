@@ -46,8 +46,8 @@ module Distem
         @vnode = vnode
         @fsforge = FileSystemForge.new(@vnode)
         raise Lib::ResourceNotFoundError, @vnode.filesystem.path if \
-          !File.exists?(@vnode.filesystem.path) and
-          !File.exists?(@vnode.filesystem.sharedpath)
+          !File.exist?(@vnode.filesystem.path) and
+          !File.exist?(@vnode.filesystem.sharedpath)
         @cpuforge = CPUForge.new(@vnode,@vnode.host.algorithms[:cpu])
         @networkforges = {}
         @vnode.vifaces.each do |viface|
@@ -72,14 +72,14 @@ module Distem
         sshpath = File.join(rootfspath,'root','.ssh')
 
         # Creating SSH directory
-        unless File.exists?(sshpath)
+        unless File.exist?(sshpath)
           Lib::Shell.run("mkdir -p #{sshpath}")
         end
 
         # Copying every private keys if not already existing
         Daemon::Admin.ssh_keys_priv.each do |keyfile|
           keypath=File.join(sshpath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
-          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
+          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exist?(keypath)
         end
         File.open(File.join(sshpath,SSH_KEY_FILENAME),'w') do |f|
           f.puts @vnode.sshkey['private']
@@ -88,7 +88,7 @@ module Distem
         # Copying every public keys if not already existing
         Daemon::Admin.ssh_keys_pub.each do |keyfile|
           keypath=File.join(sshpath,"#{SSH_KEY_PREFIX}#{File.basename(keyfile)}")
-          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exists?(keypath)
+          Lib::Shell.run("cp #{keyfile} #{keypath}") unless File.exist?(keypath)
         end
         File.open(File.join(sshpath,"#{SSH_KEY_FILENAME}.pub"),'w') do |f|
           f.puts @vnode.sshkey['public']
@@ -97,7 +97,7 @@ module Distem
         # Copying authorized_keys file of the host
         hostauthfile = File.join(Daemon::Admin::PATH_SSH,'authorized_keys')
         authfile = File.join(sshpath,'authorized_keys')
-        if File.exists?(authfile)
+        if File.exist?(authfile)
           authkeys = IO.readlines(authfile).collect{|v| v.chomp}
           hostauthkeys = IO.readlines(hostauthfile).collect{|v| v.chomp}
           hostauthkeys.each do |key|
@@ -105,13 +105,13 @@ module Distem
               authkeys.include?(key)
           end
         else
-          Lib::Shell.run("cp -f #{hostauthfile} #{authfile}") if File.exists?(hostauthfile)
+          Lib::Shell.run("cp -f #{hostauthfile} #{authfile}") if File.exist?(hostauthfile)
         end
 
         # Adding public keys to SSH authorized_keys file
         pubkeys = Daemon::Admin.ssh_keys_pub.collect{ |v| IO.read(v).chomp }
         pubkeys << @vnode.sshkey['public'] if @vnode.sshkey and @vnode.sshkey['public']
-        if File.exists?(authfile)
+        if File.exist?(authfile)
           authkeys = IO.readlines(authfile).collect{|v| v.chomp} unless authkeys
           pubkeys.each do |key|
             File.open(authfile,'a') { |f| f.puts key } unless \

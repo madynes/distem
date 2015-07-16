@@ -20,7 +20,7 @@ module Distem
       def initialize(vnode)
         super(vnode.filesystem,nil)
 
-        unless File.exists?(PATH_DEFAULT_CONFIGFILE)
+        unless File.exist?(PATH_DEFAULT_CONFIGFILE)
           Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CONFIGFILE}")
         end
 
@@ -28,7 +28,7 @@ module Distem
         uniquefspath = File.join(PATH_DEFAULT_ROOTFS_UNIQUE,@resource.vnode.name)
 
         block = Proc.new { |filepath,mode|
-          Lib::Shell.run("rm -Rf #{filepath}") if File.exists?(filepath)
+          Lib::Shell.run("rm -Rf #{filepath}") if File.exist?(filepath)
           Lib::Shell.run("mkdir #{(mode ? "-m #{mode}" : '')} -p #{filepath}")
         }
 

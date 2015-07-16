@@ -353,7 +353,7 @@ if g5k? and `g5k-subnets`.strip.empty?
 end
 
 if options[:ssh_key]
-  if File.exists?(options[:ssh_key])
+  if File.exist?(options[:ssh_key])
     sshkeyfile = options[:ssh_key]
   else
     msg("ssh key #{options[:ssh_key]} not found",MSG_ERR,true)
@@ -380,7 +380,7 @@ msg("Copying SSH key pair files",
 allnodes.each do |node|
   `scp #{sshkeyfile} root@#{node}:/root/.ssh/`
 end
-if File.exists?("#{sshkeyfile}.pub")
+if File.exist?("#{sshkeyfile}.pub")
   allnodes.each do |node|
     `scp #{sshkeyfile}.pub root@#{node}:/root/.ssh/`
   end

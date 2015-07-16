@@ -486,7 +486,7 @@ options['f_options'].each { |option|
   when 'load_config'
     str = ""
     if options['configfile']
-      if File.exists?(options['configfile'])
+      if File.exist?(options['configfile'])
         str = File.read(options['configfile'])
       else
         puts "File '#{options['configfile']}' not found !"

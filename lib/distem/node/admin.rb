@@ -50,7 +50,7 @@ module Distem
         Lib::NetTools.unset_bridge() if bridge
         Lib::NetTools.unset_ifb()
         unset_cgroups()
-        Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exists?(PATH_DISTEMTMP)
+        Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exist?(PATH_DISTEMTMP)
       end
 
       def self.has_systemd?

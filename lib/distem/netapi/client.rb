@@ -502,7 +502,7 @@ module Distem
       # @return [String] The path where the compressed image was retrieved
       def vfilesystem_image(vnodename,target = '.')
         target = '.' if !target
-        raise Lib::ResourceNotFoundError, File.dirname(target) unless File.exists?(File.dirname(target))
+        raise Lib::ResourceNotFoundError, File.dirname(target) unless File.exist?(File.dirname(target))
         if File.directory?(target)
           target = File.join(target,"#{vnodename}-fsimage.tar.gz")
         end
