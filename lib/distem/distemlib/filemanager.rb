@@ -46,7 +46,7 @@ module Distem
         case uri.scheme
           when "file"
             ret = uri.path
-            raise Lib::ResourceNotFoundError, ret unless File.exists?(ret)
+            raise Lib::ResourceNotFoundError, ret unless File.exist?(ret)
           else
             raise Lib::NotImplementedError, uri.scheme
         end
@@ -65,7 +65,7 @@ module Distem
       # * +NotImplementedError+ if the archive file format is not supported (available: tar, gzip, bzip, zip, (tgz,...))
       #
       def self.extract(archivefile,targetdir="",override=true,cow=false)
-        raise Lib::ResourceNotFoundError, archivefile unless File.exists?(archivefile)
+        raise Lib::ResourceNotFoundError, archivefile unless File.exist?(archivefile)
 
         if targetdir.empty?
           targetdir = File.dirname(archivefile)
@@ -75,7 +75,7 @@ module Distem
 
         @@lock.synchronize {
           cachedir,new = cache_archive(archivefile,filehash,cow)
-          exists = File.exists?(targetdir)
+          exists = File.exist?(targetdir)
           if !exists or override or new
             Lib::Shell.run("rm -Rf #{targetdir}") if exists
             if cow
@@ -101,9 +101,9 @@ module Distem
       #
       def self.extract!(archivefile,target_dir)
         raise Lib::ResourceNotFoundError, archivefile \
-          unless File.exists?(archivefile)
+          unless File.exist?(archivefile)
 
-        unless File.exists?(target_dir)
+        unless File.exist?(target_dir)
           Lib::Shell.run("mkdir -p #{target_dir}")
         end
 
@@ -122,13 +122,13 @@ module Distem
       # String value describing the path to the directory (on the local machine) the file was cached to
       #
       def self.cache_archive(archivefile,filehash,cow)
-        Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CACHE}") if !File.exists?(PATH_DEFAULT_CACHE)
+        Lib::Shell.run("mkdir -p #{PATH_DEFAULT_CACHE}") if !File.exist?(PATH_DEFAULT_CACHE)
         cachedir = File.join(PATH_DEFAULT_CACHE,filehash)
         newcache = false
 
         unless @@archivecache.include?(filehash)
           @@archivecache << filehash
-          if File.exists?(cachedir)
+          if File.exist?(cachedir)
             Lib::Shell.run("rm -R #{cachedir}")
           end
           if cow
@@ -158,8 +158,8 @@ module Distem
       #
       def self.compress(filepath)
         raise Lib::ResourceNotFoundError, filepath \
-          unless File.exists?(filepath)
-        unless File.exists?(PATH_DEFAULT_COMPRESS)
+          unless File.exist?(filepath)
+        unless File.exist?(PATH_DEFAULT_COMPRESS)
           Lib::Shell.run("mkdir -p #{PATH_DEFAULT_COMPRESS}")
         end
 

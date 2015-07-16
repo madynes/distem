@@ -25,7 +25,7 @@ module Distem
           log = "#{cmdlog}\n#{ret}"
           error = !$?.success?
         else
-          Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) unless File.exists?(Distem::Node::Admin::PATH_DISTEM_LOGS)
+          Dir::mkdir(Distem::Node::Admin::PATH_DISTEM_LOGS) unless File.exist?(Distem::Node::Admin::PATH_DISTEM_LOGS)
           full_version = RUBY_VERSION.split('.')
           main_version = full_version[0] + '.' + full_version[1]
           case main_version
