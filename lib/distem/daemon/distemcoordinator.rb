@@ -1228,14 +1228,13 @@ module Distem
 
           if @@network_mode == 'classical'
             pnodes = @daemon_resources.pnodes.values
-            hosts = vnetwork.address.hosts
             mask = vnetwork.address.netmask
             #Add a virtual interface connected in the network on every Pnode
             w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
             pnodes.each_index { |i|
               block = Proc.new {
                 cl = NetAPI::Client.new(pnodes[i].address.to_s, 4568)
-                cl.vnetwork_create_routing_interface(hosts[-(i+1)].to_s, mask)
+                cl.vnetwork_create_routing_interface(IPAddress::IPv4::parse_u32(vnetwork.address.last.to_u32 - i).to_s, mask)
               }
               w.add(block)
             }

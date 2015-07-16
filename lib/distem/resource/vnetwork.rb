@@ -43,8 +43,7 @@ module Distem
         @visibility = []
 
         # Address used by the coordinator
-        @alreadyusedaddr = @address.hosts.last(nb_pnodes).map { |a| a.to_s }
-
+        @alreadyusedaddr = nb_pnodes.times.map { |n| IPAddress::IPv4::parse_u32(@address.last.to_u32 - n).to_s }
         @curaddress = @address.first
       end
 
