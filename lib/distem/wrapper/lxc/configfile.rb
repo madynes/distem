@@ -70,10 +70,12 @@ module LXCWrapper # :nodoc: all
 
         #Deal with an issue when using systemd (infinite loop inducing high CPU load)
         #http://serverfault.com/questions/658052/systemd-journal-in-debian-jessie-lxc-container-eats-100-cpu
-        lxc_major_version = `lxc-start --version`.split('.').first
-        if lxc_major_version == '1'
-          f.puts "lxc.autodev = 1"
-          f.puts "lxc.kmsg = 0"
+        if system('lxc-start --version')
+          lxc_major_version = `lxc-start --version`.split('.').first
+          if lxc_major_version == '1'
+            f.puts "lxc.autodev = 1"
+            f.puts "lxc.kmsg = 0"
+          end
         end
       end
     end
