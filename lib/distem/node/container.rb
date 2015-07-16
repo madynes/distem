@@ -187,7 +187,10 @@ module Distem
       def remove
         LXCWrapper::Command.destroy(@vnode.name,true)
         if !@vnode.filesystem.shared && @vnode.filesystem.cow
-          Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
+          # The subvolume deletion is performed automatically by LXC in the Jessie version.
+          if File.exist?(@vnode.filesystem.path)
+            Lib::Shell.run("btrfs subvolume delete #{@vnode.filesystem.path}")
+          end
         end
       end
 
