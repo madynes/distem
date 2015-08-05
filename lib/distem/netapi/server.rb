@@ -419,6 +419,19 @@ module Distem
         return result!
       end
 
+      # Execute and get the result of a command on a set of virtual nodes
+      #
+      # ==== Query parameters:
+      # * *names* -- Array of virtual nodes
+      # * *command* -- The command to be executed
+      post '/commands/?' do
+        check do
+          @body = @daemon.vnodes_execute(JSON.parse(params['names']), params['command'])
+        end
+
+        return result!
+      end
+
       # Create a new virtual interface on the targeted virtual node
       # The IP address is auto assigned to the virtual interface if not specified
       #

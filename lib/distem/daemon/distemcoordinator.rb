@@ -1170,6 +1170,31 @@ module Distem
         return ret
       end
 
+      def vnodes_execute(names, command)
+        names = [names] if !names.is_a?(Array)
+        vnodes = names.map { |name| vnode_get(name) }
+        ret = {}
+        vnodesperpnode = Hash.new
+        vnodes.each { |vnode|
+          vnodesperpnode[vnode.host.address.to_s] = [] if !vnodesperpnode.has_key?(vnode.host.address.to_s)
+          vnodesperpnode[vnode.host.address.to_s] << vnode
+        }
+        tmp_ret = {}
+        w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
+        vnodesperpnode.each { |address,vn|
+          sub_block = Proc.new {
+            n = vn.map { |vnode| vnode.name }
+            Distem.client(address, 4568) do |cl|
+              tmp_ret[address] = cl.vnodes_execute(n, command)
+            end
+          }
+          w.add(sub_block)
+        }
+        w.run
+        tmp_ret.each_value {|v| ret.merge!(v)}
+        return ret
+      end
+
       def vnetwork_sync(vnet, pnode, lock=true)
         block = Proc.new do
           if !vnet.visibility.include?(pnode)
@@ -1440,23 +1465,26 @@ module Distem
         end
         # Creating vnetworks
         if desc['vplatform']['vnetworks']
-          desc['vplatform']['vnetworks'].each do |vnetdesc|
+          desc['vplatform']['vnetworks'].each do |v|
+            vnetdesc = v[1]
             vnetwork_create(vnetdesc['name'],vnetdesc['address'])
           end
         end
         # Creating the vnodes
-        starting_vnodes = []
         if desc['vplatform']['vnodes']
-          desc['vplatform']['vnodes'].each do |vnodedesc|
+          desc['vplatform']['vnodes'].each do |v|
+            vnodedesc = v[1]
             vnode_create([vnodedesc['name']], vnodedesc).first
           end
         end
         # Creating VRoutes
         #vroute_complete()
         if desc['vplatform']['vnetworks']
-          desc['vplatform']['vnetworks'].each do |vnetdesc|
+          desc['vplatform']['vnetworks'].each do |v|
+            vnetdesc = v[1]
             if vnetdesc['vroutes']
-              vnetdesc['vroutes'].each do |vroutedesc|
+              vnetdesc['vroutes'].each do |vr|
+                vroutedesc = vr[1]
                 vroute_create(vroutedesc['networksrc'],vroutedesc['networkdst'],
                               vroutedesc['gateway'])
               end
@@ -1475,7 +1503,8 @@ module Distem
         visitor = TopologyStore::HashWriter.new
         h = visitor.visit(@daemon_resources)
         if h["vplatform"]["vnodes"] && !h["vplatform"]["vnodes"].empty?
-          h["vplatform"]["vnodes"].each { |vnode|
+          h["vplatform"]["vnodes"].each { |v|
+            vnode = v[1]
             if vnode["vfilesystem"]["image"]
               vnode["vfilesystem"]["image"] = CGI.unescape(vnode["vfilesystem"]["image"])
             end
@@ -1651,7 +1680,8 @@ module Distem
         pnode.memory.capacity = hash['memory']['capacity'].split[0].to_i
         pnode.memory.swap = hash['memory']['swap'].split[0].to_i
 
-        hash['cpu']['cores'].each do |core|
+        hash['cpu']['cores'].each do |c|
+          core = c[1]
           core['frequencies'].collect!{ |val| val.split[0].to_i * 1000 }
 
           core['frequency'] = core['frequency'].split[0].to_i * 1000
@@ -1662,7 +1692,8 @@ module Distem
                              )
         end
 
-        hash['cpu']['critical_cache_links'].each do |link|
+        hash['cpu']['critical_cache_links'].each do |l|
+          link = l[1]
           pnode.cpu.add_critical_cache_link(link)
         end
       end

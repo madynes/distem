@@ -47,10 +47,11 @@ module Distem
           @finished = false
           @size = size
           @tids = []
+          @res = {}
         end
 
-        def add(t)
-          @queue << t
+        def add(task, tag = nil)
+          @queue << [task, tag]
         end
 
         def run
@@ -61,9 +62,10 @@ module Distem
             @tids << Thread.new {
               while !@finished do
                 task = nil
+                tag = nil
                 @lock.synchronize {
                   if @queue.size > 0
-                    task = @queue.pop
+                    task, tag = @queue.pop
                   else
                     @finished = true
                   end
@@ -72,13 +74,18 @@ module Distem
                   if task.is_a?(Proc)
                     task.call
                   else
-                    system(task)
+                    res = Shell.run_without_logging(task)
+                    @res[tag] = res if tag
                   end
                 end
               end
             }
           }
           @tids.each { |tid| tid.join }
+        end
+
+        def results
+          @res
         end
 
         def kill

@@ -84,7 +84,10 @@ module Distem
       # ==== Returns
       # Object value of the kind of the concrete class (i.e. HashWriter returns an Hash object)
       def visit_hash(hash)
-        ret = hash.values.collect { |val| visit(val) }
+        ret = {}
+        hash.each_pair { |k,v|
+          ret[k] = visit(v)
+        }
         return ret
       end
 

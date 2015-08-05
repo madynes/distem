@@ -349,6 +349,15 @@ module Distem
         post_json("/vnodes/#{CGI.escape(vnodename)}/commands", { :command => command })
       end
 
+      # Execute and get the result of a command on a set of virtual nodes
+      #
+      # @param [Array] names Array of virtual nodes
+      # @param [String] command The command to be executed
+      # @return [Hash] The result of the command (one entry by vnode)
+      def vnodes_execute(names, command)
+        post_json("/commands", { :names => names, :command => command })
+      end
+
       # Create a virtual network interface on the virtual node
       #
       # @param [String] vnodename The name of the virtual node

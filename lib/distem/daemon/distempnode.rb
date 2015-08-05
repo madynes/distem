@@ -697,9 +697,9 @@ module Distem
           unit = 'mhz'
 
           if desc['vcores']
-            raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
-            val = desc['vcores'][0]['frequency']
-            corenb = desc['vcores'].size
+            raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Hash)
+            val = desc['vcores']['0']['frequency']
+            corenb = desc['vcores'].keys.length
           else
             if desc['val']
               val = desc['val']
@@ -749,8 +749,8 @@ module Distem
           val = nil
           unit = 'mhz'
           if desc['vcores']
-            raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Array)
-            val = desc['vcores'][0]['frequency']
+            raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Hash)
+            val = desc['vcores']['0']['frequency']
           else
             if desc['val']
               val = desc['val']
@@ -1023,6 +1023,16 @@ module Distem
           w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file} 2>/dev/null\"")
         }
         w.run
+      end
+
+      def vnodes_execute(names, command)
+        w = Distem::Lib::Synchronization::SlidingWindow.new(100)
+        names.each { |vnode_name|
+          vnode = vnode_get(vnode_name)
+          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"#{command}\"", vnode_name)
+        }
+        w.run
+        return w.results
       end
 
       def wait_vnodes(opts)

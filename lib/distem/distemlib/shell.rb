@@ -54,6 +54,29 @@ module Distem
 
         return ret
       end
+
+      def self.run_without_logging(cmd)
+        res = {}
+        full_version = RUBY_VERSION.split('.')
+        main_version = full_version[0] + '.' + full_version[1]
+        case main_version
+        when '1.8'
+          Open3.popen3(cmd) do |stdin, stdout, stderr|
+            res[:out] = stdout.read
+            res[:err] = stderr.read
+            res[:success] = ($?.success? and res[:err].empty?) ? 'ok' : 'ko'
+          end
+        when '1.9','2.0','2.1'
+          Open3.popen3(cmd) do |stdin, stdout, stderr, thr|
+            res[:out] = stdout.read
+            res[:err] = stderr.read
+            res[:success] = (thr.value.success? and res[:err].empty?) ? 'ok' : 'ko'
+          end
+        else
+          raise "Unsupported Ruby version: #{RUBY_VERSION}"
+        end
+        return res
+      end
     end
 
   end
