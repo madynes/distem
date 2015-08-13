@@ -180,7 +180,7 @@ int run(cpu_cmds* cmds) {
 
 	/* calibrate */
 
-	loops_per_sec = CALIBRATE(LOOP(), 2.0);
+	loops_per_sec = CALIBRATE(LOOP(), 1.0);
 	printf("# loops per second = %lld\n", loops_per_sec);
 
 	threads = (pthread_t*)malloc(sizeof(pthread_t) * cmds->cpus);
