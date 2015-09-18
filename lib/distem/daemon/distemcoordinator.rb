@@ -32,11 +32,9 @@ module Distem
       @@vxlan_id = 1
       @@vxlan_id_lock = Mutex.new
 
-      @@network_mode = nil
-
       WINDOW_SIZE = 250
 
-      def initialize(network_mode,root_iface)
+      def initialize()
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
@@ -44,8 +42,6 @@ module Distem
         @vnet_id = 0
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
-        @@network_mode = network_mode
-        @@root_iface = root_iface
       end
 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
@@ -64,7 +60,6 @@ module Distem
             pnode = @daemon_resources.get_pnode_by_address(target)
             pnode = Resource::PNode.new(target) unless pnode
             @daemon_resources.add_pnode(pnode)
-            desc['set_bridge'] = (@@network_mode == 'classical')
             block = Proc.new {
               Admin.pnode_run_server(pnode)
               cl = NetAPI::Client.new(target, 4568)
@@ -425,7 +420,6 @@ module Distem
       def vnode_attach(name,host)
         vnode = vnode_get(name)
         pnode = @daemon_resources.get_pnode_by_address(host)
-
         if pnode
           raise Lib::UninitializedResourceError, pnode.address.to_s unless \
           pnode.status == Resource::Status::RUNNING
@@ -870,7 +864,6 @@ module Distem
             prop = desc['vnetwork']
             vnetwork = vplatform.get_vnetwork_by_name(prop)
           end
-          viface.bridge = (vnetwork.vxlan_id > 0) ? Lib::NetTools::VXLAN_BRIDGE_PREFIX + vnetwork.vxlan_id.to_s : Lib::NetTools::DEFAULT_BRIDGE
           raise Lib::ResourceNotFoundError, "vnetwork:#{prop}" unless vnetwork
 
           if desc['address']
@@ -1201,8 +1194,10 @@ module Distem
             vnet.visibility << pnode
             cl = NetAPI::Client.new(pnode.address.to_s, 4568)
             # Adding VNetwork on the pnode
-            cl.vnetwork_create(vnet.name,vnet.address.to_string,{'nb_pnodes' => @daemon_resources.pnodes.length, 'pnode_index' => @daemon_resources.pnodes.keys.index(pnode.address.to_s), 'vxlan_id' => vnet.vxlan_id.to_i, 'root_iface' => @@root_iface})
-
+            opts = vnet.opts
+            opts['nb_pnodes'] = @daemon_resources.pnodes.length
+            opts['pnode_index'] = @daemon_resources.pnodes.keys.index(pnode.address.to_s)
+            cl.vnetwork_create(vnet.name,vnet.address.to_string,opts)
             # Adding VRoutes to the new VNetwork
             vnet.vroutes.values.each do |vroute|
               vnetwork_sync(vroute.dstnet,pnode,false)
@@ -1229,6 +1224,7 @@ module Distem
       # ==== Attributes
       # * +name+ the -unique- name of the virtual network (it will be used in a lot of methods)
       # * +address+ the address in the CIDR (10.0.0.1/24) or IP/NetMask (10.0.0.1/255.255.255.0) format
+      # * +opts+
       # ==== Returns
       # Resource::VNetwork object
       # ==== Exceptions
@@ -1241,30 +1237,23 @@ module Distem
             name = "vnetwork#{@vnet_id}"
             @vnet_id += 1
           end
-          if @@network_mode == 'vxlan'
-            vnetwork = Resource::VNetwork.new(address,name,@daemon_resources.pnodes.length,@@vxlan_id)
+          if !opts
+            opts = {}
+          end
+          if opts.has_key?('network_type')
+            raise Lib::InvalidParameterError, opts['network_type'] if !['classical','vxlan'].include?(opts['network_type'])
+          else
+            opts['network_type'] = 'classical'
+          end
+
+          if opts['network_type'] == 'vxlan'
+            opts['vxlan_id'] = @@vxlan_id
             @@vxlan_id_lock.synchronize {
               @@vxlan_id += 1
             }
-          else
-            vnetwork = Resource::VNetwork.new(address,name,@daemon_resources.pnodes.length,0)
           end
+          vnetwork = Resource::VNetwork.new(address, name, @daemon_resources.pnodes.length, opts)
           @daemon_resources.add_vnetwork(vnetwork)
-
-          if @@network_mode == 'classical'
-            pnodes = @daemon_resources.pnodes.values
-            mask = vnetwork.address.netmask
-            #Add a virtual interface connected in the network on every Pnode
-            w = Distem::Lib::Synchronization::SlidingWindow.new(WINDOW_SIZE)
-            pnodes.each_index { |i|
-              block = Proc.new {
-                cl = NetAPI::Client.new(pnodes[i].address.to_s, 4568)
-                cl.vnetwork_create_routing_interface(IPAddress::IPv4::parse_u32(vnetwork.address.last.to_u32 - i).to_s, mask)
-              }
-              w.add(block)
-            }
-            w.run
-          end
           return vnetwork
         rescue Lib::AlreadyExistingResourceError
           raise
@@ -1691,10 +1680,8 @@ module Distem
                              core['frequency'], core['frequencies']
                              )
         end
-
         hash['cpu']['critical_cache_links'].each do |l|
-          link = l[1]
-          pnode.cpu.add_critical_cache_link(link)
+          pnode.cpu.add_critical_cache_link(l)
         end
       end
 

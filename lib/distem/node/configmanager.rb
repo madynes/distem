@@ -53,7 +53,7 @@ module Distem
       #
       def vnode_remove(vnode)
         raise unless vnode.is_a?(Resource::VNode)
-        if @containers[vnode.name] 
+        if @containers[vnode.name]
           @containers[vnode.name].destroy
           @containers.delete(vnode.name)
         end
@@ -69,13 +69,14 @@ module Distem
       # Start a virtual node to be able to use it (it have to be installed and in the status READY)
       # ==== Attributes
       # * +vnode+ The VNode object
+      # * +distempnode+ DistemPnode object
       #
-      def vnode_start(vnode)
+      def vnode_start(vnode, distempnode)
         if @containers[vnode.name]
           @containers[vnode.name].start()
         else
           @containers[vnode.name] = Node::Container.new(vnode)
-          @containers[vnode.name].configure()
+          @containers[vnode.name].configure(distempnode)
           @containers[vnode.name].start()
 =begin
           vnode.vifaces.each do |viface|

@@ -18,7 +18,7 @@ module LXCWrapper # :nodoc: all
       "lxc.cgroup.devices.allow = c 5:2 rwm  #  /dev/pts/ptmx\n" \
       "lxc.cgroup.devices.allow = c 254:0 rwm  # rtc\n"
 
-    def self.generate(vnode,filepath)
+    def self.generate(vnode,filepath,distempnode)
       # Write lxc config file
       File.open(filepath, 'w') do |f|
         f.puts DEFAULT_DEV_RULES
@@ -46,7 +46,20 @@ module LXCWrapper # :nodoc: all
 
         vnode.vifaces.each do |viface|
           f.puts "lxc.network.type = veth"
-          f.puts "lxc.network.link = #{viface.bridge}"
+          viface_bridge = nil
+          case viface.vnetwork.opts['network_type']
+          when 'classical'
+            if viface.vnetwork.opts.has_key?('root_interface')
+              viface_bridge = distempnode.linux_bridges[vnetwork.opts['root_interface']]
+            else
+              viface_bridge = distempnode.linux_bridges[distempnode.default_network_interface]
+            end
+          when 'vxlan'
+            viface_bridge = Distem::Lib::NetTools::VXLAN_BRIDGE_PREFIX + viface.vnetwork.opts['vxlan_id'].to_s
+          else
+            raise
+          end
+          f.puts "lxc.network.link = #{viface_bridge}"
           f.puts "lxc.network.name = #{viface.name}"
           f.puts "lxc.network.flags = up"
           f.puts "lxc.network.hwaddr = #{viface.macaddress}"

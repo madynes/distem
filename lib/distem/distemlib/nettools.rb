@@ -6,18 +6,16 @@ module Distem
     class NetTools
       # Name used for the bridge set up on a physical machine
       DEFAULT_BRIDGE='br0'
-      VXLAN_BRIDGE_PREFIX='vxbr'
+      VXLAN_BRIDGE_PREFIX='vxlanbr'
       VXLAN_INTERFACE_PREFIX='vxlan'
       LOCALHOST='localhost' # :nodoc:
       # Maximal size for a network interface name (from GNU/Linux specifications)
       IFNAMEMAXSIZE=15
       @@nic_count=1
       @@addr_default=nil
-      @@default_iface = nil
-      @@default_iface_ip = nil
-      @@default_iface_netmask = nil
-      @@default_gw = nil
-      @@alias_interfaces = {}
+      # Hash containing the (interface name, interface address, interface netmask) triplet
+      # for a root interface on which a bridge is plugged on
+      @@br_info = {}
 
       # Gets the name of the default network interface used for network communications
       # ==== Returns
@@ -84,48 +82,53 @@ module Distem
         return cmdret.lines.grep(/^default /).first.gsub(/.* via ([0-9.]+).*/, '\1').chomp
       end
 
-      # Set up the default bridge that will be used to attach new network interfaces
-      def self.set_bridge
+      def self.set_bridge(root_interface, default_gw)
         str = Shell.run("ifconfig")
-        unless str.include?("#{DEFAULT_BRIDGE}")
+        bridge_name = "br_#{root_interface}"
+        unless str.include?(bridge_name)
+          @@br_info[bridge_name] = [root_interface, self.get_iface_addr(root_interface), self.get_netmask(root_interface)]
           # needs to be done before we break eth0
-          @@default_iface = self.get_default_iface()
-          @@default_iface_ip = self.get_iface_addr(@@default_iface)
-          @@default_iface_netmask = self.get_netmask(@@default_iface)
-          cfg = self.get_iface_config(@@default_iface)
-          @@default_gw = self.get_default_gateway
-          Shell.run("ethtool -G #{@@default_iface} rx 4096 tx 4096 || true")
+          cfg = self.get_iface_config(root_interface)
+          Shell.run("ethtool -G #{root_interface} rx 4096 tx 4096 || true")
 
-          Shell.run("brctl addbr #{DEFAULT_BRIDGE}")
-          Shell.run("brctl setfd #{DEFAULT_BRIDGE} 0")
-          Shell.run("brctl setageing #{DEFAULT_BRIDGE} 3000000")
-          Shell.run("/bin/ip addr add dev #{DEFAULT_BRIDGE} #{cfg}")
-          Shell.run("/bin/ip link set dev #{DEFAULT_BRIDGE} promisc on")
-          Shell.run("/bin/ip link set dev #{DEFAULT_BRIDGE} up")
-          Shell.run("brctl addif #{DEFAULT_BRIDGE} #{@@default_iface}")
-          Shell.run("ifconfig #{@@default_iface} 0.0.0.0 up")
-          iface = self.get_default_iface()
-          unless iface.empty?
-            Shell.run("ip route del default dev #{iface}")
+          Shell.run("brctl addbr #{bridge_name}")
+          Shell.run("brctl setfd #{bridge_name} 0")
+          Shell.run("brctl setageing #{bridge_name} 3000000")
+          Shell.run("/bin/ip addr add dev #{bridge_name} #{cfg}")
+          Shell.run("/bin/ip link set dev #{bridge_name} promisc on")
+          Shell.run("/bin/ip link set dev #{bridge_name} up")
+          Shell.run("brctl addif #{bridge_name} #{root_interface}")
+          Shell.run("ifconfig #{root_interface} 0.0.0.0 up")
+          # Set the default route only if the default interface has been added into the bridge, in
+          # this case the default gateway is passed as a parameter to set_bridge
+          if default_gw
+            iface = self.get_default_iface()
+            unless iface.empty?
+              Shell.run("ip route del default dev #{iface}")
+            end
+            Shell.run("ip route add default dev #{bridge_name} via #{default_gw}")
           end
-          Shell.run("ip route add default dev #{DEFAULT_BRIDGE} via #{@@default_gw}")
+          return bridge_name
+        else
+          return nil
         end
       end
 
       # Unset the bridge and restore the default interface, if possible
-      def self.unset_bridge
-        if (@@default_iface && @@default_iface_ip && @@default_iface_netmask && @@default_gw)
-          cmd = ""
-          Dir.glob("/sys/class/net/#{DEFAULT_BRIDGE}/brif/*").each { |i|
-            cmd += "brctl delif #{DEFAULT_BRIDGE} #{File.basename(i)};"
-          }
-          cmd += "ip link set #{DEFAULT_BRIDGE} down;"
-          cmd += "brctl delbr #{DEFAULT_BRIDGE};"
-          cmd += "ifconfig #{@@default_iface} #{@@default_iface_ip} netmask #{@@default_iface_netmask};"
-          cmd += "route add -net 0.0.0.0 gw #{@@default_gw} dev #{@@default_iface}"
-          Shell.run(cmd)
+      def self.unset_bridge(brname, default_gw)
+        interface, ip, netmask = @@br_info[brname]
+        @@br_info.delete(brname)
+        cmd = ""
+        Dir.glob("/sys/class/net/#{brname}/brif/*").each { |i|
+          cmd += "brctl delif #{brname} #{File.basename(i)};"
+        }
+        cmd += "ip link set #{brname} down;"
+        cmd += "brctl delbr #{brname};"
+        cmd += "ifconfig #{interface} #{ip} netmask #{netmask}"
+        if default_gw
+          cmd += ";route add -net 0.0.0.0 gw #{default_gw} dev #{interface}"
         end
-        @@default_iface = @@default_iface_ip = @@default_iface_netmask = @@default_gw = nil
+        Shell.run(cmd)
       end
 
       # Set up the IFB module
@@ -148,12 +151,16 @@ module Distem
       end
 
       # Create a new NIC network interface on the physical node (used to communicate with the VNodes, see Daemon::Admin)
-      def self.set_new_nic(address,netmask,iface=nil)
-        iface = self.get_default_iface() if !iface
+      def self.set_new_nic(address,netmask,iface)
         new_iface = "#{iface}:#{@@nic_count}"
         Shell.run("ifconfig #{new_iface} #{address} netmask #{netmask}")
         @@nic_count += 1
         return new_iface
+      end
+
+      # Unset NIC
+      def self.unset_nic(name)
+        Shell.run("ifconfig #{name} down")
       end
 
       # Disable IPv6
@@ -248,20 +255,11 @@ module Distem
       # * +netmask+ netmask of the related virtual network
       # * +default_interface+ specify a default interface used to plug the VXLAN interface
       #
-      def self.create_vxlan_interface(id,address,netmask,default_interface=nil)
-        if default_interface
-          root_iface = default_interface
-        else
-          if !@@default_iface
-            root_iface = @@default_iface = self.get_default_iface()
-          else
-            root_iface = @@default_iface
-          end
-        end
+      def self.create_vxlan_interface(id,address,netmask,root_interface)
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         # First, we set up the VXLAN interface
-        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{root_iface} dstport 4789")
+        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.#{id} ttl 10 dev #{root_interface} dstport 4789")
         Shell.run("ip link set up dev #{vxlan_iface}")
         # Then, we create a bridge
         Shell.run("brctl addbr #{bridge}")
@@ -272,8 +270,6 @@ module Distem
         # And we add the VXLAN interface into the bridge
         Shell.run("brctl addif #{bridge} #{vxlan_iface}")
         Shell.run("ifconfig #{vxlan_iface} 0.0.0.0 up")
-        # Finally, we create an alias interface attached to the bridge to allow the vnodes "view" from pnodes
-        @@alias_interfaces[id] = set_new_nic(address,netmask,bridge)
       end
 
       # Remove a VXLAN interface and its related bridge
@@ -283,8 +279,6 @@ module Distem
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         Shell.run("brctl delif #{bridge} #{vxlan_iface}")
-        Shell.run("ifconfig #{@@alias_interfaces[id]} down")
-        @@alias_interfaces.delete(id)
         Shell.run("ip link del #{vxlan_iface}")
         Shell.run("ifconfig #{bridge} down")
         Shell.run("brctl delbr #{bridge}")

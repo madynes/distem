@@ -44,10 +44,7 @@ module Distem
       end
 
       # Clean and unset all content set by the system (remove cgroups, bridge, ifb, temporary files, ...)
-      # ==== Attributes
-      # * +bridge+ Boolean that specifies if a bridge has been created
-      def self.quit_node(bridge = true)
-        Lib::NetTools.unset_bridge() if bridge
+      def self.quit_node()
         Lib::NetTools.unset_ifb()
         unset_cgroups()
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exist?(PATH_DISTEMTMP)

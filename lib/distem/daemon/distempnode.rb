@@ -23,13 +23,22 @@ module Distem
         :pnode_init => {},
       }
 
-      def initialize(iface = nil)
+      # Hash[root_interface] = bridge_name
+      attr_reader :linux_bridges
+      attr_reader :default_network_interface
+      attr_reader :default_network_gw
+
+      def initialize()
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @node_config = Node::ConfigManager.new
         @collector = nil
         @etchosts_updated = nil
-        @set_bridge = nil
+        @linux_bridges = {}
+        @routing_interfaces = {}
+        @vnetworks_linked_to_bridge = {}
+        @default_network_interface = Lib::NetTools.get_default_iface
+        @default_network_gw = Lib::NetTools.get_default_gateway
       end
 
 
@@ -45,7 +54,6 @@ module Distem
       def pnode_create(target,desc={},async=false)
         raise Lib::ResourceError, "Please, contact the good PNode" unless target?(target)
         begin
-          @set_bridge = (desc['set_bridge'] == true)
           async = parse_bool(async)
           pnode = @node_config.pnode
           Node::Admin.init_node(pnode,desc)
@@ -102,7 +110,7 @@ module Distem
           tmp.unlink
         end
         Lib::FileManager::clean_cache
-        Node::Admin.quit_node(@set_bridge)
+        Node::Admin.quit_node()
         pnode.status = Resource::Status::READY
         return pnode
       end
@@ -361,7 +369,7 @@ module Distem
         vnode.status = Resource::Status::CONFIGURING
         vnode.host = @node_config.pnode unless vnode.host
         vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
-        @node_config.vnode_start(vnode)
+        @node_config.vnode_start(vnode, self)
         vnode.status = Resource::Status::RUNNING
 
         return [vnode]
@@ -518,12 +526,10 @@ module Distem
           downkeys(desc)
 
           desc['vnetwork'] = desc['vnetwork'].gsub(' ','_') if desc['vnetwork']
-
           raise Lib::MissingParameterError, "address&macaddress&vnetwork" if \
           ((!desc['address'] or desc['address'].empty?) \
            or (!desc['macaddress'] or desc['macaddress'].empty?) \
-           or (!desc['vnetwork'] or desc['vnetwork'].empty?) \
-           or (!desc['bridge'] or desc['bridge'].empty?))
+           or (!desc['vnetwork'] or desc['vnetwork'].empty?))
           vplatform = @node_config.vplatform
           viface.macaddress = desc['macaddress']
           viface.bridge = desc['bridge']
@@ -836,9 +842,36 @@ module Distem
       def vnetwork_create(name,address,opts)
         begin
           name = name.gsub(' ','_') if name
-          vnetwork = Resource::VNetwork.new(address,name,opts['nb_pnodes'].to_i,opts['vxlan_id'])
-          if opts['vxlan_id'] > 0
-            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'],vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address,vnetwork.address.netmask,opts['root_iface'])
+          root_interface = opts.has_key?('root_interface') ? opts['root_interface'] : @default_network_interface
+          vnetwork = Resource::VNetwork.new(address,name,opts['nb_pnodes'].to_i, opts)
+          # Check if the linux bridge has to be created
+          if !@linux_bridges.has_key?(root_interface)
+            brname = Lib::NetTools.set_bridge(root_interface, root_interface == @default_network_interface ? @default_network_gw : nil)
+            if brname
+              @linux_bridges[root_interface] = brname
+            else
+              raise Lib::AlreadyExistingResourceError
+            end
+            @vnetworks_linked_to_bridge[@linux_bridges[root_interface]] = []
+          end
+          @vnetworks_linked_to_bridge[@linux_bridges[root_interface]] << name
+          case opts['network_type']
+          when 'vxlan'
+            address = vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address
+            netmask = vnetwork.address.netmask
+            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'], address,
+              netmask,
+              @linux_bridges[root_interface])
+            @routing_interfaces[name] = Lib::NetTools.set_new_nic(address,
+              netmask,
+              Lib::NetTools::VXLAN_BRIDGE_PREFIX + opts['vxlan_id'].to_s)
+          when 'classical'
+            @routing_interfaces[name] = Lib::NetTools.set_new_nic(
+              IPAddress::IPv4::parse_u32(vnetwork.address.last.to_u32 - opts['pnode_index']).to_s,
+              vnetwork.address.netmask,
+              @linux_bridges[root_interface])
+          else
+            raise
           end
           @node_config.vnetwork_add(vnetwork)
           return vnetwork
@@ -850,18 +883,6 @@ module Distem
         end
       end
 
-
-      # Add a routing interface in the bridge in order to allow traffic from Pnode to Vnodes
-      # ==== Attributes
-      # * +address+ the address of the interface
-      # * +netmask+ the netmask of the interface
-      # ==== Returns
-      # Array with the address
-      def vnetwork_create_routing_interface(address,netmask)
-        Lib::NetTools.set_new_nic(address, netmask)
-        return ["#{address}/#{netmask}"]
-      end
-
       # Delete the virtual network
       # ==== Returns
       # Resource::VNetwork object
@@ -869,12 +890,21 @@ module Distem
       #
       def vnetwork_remove(name)
         vnetwork = vnetwork_get(name)
-
         vnetwork.vnodes.each_pair do |vnode,viface|
           viface_detach(vnode.name,viface.name)
         end
-        if vnetwork.vxlan_id > 0
-          Lib::NetTools.remove_vxlan_interface(vnetwork.vxlan_id)
+        Lib::NetTools.unset_nic(@routing_interfaces[name])
+        @routing_interfaces.delete(name)
+        if vnetwork.opts['network_type'] == 'vxlan'
+          Lib::NetTools.remove_vxlan_interface(vnetwork.opts['vxlan_id'])
+        end
+        root_interface = vnetwork.opts.has_key?('root_interface') ? vnetwork.opts['root_interface'] : @default_network_interface
+        brname = @linux_bridges[root_interface]
+        @vnetworks_linked_to_bridge[brname].delete(name)
+        if @vnetworks_linked_to_bridge[brname].empty?
+          Lib::NetTools.unset_bridge(brname, root_interface == @default_network_interface ? @default_network_gw : nil)
+          @vnetworks_linked_to_bridge.delete(brname)
+          @linux_bridges.delete(vnetwork.opts['root_interface'])
         end
         @node_config.vnetwork_remove(vnetwork)
         return vnetwork
@@ -888,7 +918,10 @@ module Distem
       def vnetworks_remove()
         vnetworks = nil
         vnetworks = @node_config.vplatform.vnetworks
-        vnetworks.each_value { |vnetwork| vnetwork_remove(vnetwork.name) }
+        # Required to get the vnetworks before iterating over them since @node_config.vplatform.vnetworks is modified
+        t = vnetworks.values
+        t.each { |vnetwork|
+          vnetwork_remove(vnetwork.name) }
         return vnetworks
       end
 

@@ -16,19 +16,19 @@ module Distem
       attr_reader  :vroutes
       # An Array of physical nodes this virtual network is visible on
       attr_accessor :visibility
-      # VXLAN number (used to create bridges and vxlan interfaces on pnodes)
-      attr_accessor :vxlan_id
+      # An Hash of Miscellaneous options (network_type, root_interface, vxlan_id, ...)
+      attr_accessor :opts
 
       # Create a new VNetwork
       # ==== Attributes
       # * +address+ The address range to associate to this virtual network (ip/mask, ip/cidr format or IPAddress object)
       # * +name+ The name of the virtual network (if not precised, set to "vnetworkN" where N is a unique id)
       # * +nb_pnodes+ The number of physical nodes
-      # * +vxlan_id+ Dedicated id to set up bridge and vxlan interfaces (0 means that vxlan interfaces are not used)
-      def initialize(address,name,nb_pnodes,vxlan_id)
+      # * +opts+ Miscellaneous options
+      def initialize(address,name,nb_pnodes,opts)
         @id = 0
         @name = name
-        @vxlan_id = vxlan_id
+        @opts = opts
         if address.is_a?(IPAddress)
           @address = address.network.clone
         else
@@ -192,7 +192,7 @@ module Distem
             found = true if viface.connected_to?(vnetwork)
 
             if viface.vnetwork and !excludelist.include?(viface.vnetwork)
-              found = true if viface.vnetwork.perform_vroute(vnetwork,excludelist) 
+              found = true if viface.vnetwork.perform_vroute(vnetwork,excludelist)
             end
 
             break if found

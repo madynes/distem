@@ -10,8 +10,6 @@ options = {}
 
 options['f_daemon'] = false
 options['f_verbose'] = false
-options['f_network_mode'] = 'classical'
-options['f_interface'] = nil
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -21,35 +19,16 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-d', '--daemon', 'Execute the server as a coordinator' ) do
     options['f_daemon'] = true
   end
-  opts.on( '-i', '--network-interface INTERFACE', 'Use a specific interface (e.g. ib0) for inter-pnode communication. This can only be used with vxlan network mode' ) do |iface|
-    options['f_interface'] = iface
-  end
-  opts.on('-n', '--network-mode MODE', 'Define the network mode (classical or vxlan)') do |mode|
-    case mode
-    when 'classical'
-    when 'vxlan'
-    else
-      puts 'Invalid network mode'
-    end
-    options['f_network_mode'] = mode
-  end
   opts.on( '--verbose', 'Execute the server in verbose mode' ) do
     options['f_verbose'] = true
   end
 end
 optparse.parse!
 
-if options['f_interface'] and (options['f_network_mode'] != 'vxlan')
-  puts 'Specifying an interface is only possible with vxlan network mode'
-  exit 1
-end
-
 str = Distem::Lib::Shell.run('pidof lxc-wait || true')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
 opts = {
   'verbose' => options['f_verbose'],
-  'network_mode' => options['f_network_mode'],
-  'network_interface' => options['f_interface'],
 }
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"

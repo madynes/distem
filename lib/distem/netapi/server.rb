@@ -722,7 +722,7 @@ module Distem
           check do
             @body = @daemon.vplatform_create(params['format'],params['data'],params['rootfs'] == '' ? nil : params['rootfs'])
           end
-          
+
           return result!
         end
       end
@@ -877,7 +877,7 @@ module Distem
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new(settings.network_mode, settings.network_interface)
+        @daemon = Daemon::DistemCoordinator.new()
       end
     end
 

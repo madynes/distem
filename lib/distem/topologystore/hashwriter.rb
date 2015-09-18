@@ -178,7 +178,7 @@ module Distem
           'address' => vnetwork.address.to_string,
           'vnodes' => [],
           'vroutes' => visit(vnetwork.vroutes),
-          'vxlan_id' => vnetwork.vxlan_id.to_i,
+          'opts' => vnetwork.opts,
         }
         vnetwork.vnodes.each_pair do |vnode,viface|
           ret['vnodes'] << vnode.name if viface
@@ -224,4 +224,3 @@ module Distem
 
   end
 end
-

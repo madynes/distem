@@ -231,7 +231,7 @@ module Distem
       end
 
       # Congigure a virtual node (set LXC config files, ...) on a physical machine
-      def configure
+      def configure(distempnode)
         @@confsem.synchronize do
           rootfspath = nil
           if @vnode.filesystem.shared
@@ -244,7 +244,7 @@ module Distem
 
           # Generate lxc configfile
           configfile = File.join(FileSystemForge::PATH_DEFAULT_CONFIGFILE, "config-#{@curname}")
-          LXCWrapper::ConfigFile.generate(@vnode,configfile)
+          LXCWrapper::ConfigFile.generate(@vnode,configfile,distempnode)
 
           etcpath = File.join(rootfspath,'etc')
 
