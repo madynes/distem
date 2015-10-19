@@ -16,7 +16,7 @@ module Distem
       attr_reader  :vroutes
       # An Array of physical nodes this virtual network is visible on
       attr_accessor :visibility
-      # An Hash of Miscellaneous options (network_type, root_interface, vxlan_id, ...)
+      # An Hash of Miscellaneous options (network_type, root_interface, vxlan_id...)
       attr_accessor :opts
 
       # Create a new VNetwork
@@ -182,30 +182,26 @@ module Distem
       # ==== Returns
       # VNode object
       #
-      def perform_vroute(vnetwork,excludelist=[])
+      def perform_vroute(vnetwork,admin_vnetwork,excludelist=[])
         ret = nil
         excludelist << self
         found = false
-
         @vnodes.each_key do |vnode|
           vnode.vifaces.each do |viface|
-            found = true if viface.connected_to?(vnetwork)
-
-            if viface.vnetwork and !excludelist.include?(viface.vnetwork)
-              found = true if viface.vnetwork.perform_vroute(vnetwork,excludelist)
+            if viface.connected_to?(vnetwork)
+              found = true
             end
-
+            if viface.vnetwork and !excludelist.include?(viface.vnetwork) and (viface.vnetwork != admin_vnetwork)
+              found = true if viface.vnetwork.perform_vroute(vnetwork,admin_vnetwork,excludelist)
+            end
             break if found
           end
-
           if found
             ret = vnode
             break
           end
         end
-
         excludelist.delete(self)
-
         return ret
       end
 

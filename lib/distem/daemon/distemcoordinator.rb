@@ -34,7 +34,10 @@ module Distem
 
       WINDOW_SIZE = 250
 
-      def initialize()
+      ADMIN_NETWORK_IP = '220.0.0.0/8'
+      ADMIN_NETWORK_NAME = 'adm'
+
+      def initialize(enable_admin_network = false)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
@@ -42,6 +45,8 @@ module Distem
         @vnet_id = 0
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
+        @admin_network = nil
+        @enable_admin_network = enable_admin_network
       end
 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
@@ -80,7 +85,6 @@ module Distem
             end
 
             pnode_update(pnode.address.to_s,desc)
-
             return pnode
           rescue Lib::AlreadyExistingResourceError
             raise
@@ -323,6 +327,11 @@ module Distem
             @daemon_resources.add_vnode(vnode)
             vnodes << vnode
           }
+          # Creation of an interface connected to the administration network
+          if @enable_admin_network
+            desc['vifaces'] = [] if !desc.has_key?('vifaces')
+            desc['vifaces'] << { 'name' => 'ifadm', 'vnetwork' => ADMIN_NETWORK_NAME }
+          end
           vnode_update(names,desc,async)
           return vnodes
         rescue Lib::AlreadyExistingResourceError
@@ -762,8 +771,9 @@ module Distem
         begin
           vifacename = vifacename.gsub(' ','_')
           vnode = vnode_get(vnodename)
-          viface = Resource::VIface.new(vifacename,vnode)
           downkeys(desc)
+          default = desc.has_key?('default') ? desc['default'] : false
+          viface = Resource::VIface.new(vifacename,vnode,default)
           vnode.add_viface(viface)
           viface_update(vnode.name,viface.name,desc)
           return viface
@@ -1230,6 +1240,11 @@ module Distem
       # ==== Exceptions
       #
       def vnetwork_create(name,address,opts=nil)
+        if !@admin_network && @enable_admin_network
+          @admin_network = true
+          @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP, {'network_type' => 'vxlan'})
+        end
+
         begin
           if name
             name = name.gsub(' ','_')
@@ -1386,15 +1401,14 @@ module Distem
         # >>> TODO: Use vnetworks_get
         @daemon_resources.vnetworks.each_value do |srcnet|
           @daemon_resources.vnetworks.each_value do |destnet|
-            next if srcnet == destnet
-            gw = srcnet.perform_vroute(destnet)
+            next if (srcnet == destnet) or (srcnet == @admin_network) or (destnet == @admin_network)
+            gw = srcnet.perform_vroute(destnet,@admin_network)
             if gw
               vnode_mode_update(gw.name,Resource::VNode::MODE_GATEWAY) unless gw.gateway
               ret << vroute_create(srcnet.name,destnet.name,gw.name)
             end
           end
         end
-
       end
 
       # Add an event trace to a resource
@@ -1551,7 +1565,10 @@ module Distem
         @daemon_resources.vnodes.each_value {|vnode|
           vnode.vifaces.each do |viface|
             if viface.vnetwork
-              results << viface.address.address.to_s + " " + vnode.name
+              if viface.default
+                results << viface.address.address.to_s + " " + vnode.name
+              end
+              results << viface.address.address.to_s + " " + vnode.name + "-" + viface.vnetwork.name
             end
           end
         }

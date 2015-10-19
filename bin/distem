@@ -186,12 +186,12 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnetwork'] = str if str
   end
   opts.on(
-    '--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS]',
+    '--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS,default=true|false]',
     'Create VIFACE on VNODE'
   ) do |str|
     options['f_options'] << 'create_viface'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('create-viface', h, ['vnode','iface'], ['vnetwork','address'])
+    exit 1 if not check_opts('create-viface', h, ['vnode','iface'], ['vnetwork','address','default'])
     options.update(h)
   end
   opts.on(
@@ -389,6 +389,9 @@ options['f_options'].each { |option|
       params['vnetwork'] = options['vnetwork']
     elsif options['address']
       params['address'] = options['address']
+    end
+    if options['default']
+      params['default'] = options['default']
     end
     pp cl.viface_create(options['vnode'], options['iface'],params)
   when 'remove_viface'

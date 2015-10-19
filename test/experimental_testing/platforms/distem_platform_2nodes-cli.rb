@@ -38,8 +38,8 @@ end
 res = system("distem --create-vnetwork vnetwork=vnet,address=#{net}/#{netmask}")
 res = res && system("distem --create-vnode vnode=node1,pnode=#{pnodes[0]},rootfs=#{image}")
 res = res && system("distem --create-vnode vnode=node2,pnode=#{pnodes[1]},rootfs=#{image}")
-res = res && system("distem --create-viface vnode=node1,iface=af0,vnetwork=vnet")
-res = res && system("distem --create-viface vnode=node2,iface=af0,vnetwork=vnet")
+res = res && system("distem --create-viface vnode=node1,iface=af0,vnetwork=vnet,default=true")
+res = res && system("distem --create-viface vnode=node2,iface=af0,vnetwork=vnet,default=true")
 res = res && system("distem --start-vnode node1")
 res = res && system("distem --start-vnode node2")
 exit 1 if not res

@@ -191,6 +191,7 @@ options[:cow] = nil
 options[:ci] = nil
 options[:deb_repo] = 'http://distem.gforge.inria.fr/deb'
 options[:deb_version] = 'wheezy'
+options[:enable_admin_network] = false
 
 args = ARGV.dup
 
@@ -264,6 +265,9 @@ optparse = OptionParser.new do |opts|
       exit 1
     end
     options[:deb_version] = v
+  end
+  opts.on('--enable-admin-network', 'Create a global administration network (this leverages VXLAN support)') do
+    options[:enable_admin_network] = true
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -527,7 +531,7 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     timeout(60) {
-      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} #{options[:enable_admin_network] ? '--enable-admin-network' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|
         launched = []

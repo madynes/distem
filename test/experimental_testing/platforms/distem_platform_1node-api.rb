@@ -40,7 +40,7 @@ Distem.client { |cl|
   res = cl.vnode_create('node1', 
                   {
                     'vfilesystem' =>{'image' => image, 'shared' => true},
-                    'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet'}]
+                    'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                   })
   iplist << res['vifaces'][0]['address'].split('/')[0]
   cl.vcpu_create('node1', 1, 'ratio', 1)

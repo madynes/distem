@@ -41,11 +41,11 @@ end
 Distem.client { |cl|
   cl.vnetwork_create('vnet', "#{net}/#{netmask}")
 
-  res = cl.vnode_create('node1', 
+  res = cl.vnode_create('node1',
                         {
                           'host' => pnodes[0],
                           'vfilesystem' =>{'image' => image, 'shared' => true},
-                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet'}]
+                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                         })
   iplist << res['vifaces'][0]['address'].split('/')[0]
 
@@ -53,11 +53,11 @@ Distem.client { |cl|
                         {
                           'host' => pnodes[1],
                           'vfilesystem' =>{'image' => image, 'shared' => true},
-                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet'}]
+                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                         })
   iplist << res['vifaces'][0]['address'].split('/')[0]
 
-  
+
   # Start the virtual nodes
   puts "Starting the nodes"
   nodes.each { |node|

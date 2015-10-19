@@ -51,7 +51,7 @@ module Distem
         end
 
 
-        # Add a new property to the VTraffic 
+        # Add a new property to the VTraffic
         # ==== Attributes
         # * +prop+ The Property object
         #
@@ -60,7 +60,7 @@ module Distem
           @properties[prop.class.name] = prop
         end
 
-        # Add new properties to the VTraffic 
+        # Add new properties to the VTraffic
         # ==== Attributes
         # * +properties+ An Array of Property objects
         #
@@ -77,7 +77,7 @@ module Distem
           return properties[typename]
         end
 
-        # Parse a Hash of properties 
+        # Parse a Hash of properties
         # ==== Attributes
         # * +hash+ Hash representing the properties in the form { "propertyname" => { prop1 => val, prop2 => val }, e.g. {"Bandwidth" => { "rate" => "100mbps" } }.
         def parse_properties(hash)
@@ -110,14 +110,15 @@ module Distem
       attr_accessor :latency_filters
       # Bridge on with the viface is attached
       attr_accessor :bridge
-
+      # Define if this interface is the vnode's default one
+      attr_reader :default
 
       # Create a new VIface
       # ==== Attributes
       # * +name+ The name of the virtual network interface
       # * +vnode+ The VNode object describing the virtual node associated to this virtual network interface
-      #
-      def initialize(name,vnode)
+      # * +default+ Specify if it has to be set as the default interface
+      def initialize(name,vnode,default = false)
         raise if name.empty? or not name.is_a?(String)
 
         @id = @@ids
@@ -132,6 +133,7 @@ module Distem
         @@ids += 1
         @ifb = nil
         @filters = nil
+        @default = default
       end
 
       # Attach the virtual network interface to a virtual network specifying it's IP address

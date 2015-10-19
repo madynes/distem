@@ -10,6 +10,7 @@ options = {}
 
 options['f_daemon'] = false
 options['f_verbose'] = false
+options['f_enable_admin_network'] = false
 
 optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -22,6 +23,9 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '--verbose', 'Execute the server in verbose mode' ) do
     options['f_verbose'] = true
   end
+  opts.on( '--enable-admin-network', 'Create a global administration network (this leverages VXLAN support)' ) do
+    options['f_enable_admin_network'] = true
+  end
 end
 optparse.parse!
 
@@ -29,6 +33,7 @@ str = Distem::Lib::Shell.run('pidof lxc-wait || true')
 Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
 opts = {
   'verbose' => options['f_verbose'],
+  'enable_admin_network' => options['f_enable_admin_network']
 }
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"

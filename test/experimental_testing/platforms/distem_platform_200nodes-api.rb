@@ -17,7 +17,7 @@ Distem.client { |cl|
   res = cl.vnodes_create(nodes,
                         {
                           'vfilesystem' =>{'image' => image, 'shared' => true},
-                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet'}]
+                          'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                         })
   res.each { |r| iplist << r['vifaces'][0]['address'].split('/')[0] }
 

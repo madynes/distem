@@ -857,7 +857,7 @@ module Distem
           @vnetworks_linked_to_bridge[@linux_bridges[root_interface]] << name
           case opts['network_type']
           when 'vxlan'
-            address = vnetwork.address.hosts[-(opts['pnode_index'] + 1)].address
+            address = IPAddress::IPv4::parse_u32(vnetwork.address.last.to_u32 - opts['pnode_index']).to_s
             netmask = vnetwork.address.netmask
             Lib::NetTools.create_vxlan_interface(opts['vxlan_id'], address,
               netmask,

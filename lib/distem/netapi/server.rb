@@ -877,7 +877,7 @@ module Distem
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new()
+        @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network)
       end
     end
 
