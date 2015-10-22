@@ -704,7 +704,7 @@ module Distem
 
           if desc['vcores']
             raise Lib::InvalidParameterError, 'vcores' unless desc['vcores'].is_a?(Hash)
-            val = desc['vcores']['0']['frequency']
+            val = desc['vcores'].values[0]['frequency']
             corenb = desc['vcores'].keys.length
           else
             if desc['val']
