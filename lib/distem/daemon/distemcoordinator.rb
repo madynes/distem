@@ -330,7 +330,7 @@ module Distem
           # Creation of an interface connected to the administration network
           if @enable_admin_network
             desc['vifaces'] = [] if !desc.has_key?('vifaces')
-            desc['vifaces'] << { 'name' => 'ifadm', 'vnetwork' => ADMIN_NETWORK_NAME }
+            desc['vifaces'] << { 'name' => 'ifadm', 'vnetwork' => ADMIN_NETWORK_NAME } if desc['vifaces'].select {|viface| viface['vnetwork'] == ADMIN_NETWORK_NAME}.empty?
           end
           vnode_update(names,desc,async)
           return vnodes
