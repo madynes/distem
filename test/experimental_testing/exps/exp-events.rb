@@ -12,6 +12,7 @@ end
 puts '<<< Event framework test >>>'
 
 def is_here(n)
+  # http://superuser.com/questions/288521/problem-with-ping-open-socket-operation-not-permitted
   return system("ping -c 1 -W 1 #{n}")
 end
 

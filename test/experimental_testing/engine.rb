@@ -4,11 +4,13 @@
 # - supposed to be executed inside an OAR reservation with KaVLAN
 # - netssh and netssh/multi gems must be installed
 
-require 'test/unit'
+
 require 'tempfile'
 require 'yaml'
 require 'pp'
 require 'rubygems'
+require 'minitest'
+require 'minitest/autorun'
 require 'net/ssh'
 require 'net/ssh/multi'
 
@@ -24,8 +26,8 @@ if MODE == 'g5k'
   GIT = (ARGV[2] == 'true')
   CLUSTER = ARGV[3]
   GITREPO = ARGV[4]
-  KADEPLOY_ENVIRONMENT = 'wheezy-x64-nfs'
-  IMAGE = 'file:///home/ejeanvoine/distem-fs-wheezy.tar.gz'
+  KADEPLOY_ENVIRONMENT = 'jessie-x64-nfs'
+  IMAGE = 'file:///home/ejeanvoine/public/distem/distem-fs-wheezy.tar.gz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
 else
@@ -73,7 +75,7 @@ class CommonTools
       msg("Deploying #{pnodes.join(',')} (attempt #{i+1})")
       ok = Tempfile.new("nodes_ok")
       node_list = "-m #{pnodes.join(' -m ')}"
-      system("kadeploy3 -V 1 #{node_list} -e #{environment} -k -o #{ok.path} --vlan #{vlan}")
+      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u ejeanvoine -k -o #{ok.path} --vlan #{vlan}")
       next if not File.exist?(ok.path)
       deployed_pnodes = IO.readlines(ok.path).collect { |line| line.strip }
       break if (deployed_pnodes.length == pnodes.length)
@@ -93,13 +95,17 @@ class CommonTools
   end
 end
 
-class ExperimentalTesting < Test::Unit::TestCase
+class ExperimentalTesting < MiniTest::Unit::TestCase
   @@initialized = false
   @@coordinator = nil
   @@pnodes = nil
   @@deployed_nodes = nil
   @@vlan = nil
   @@ref = nil
+
+  def self.test_order
+    :alpha
+  end
 
   def plateform_init
     @@ref = YAML::load_file(REFFILE)
@@ -114,18 +120,21 @@ class ExperimentalTesting < Test::Unit::TestCase
       CommonTools::error("Not enough nodes after deployment") if @@deployed_nodes.length < oar_nodes.length
       nodes = @@deployed_nodes.collect { |node|
         t = node.split('.')
-        t.shift + "-kavlan-#{@@vlan}." + t.join('.')
+        t = t.shift + "-kavlan-#{@@vlan}." + t.join('.')
+        t = t.shift + "." + t.join('.')
       }
+      nodes = oar_nodes
     else
       nodes = [ 'distem-n1','distem-n1' ]
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
+
     @@initialized = true
   end
 
   def clean_env
-    CommonTools::reboot_nodes(@@deployed_nodes, @@vlan) if MODE == 'g5k'
+#    CommonTools::reboot_nodes(@@deployed_nodes, @@vlan) if MODE == 'g5k'
     CommonTools::clean_nodes(@@pnodes)
   end
 
@@ -141,9 +150,10 @@ class ExperimentalTesting < Test::Unit::TestCase
     f.close
     distemcmd = ''
     if (MODE == 'g5k')
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path}"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --debian-version jessie"
       distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
+      distemcmd = "#{DISTEMBOOTSTRAP} --enable-admin-network --debian-version jessie"
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
@@ -236,8 +246,8 @@ class ExperimentalTesting < Test::Unit::TestCase
 
   def test_00_setup_ok
     puts "\n\n**** Running #{this_method} ****"
-    assert_not_nil(@@coordinator)
-    assert_not_nil(@@pnodes)
+    assert(@@coordinator != nil)
+    assert(@@pnodes != nil)
   end
 
   def test_01_platform_api
@@ -310,7 +320,7 @@ class ExperimentalTesting < Test::Unit::TestCase
         }
       }
     }
- end
+  end
 
   def test_09_vectorized_init_and_connectivity
     puts "\n\n**** Running #{this_method} ****"
@@ -325,7 +335,7 @@ class ExperimentalTesting < Test::Unit::TestCase
         check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-connectivity.rb')}"))
       }
     }
- end
+  end
 
   def test_10_set_peers_latency
     puts "\n\n**** Running #{this_method} ****"
