@@ -120,8 +120,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       CommonTools::error("Not enough nodes after deployment") if @@deployed_nodes.length < oar_nodes.length
       nodes = @@deployed_nodes.collect { |node|
         t = node.split('.')
-        t = t.shift + "-kavlan-#{@@vlan}." + t.join('.')
-        t = t.shift + "." + t.join('.')
+        t.shift + "-kavlan-#{@@vlan}." + t.join('.')
       }
       nodes = oar_nodes
     else
