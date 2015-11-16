@@ -122,7 +122,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         t = node.split('.')
         t.shift + "-kavlan-#{@@vlan}." + t.join('.')
       }
-      nodes = oar_nodes
     else
       nodes = [ 'distem-n1','distem-n1' ]
     end
@@ -152,7 +151,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --debian-version jessie"
       distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
-      distemcmd = "#{DISTEMBOOTSTRAP} --enable-admin-network --debian-version jessie"
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
