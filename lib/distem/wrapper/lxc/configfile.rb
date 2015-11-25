@@ -50,12 +50,12 @@ module LXCWrapper # :nodoc: all
           case viface.vnetwork.opts['network_type']
           when 'classical'
             if viface.vnetwork.opts.has_key?('root_interface')
-              viface_bridge = distempnode.linux_bridges[vnetwork.opts['root_interface']]
+              viface_bridge = distempnode.linux_bridges[viface.vnetwork.opts['root_interface']]
             else
               viface_bridge = distempnode.linux_bridges[distempnode.default_network_interface]
             end
           when 'vxlan'
-            viface_bridge = Distem::Lib::NetTools::VXLAN_BRIDGE_PREFIX + viface.vnetwork.opts['vxlan_id'].to_s
+            viface_bridge = Distem::Lib::NetTools::VXLAN_BRIDGE_PREFIX.to_s + viface.vnetwork.opts['vxlan_id'].to_s
           else
             raise
           end
