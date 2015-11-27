@@ -531,7 +531,7 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     timeout(60) {
-      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} #{options[:enable_admin_network] ? '--enable-admin-network' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd.log')}&",
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} #{options[:enable_admin_network] ? '--enable-admin-network' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd-coord.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|
         launched = []

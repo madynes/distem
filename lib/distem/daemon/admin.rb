@@ -6,7 +6,7 @@ module Distem
     # Class that allow to manage daemon administration methods such as initializing another physical node
     class Admin
       # The file used to store the stdout and stderr logs for the launched daemons
-      PATH_DISTEMD_LOG=File.join(Node::Admin::PATH_DISTEM_LOGS,"distemd.log")
+      PATH_DISTEMD_LOG=File.join(Node::Admin::PATH_DISTEM_LOGS,"distemd-pnode.log")
       # Default SSH user
       SSH_USER=ENV['USER']
       # Paths to the SSH key files
