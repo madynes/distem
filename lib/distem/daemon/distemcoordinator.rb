@@ -46,7 +46,9 @@ module Distem
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
         @admin_network = nil
-        @enable_admin_network = enable_admin_network
+        if enable_admin_network
+          @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP, {'network_type' => 'vxlan'})
+        end
       end
 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
@@ -72,6 +74,9 @@ module Distem
               # here ret should always contains one element
               updateobj_pnode(pnode,ret)
               pnode.status = Resource::Status::RUNNING
+              if @admin_network && (target == @node_name)
+                vnetwork_sync(@admin_network,pnode)
+              end
             }
 
             if async
@@ -328,7 +333,7 @@ module Distem
             vnodes << vnode
           }
           # Creation of an interface connected to the administration network
-          if @enable_admin_network
+          if @admin_network
             desc['vifaces'] = [] if !desc.has_key?('vifaces')
             desc['vifaces'] << { 'name' => 'ifadm', 'vnetwork' => ADMIN_NETWORK_NAME } if desc['vifaces'].select {|viface| viface['vnetwork'] == ADMIN_NETWORK_NAME}.empty?
           end
@@ -1240,11 +1245,6 @@ module Distem
       # ==== Exceptions
       #
       def vnetwork_create(name,address,opts=nil)
-        if !@admin_network && @enable_admin_network
-          @admin_network = true
-          @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP, {'network_type' => 'vxlan'})
-        end
-
         begin
           if name
             name = name.gsub(' ','_')
