@@ -403,7 +403,10 @@ Net::SSH::Multi.start do |session|
       end
     end
   end
-
+  #Add a missing capability on Grid5000's Jessie environments
+  if g5k? && (options[:deb_version] == 'jessie')
+    exec(session, "setcap cap_net_raw=ep /bin/ping")
+  end
   # Check nfs paths
   tmp = exec(session,"ls -a #{File.join('/','home',ENV['USER'])}",nil,false,false)
   nopath = allnodes - tmp.keys
