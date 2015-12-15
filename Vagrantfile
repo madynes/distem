@@ -15,7 +15,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   names.each_with_index do |nodeName,index|
     config.vm.define nodeName do |node|
       node.vm.box = "debian-jessie"
-      node.vm.box_url = "https://atlas.hashicorp.com/debian/boxes/jessie64/versions/8.2.2/providers/virtualbox.box"
+      # Stick to 8.2.1 version since newer versions do not allow two-way synchronization of /vagrant shared folder:
+      node.vm.box_url = "https://atlas.hashicorp.com/debian/boxes/jessie64/versions/8.2.1/providers/virtualbox.box"
       ip_vnode = ipAddrPrefix + index.to_s
       node.vm.network "private_network", ip: ip_vnode
       node.vm.provider :virtualbox do |v|
@@ -27,6 +28,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       names.each_with_index do |n,i|
         node.vm.provision :shell, inline: "echo #{ipAddrPrefix + i.to_s} #{n}>> /etc/hosts"
       end
+
       node.vm.provision :shell, inline: "hostname #{nodeName}"
       node.vm.provision "file", source: "/tmp/sshkey", destination: "~/.ssh/id_rsa"
       node.vm.provision "file", source: "/tmp/sshkey.pub", destination: "~/.ssh/id_rsa.pub"
@@ -35,7 +37,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.provision :shell, inline: "echo 'Host *\nStrictHostKeyChecking no\nUserKnownHostsFile /dev/null' > /home/vagrant/.ssh/config"
       node.vm.provision :shell, inline: "echo 'Host *\nStrictHostKeyChecking no\nUserKnownHostsFile /dev/null' > /root/.ssh/config"
       node.vm.provision :shell, inline: "cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys"
-      node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby ruby-dev gem"
+      node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get update"
+      node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby"
+      node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby-dev gem"
       node.vm.provision :shell, inline: "gem install net-ssh-multi"
     end
   end
