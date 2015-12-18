@@ -220,7 +220,8 @@ module Distem
       def ==(vnetwork)
         ret = false
         if vnetwork.is_a?(VNetwork)
-          ret = (vnetwork.address.to_string == @address.to_string)
+          ret = (vnetwork.name == @name)
+        #what follows has probably to be removed
         elsif vnetwork.is_a?(String)
           begin
             addr = IPAddress.parse(vnetwork)

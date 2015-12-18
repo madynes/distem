@@ -105,7 +105,7 @@ module Distem
         raise Lib::AlreadyExistingResourceError, vnode.name \
           if @vnodes[vnode.name]
 
-        @vnodes[vnode.name] = vnode 
+        @vnodes[vnode.name] = vnode
       end
 
       # Remove a virtual node from the platform. If the virtual node is acting as gateway in some virtual routes, also remove this vroutes from the platform.
@@ -149,12 +149,9 @@ module Distem
       def add_vnetwork(vnetwork)
         raise unless vnetwork.is_a?(VNetwork)
         raise Lib::AlreadyExistingResourceError, "#{vnetwork.address.to_string}(#{vnetwork.name})" \
-          if @vnetworks[vnetwork.address.to_string]
+          if @vnetworks[vnetwork.name]
 
-        raise Lib::AlreadyExistingResourceError, vnetwork.name \
-          if @vnetworks.values.select{ |vnet| vnetwork.name == vnet.name }[0]
-
-        @vnetworks[vnetwork.address.to_string] = vnetwork
+        @vnetworks[vnetwork.name] = vnetwork
       end
 
       # Remove a virtual network from the platform. Also remove all virtual routes this virtual network is playing a role in.
@@ -171,7 +168,7 @@ module Distem
           end
         end
         vnetwork.destroy()
-        @vnetworks.delete(vnetwork.address.to_string)
+        @vnetworks.delete(vnetwork.name)
       end
 
       # Get a virtual network specifying it's name
@@ -181,7 +178,7 @@ module Distem
       # VNetwork object or nil if not found
       #
       def get_vnetwork_by_name(name)
-        return @vnetworks.values.select { |vnet| vnet.name == name }[0]
+        return @vnetworks[name]
       end
 
       # Get a virtual network specifying an IP address it's address range is including
@@ -201,9 +198,7 @@ module Distem
           return nil
         end
 
-        ret = @vnetworks[address.to_string]
-        ret = @vnetworks.values.select{ |vnet| vnet.address.include?(address) }[0] \
-          unless ret
+        ret = @vnetworks.values.select{ |vnet| vnet.address.include?(address) }[0]
         return ret
       end
 
@@ -215,8 +210,8 @@ module Distem
       #
       def add_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
-        vnetwork = @vnetworks[vroute.srcnet.address.to_string]
-        raise Lib::ResourceNotFoundError, vroute.srcnet.to_s unless vnetwork
+        vnetwork = @vnetworks[vroute.srcnet.name]
+        raise Lib::ResourceNotFoundError, vroute.srcnet.name unless vnetwork
         vnetwork.add_vroute(vroute)
       end
 
@@ -228,8 +223,8 @@ module Distem
       #
       def remove_vroute(vroute)
         raise unless vroute.is_a?(VRoute)
-        vnetwork = @vnetworks[vroute.srcnet.address.to_string]
-        raise Lib::ResourceNotFoundError, vroute.srcnet.to_s unless vnetwork
+        vnetwork = @vnetworks[vroute.srcnet.name]
+        raise Lib::ResourceNotFoundError, vroute.srcnet.name unless vnetwork
         vnetwork.remove_vroute(vroute)
       end
 
