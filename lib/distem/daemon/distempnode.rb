@@ -1035,6 +1035,13 @@ module Distem
         }
       end
 
+      def get_default_iface_from_vnode(vnode)
+        # try to find an interface in the administration network since it is
+        # supposed to be reachable in any case
+        ifadm = vnode.vifaces.select { |viface| viface.name == 'ifadm' }
+        return ifadm.empty? ? vnode.vifaces[0] : ifadm[0]
+      end
+
       def set_global_arptable(compressed_data, arp_file)
         shared_fs = []
         private_fs = []
@@ -1053,7 +1060,7 @@ module Distem
 
         w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         (shared_fs + private_fs).each { |vnode|
-          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"arp -f #{arp_file} 2>/dev/null\"")
+          w.add("ssh -q -o StrictHostKeyChecking=no #{get_default_iface_from_vnode(vnode).address.address.to_s} \"arp -f #{arp_file} 2>/dev/null\"")
         }
         w.run
       end
@@ -1062,7 +1069,7 @@ module Distem
         w = Distem::Lib::Synchronization::SlidingWindow.new(100)
         names.each { |vnode_name|
           vnode = vnode_get(vnode_name)
-          w.add("ssh -q -o StrictHostKeyChecking=no #{vnode.vifaces[0].address.address.to_s} \"#{command}\"", vnode_name)
+          w.add("ssh -q -o StrictHostKeyChecking=no #{get_default_iface_from_vnode(vnode).address.address.to_s} \"#{command}\"", vnode_name)
         }
         w.run
         return w.results
@@ -1073,10 +1080,10 @@ module Distem
         timeout = opts['timeout']
         vnodes = []
         if opts['vnodes']
-          vnodes = opts['vnodes'].collect { |vnode| vnode_get(vnode).vifaces[0].address.address.to_s }
+          vnodes = opts['vnodes'].collect { |vnode| get_default_iface_from_vnode(vnode_get(vnode)).address.address.to_s }
         else
           @node_config.vplatform.vnodes.each_value { |vnode|
-            vnodes << vnode.vifaces[0].address.address.to_s
+            vnodes << get_default_iface_from_vnode(vnode).address.address.to_s
           }
         end
         finished = false
