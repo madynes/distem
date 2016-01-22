@@ -3,7 +3,7 @@ require 'rake/testtask'
 require 'rdoc/task'
 require 'rake/packagetask'
 
-DISTEM_VERSION='1.0'
+DISTEM_VERSION='1.1'
 
 begin
   require 'rake/extensiontask'
@@ -132,7 +132,7 @@ task :man do
   (Dir['bin/*'] + ['scripts/distem-bootstrap', 'scripts/distem-devbootstrap']).each do |f|
     FileUtils.mkdir_p('man')
     # This hack is required so that the executables can find the extension and load them
-    ENV['RUBYLIB'] = File.join(File.dirname(__FILE__), 'debian', 'distem', Config::CONFIG['vendorarchdir'])
+    ENV['RUBYLIB'] = File.join(File.dirname(__FILE__), 'debian', 'distem', RbConfig::CONFIG['vendorarchdir'])
     system("help2man --no-info --version-string='#{DISTEM_VERSION}' #{f} > man/#{File.basename(f)}.1")
     system("man -Hcat man/#{File.basename(f)}.1 | sed 's/&minus;/-/g' > man/#{File.basename(f)}.html")
   end
