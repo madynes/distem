@@ -28,8 +28,8 @@ module Distem
       MAC_PREFIX = "fe:#{rand(256).to_s(16).rjust(2,"0")}:#{rand(256).to_s(16).rjust(2,"0")}"
       @@mac_id = 0
       @@mac_id_lock = Mutex.new
-
-      @@vxlan_id = 1
+      @@vxlan_id = 0
+      @@vxlan_mcast_id = 0
       @@vxlan_id_lock = Mutex.new
 
       WINDOW_SIZE = 250
@@ -37,7 +37,7 @@ module Distem
       ADMIN_NETWORK_IP = '220.0.0.0/8'
       ADMIN_NETWORK_NAME = 'adm'
 
-      def initialize(enable_admin_network = false)
+      def initialize(enable_admin_network = false, vxlan_id = 1)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
@@ -46,8 +46,13 @@ module Distem
         @event_trace = Events::Trace.new
         @event_manager = Events::EventManager.new(@event_trace)
         @admin_network = nil
+        # Since a vxlan_id is a 24 bits value, this allows to hage 16 instances of 2^20 vxlan networks
+        @@vxlan_id = vxlan_id.to_i * 2**20
+        @@vxlan_mcast_id = vxlan_id.to_i
         if enable_admin_network
-          @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP, {'network_type' => 'vxlan'})
+          @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP,
+                                           {'network_type' => 'vxlan',
+                                            'vxlan_id' => vxlan_id})
         end
       end
 
@@ -1266,6 +1271,7 @@ module Distem
             @@vxlan_id_lock.synchronize {
               @@vxlan_id += 1
             }
+            opts['vxlan_mcast_id'] = @@vxlan_mcast_id
           end
           vnetwork = Resource::VNetwork.new(address, name, @daemon_resources.pnodes.length, opts)
           @daemon_resources.add_vnetwork(vnetwork)

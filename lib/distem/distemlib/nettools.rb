@@ -251,15 +251,17 @@ module Distem
       # Create a VXLAN interface to encapsulate inter-pnode traffic inside VXLAN tunnel
       # ==== Attributes
       # * +id+ identifier of the VXLAN
+      # * +mcast_id+ identifier used to generate the address of the multicast group
       # * +address+ address of the related virtual network
       # * +netmask+ netmask of the related virtual network
       # * +default_interface+ specify a default interface used to plug the VXLAN interface
       #
-      def self.create_vxlan_interface(id,address,netmask,root_interface)
+      def self.create_vxlan_interface(id, mcast_id, address,netmask,root_interface)
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         # First, we set up the VXLAN interface
-        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group 239.0.0.1 ttl 10 dev #{root_interface} dstport 4789")
+        mcast_addr = IPAddress::IPv4::parse_u32(mcast_id + IPAddress("239.0.0.0").u32).address
+        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group #{mcast_addr} ttl 10 dev #{root_interface} dstport 4789")
         Shell.run("ip link set up dev #{vxlan_iface}")
         # Then, we create a bridge
         Shell.run("brctl addbr #{bridge}")

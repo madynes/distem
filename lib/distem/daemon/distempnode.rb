@@ -859,7 +859,7 @@ module Distem
           when 'vxlan'
             address = IPAddress::IPv4::parse_u32(vnetwork.address.last.to_u32 - opts['pnode_index']).to_s
             netmask = vnetwork.address.netmask
-            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'], address,
+            Lib::NetTools.create_vxlan_interface(opts['vxlan_id'], opts['vxlan_mcast_id'], address,
               netmask,
               @linux_bridges[root_interface])
             @routing_interfaces[name] = Lib::NetTools.set_new_nic(address,

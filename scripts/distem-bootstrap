@@ -191,6 +191,7 @@ options[:ci] = nil
 options[:deb_repo] = 'http://distem.gforge.inria.fr/deb-jessie'
 options[:deb_version] = 'jessie'
 options[:enable_admin_network] = false
+options[:vxlan_id] = nil
 
 args = ARGV.dup
 
@@ -265,8 +266,15 @@ optparse = OptionParser.new do |opts|
     end
     options[:deb_version] = v
   end
-  opts.on('--enable-admin-network', 'Create a global administration network (this leverages VXLAN support)') do
+  opts.on( '--enable-admin-network', 'Create a global administration network (this leverages VXLAN support)') do
     options[:enable_admin_network] = true
+  end
+  opts.on( '--vxlan-id <id>', 'Set the VXLAN id (value beetween 0 and 15)' ) do |id|
+    if (id.to_i < 0) or (id.to_i > 15)
+      puts 'Invalid VXLAN id value'
+      exit 1
+    end
+    options[:vxlan_id] = id
   end
   opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
     options[:verbose] = true
@@ -528,7 +536,10 @@ Net::SSH::Multi.start do |session|
     msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
     exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
     timeout(60) {
-      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} #{options[:enable_admin_network] ? '--enable-admin-network' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd-coord.log')}&",
+      exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} \
+                                   #{options[:enable_admin_network] ? '--enable-admin-network' : ''} \
+                                   #{options[:vxlan_id] ? '--vxlan-id ' + options[:vxlan_id] : ''} \
+                                   -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd-coord.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|
         launched = []
