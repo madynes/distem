@@ -195,7 +195,7 @@ options[:enable_admin_network] = false
 args = ARGV.dup
 
 optparse = OptionParser.new do |opts|
-  opts.banner = "Usage: #{$0} [options] [<script_to_execute>]"
+  opts.banner = "Usage: #{$0} [options]"
   opts.separator ""
   opts.separator "distem-bootstrap automatically sets up a distem environment."
   opts.separator "When run without options, it will create a distem environment with the latest"
@@ -276,15 +276,10 @@ optparse = OptionParser.new do |opts|
     exit
   end
   opts.separator ""
-  opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
-  opts.separator "environment variable, while the address of the coordinator is in #{VAR_DISTEM_COORD}."
-  opts.separator ""
   opts.separator "Examples:"
   opts.separator "# reserve and deploy nodes using katapult3, then install distem"
   opts.separator "oarsub -t deploy -l nodes=10,walltime=1 \\"
   opts.separator " 'katapult3 -e squeeze-x64-min -c --sleep -- distem-bootstrap'"
-  opts.separator "# run script.rb against the latest git snapshot of distem"
-  opts.separator "distem-bootstrap --no-init-pnodes --git -- script.rb"
   opts.separator "# setup distem, installing additional packages"
   opts.separator "distem-bootstrap -p htop -r restfully -f nodes"
 
@@ -510,7 +505,7 @@ Net::SSH::Multi.start do |session|
          :coord)
   end
 
-  if options[:init_pnodes] or ARGV[0]
+  if options[:init_pnodes]
     launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",nil,false,false)
     unless launched.empty?
       tokill = launched.keys
@@ -567,31 +562,7 @@ Net::SSH::Multi.start do |session|
 
   msg('Install done',MSG_INFO)
 
-  if ARGV[0]
-    begin
-      File.open(ARGV[0], 'r') do |f|
-        filename = exec(session,'tempfile',:coord)[coordinator][0]
-        msg("Copying script file in '#{filename}' on #{coordinator}",MSG_INFO)
-        `scp #{ARGV[0]} root@#{coordinator}:#{filename}`
-        exec(session,"chmod +x #{filename}",:coord)
-        msg("Executing script file '#{filename}' on #{coordinator}",
-            MSG_INFO)
-
-        argv_dup = ARGV.dup
-        argv_dup.shift
-        script_args = (argv_dup.length > 0 ? argv_dup.join(" ") : "")
-        exec(session,
-             "export #{VAR_DISTEM_NODES}='#{(nodelist + [coordinator]) * "\n"}'; export #{VAR_DISTEM_COORD}='#{coordinator}';#{filename} #{script_args}",
-             :coord,true,true,true)
-        exec(session,"rm #{filename}",:coord)
-      end
-      msg('Script execution done',MSG_INFO)
-    rescue Errno::ENOENT
-      msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)
-    end
-  end
-
-  msg("Coordinator: #{coordinator}") if options[:init_pnodes] or ARGV[0]
+  msg("Coordinator: #{coordinator}") if options[:init_pnodes]
 
   # Send stats record to stats server
   if g5k? and options[:stats]
