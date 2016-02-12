@@ -9,7 +9,12 @@ module LXCWrapper # :nodoc: all
     def self.create(contname, configfile, wait=true)
       @@lxc.synchronize {
         _destroy(contname,wait)
-        Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
+        lxc_version = get_lxc_version()
+        if lxc_version >= '1.0.8'
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none",true)
+        else
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
+        end
       }
     end
 
@@ -54,6 +59,11 @@ module LXCWrapper # :nodoc: all
       @@lxc.synchronize {
         _destroy(contname, wait)
       }
+    end
+
+    def self.get_lxc_version()
+      lxc_version = _command?('lxc-version')? `lxc-version`.split(":")[1].strip : `lxc-ls --version`.chop
+      return lxc_version
     end
 
     private
@@ -139,5 +149,11 @@ module LXCWrapper # :nodoc: all
         cycle += 1
       end while list.include?(contname)
     end
+
+    def self._command?(name)
+      `which #{name}`
+      $?.success?
+    end
+
   end
 end
