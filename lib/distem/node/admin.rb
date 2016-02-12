@@ -50,13 +50,13 @@ module Distem
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exist?(PATH_DISTEMTMP)
       end
 
-      def self.has_systemd?
-        return !File.exist?('/sbin/init') || ((File.ftype('/sbin/init') == 'link') && File.readlink('/sbin/init').include?('systemd'))
+      def self.has_cgroups?
+        return Lib::Shell.run("mount | grep cgroup; true").empty?
       end
 
       # Initialize (mount) the CGroup filesystem that will be used by the system (LXC, ...)
       def self.set_cgroups
-        if !has_systemd?
+        if has_cgroups?
           Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP}")
           Lib::Shell.run("mount -t cgroup cgroup #{PATH_SYSV_CGROUP}")
         end
@@ -64,7 +64,7 @@ module Distem
 
       # Clean (umount) the CGroup filesystem used by the system
       def self.unset_cgroups
-        if !has_systemd?
+        if has_cgroups?
           Lib::Shell.run("umount #{PATH_SYSV_CGROUP}")
           Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP}")
         end
