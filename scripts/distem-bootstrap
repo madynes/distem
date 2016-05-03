@@ -451,7 +451,8 @@ Net::SSH::Multi.start do |session|
     if options[:git]
       if options[:ci] != nil
         msg("Syncing source repository on #{coordinator} with the current Gerrit repository",MSG_INFO)
-        system("rsync -rlut --delete #{options[:ci]}/* root@#{options[:coordinator]}:#{gitdir}")
+
+        system("rsync -rlut --delete #{options[:ci]}/* root@#{coordinator}:#{gitdir}")
       else
         msg("Retrieving '#{options[:git_url]}' repository on #{coordinator}",MSG_INFO)
         if g5k?
