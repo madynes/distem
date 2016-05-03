@@ -43,11 +43,11 @@ opts = {
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"
   tid = []
-  tid << Thread.new {Distem::NetAPI::ServerCoordinator.run!(opts)}
+  tid << Thread.new {Distem::NetAPI::CoordinatorServer.run!(opts)}
   sleep(2)
-  tid << Thread.new {Distem::NetAPI::ServerPnode.run!(opts)}
+  tid << Thread.new {Distem::NetAPI::PnodeServer.run!(opts)}
   tid.each { |t| t.join}
 else
   puts "Starting the server in Pnode mode"
-  Distem::NetAPI::ServerPnode.run!(opts)
+  Distem::NetAPI::PnodeServer.run!(opts)
 end

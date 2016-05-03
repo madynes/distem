@@ -879,6 +879,11 @@ module Distem
         super
         @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id)
       end
+
+      def run
+        CoordinatorServer.run!
+      end
+
     end
 
     class PnodeServer < Server
@@ -888,22 +893,12 @@ module Distem
         super
         @daemon = Daemon::DistemPnode.new
       end
-    end
-
-    class ServerCoordinator < CoordinatorServer
-      def initialize
-        super()
-      end
 
       def run
-        ServerCoordinator.run!
+        PnodeServer.run!
       end
-    end
 
-    class ServerPnode < PnodeServer
-      def run
-        ServerPnode.run!
-      end
     end
   end
+
 end
