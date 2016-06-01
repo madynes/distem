@@ -46,7 +46,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
   config.vm.define "frontend" do |node|
-    node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby-dev rake screen"
+    node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby-dev rake screen zlib1g-dev"
     node.vm.provision :shell, inline: "gem install rake-compiler nokogiri"
     node.vm.provision :shell, inline: "cd /vagrant && rake compile", privileged: false
     node.vm.provision :shell, inline: "/vagrant/scripts/distem-bootstrap --debian-version jessie -g -x -f /vagrant/machinefile", privileged: false
