@@ -8,7 +8,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  numNodes = 2
+  numNodes = 1
   ipAddrPrefix = "192.168.60.10"
   system "[ ! -e /tmp/sshkey ] && ssh-keygen -t rsa -f /tmp/sshkey -q -N ''"
   names = [*(1..numNodes)].map{ |x| ("vm" + x.to_s).to_sym} + [ "frontend" ]
@@ -46,9 +46,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
   config.vm.define "frontend" do |node|
-    node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby-dev rake screen zlib1g-dev"
+    node.vm.provision :shell, inline: "DEBIAN_FRONTEND=noninteractive apt-get install -q -y ruby-dev rake screen"
     node.vm.provision :shell, inline: "gem install rake-compiler nokogiri"
     node.vm.provision :shell, inline: "cd /vagrant && rake compile", privileged: false
+    node.vm.provision :shell, inline: "echo '---\nlib: /vagrant/lib\next: /vagrant/lib/ext\nbin: /vagrant/bin'>/vagrant/distemfiles.yml", privileged: false
     node.vm.provision :shell, inline: "/vagrant/scripts/distem-bootstrap --debian-version jessie -g -x -f /vagrant/machinefile", privileged: false
     node.vm.provision :shell, inline: "/vagrant/scripts/distem-devbootstrap -u /vagrant/distemfiles.yml -f /vagrant/machinefile", privileged: false
   end
