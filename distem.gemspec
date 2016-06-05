@@ -19,6 +19,7 @@ EOS
   s.add_runtime_dependency 'sinatra'
   s.add_runtime_dependency 'json'
   s.add_runtime_dependency 'net-ssh'
+  s.add_runtime_dependency 'ruby-graphviz'
 
   if s.respond_to? :specification_version then
     s.specification_version = 3

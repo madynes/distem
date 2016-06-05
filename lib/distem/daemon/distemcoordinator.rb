@@ -1550,6 +1550,11 @@ module Distem
         return JSON.pretty_generate(h)
       end
 
+      def vnodes_to_dot(output_file)
+        raise Lib::MissingParameterError, 'output file' unless output_file
+        @daemon_resources.vnodes_to_dot(output_file)
+      end
+
       def set_peers_latencies(vnodes, matrix)
         #sanity check
         if (vnodes.length == matrix.length)
