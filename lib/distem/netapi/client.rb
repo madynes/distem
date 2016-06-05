@@ -606,6 +606,11 @@ module Distem
         return JSON.pretty_generate(ret)
       end
 
+      def vnodes_to_dot(output_file)
+        params = {}
+        params['outputfile'] = output_file
+        post_json("/vplatform/vnodesdotfile",params)
+      end
       # Add an event trace to a resource
       #
       # @param [Hash] resource_desc A descrition of the affected resource
