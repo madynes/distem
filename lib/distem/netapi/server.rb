@@ -727,6 +727,15 @@ module Distem
         end
       end
 
+      post '/vplatform/vnodesdotfile/?' do
+        check do
+          output_file = CGI.unescape(params['outputfile'])
+          @body = @daemon.vnodes_to_dot(output_file)
+        end
+
+        return result!
+      end
+
       # Add a event trace to a resource
       post '/events/trace/?' do
         check do

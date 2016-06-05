@@ -359,7 +359,7 @@ module Distem
         vnodes = []
         downkeys(description)
         names.each { |name|
-          desc = Marshal.load(Marshal.dump(description))
+          desc = description
           vnode = vnode_get(name)
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
@@ -1520,6 +1520,11 @@ module Distem
           }
         end
         return JSON.pretty_generate(h)
+      end
+
+      def vnodes_to_dot(output_file)
+        raise Lib::MissingParameterError, 'output file' unless output_file
+        @daemon_resources.vnodes_to_dot(output_file)
       end
 
       def set_peers_latencies(vnodes, matrix)
