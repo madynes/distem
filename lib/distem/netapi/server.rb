@@ -835,6 +835,15 @@ module Distem
         return result!
       end
 
+      post '/vplatform/alevin/?' do
+        check do
+          file = CGI.unescape(params['file'])
+          @body = @daemon.run_alevin(file)
+        end
+
+        return result!
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})

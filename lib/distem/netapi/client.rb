@@ -598,6 +598,12 @@ module Distem
         post_json("/vplatform", { 'format' => format, 'data' => data, 'rootfs' => rootfs })
       end
 
+      def run_alevin(file)
+         params = {}
+         params['file'] = file
+         post_json("/vplatform/alevin",params)
+      end
+
       # Get the full description of the platform
       #
       # @return [String] The description in the wished format

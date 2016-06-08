@@ -37,6 +37,8 @@ module Distem
       ADMIN_NETWORK_IP = '220.0.0.0/8'
       ADMIN_NETWORK_NAME = 'adm'
 
+      PATH_DEFAULT_BIN="/tmp/distem/bin/"
+
       def initialize(enable_admin_network = false, vxlan_id = 1)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
@@ -66,6 +68,7 @@ module Distem
       # ==== Exceptions
       #
       def pnode_create(targets,desc={},async=false)
+
         l = lambda { |target|
           begin
             async = parse_bool(async)
@@ -293,6 +296,25 @@ module Distem
       def pmemory_get(hostname, raising = true)
         pnode = pnode_get(hostname)
         return pnode.memory
+      end
+
+      # Runs Alevin and maps vnodes into pnodes
+      # ==== Attributes
+      # * +physical_net+ DOT file that represents the physical infrastructure
+
+      def run_alevin(physical_net)
+
+        virtual_net = Tempfile.new('virtual')
+        vnodes_to_dot(virtual_net.path)
+        mapping = Tempfile.new('mapping')
+
+        cmd = "java -jar #{PATH_DEFAULT_BIN}/alevin.jar #{physical_net} #{virtual_net.path} #{mapping.path}"
+        Lib::Shell.run(cmd)
+        # Check result of mapping file
+        # I'm not sure if it should raise an exception
+        raise "Problem running alevin mapping" if parse_mapping(mapping.path).empty?
+        map_vnodes_pnodes(mapping)
+#        mapping.close # keeping the file for the moment for debugging purposes
       end
 
       # Get the description of a vnode
