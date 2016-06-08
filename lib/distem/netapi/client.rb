@@ -598,10 +598,14 @@ module Distem
         post_json("/vplatform", { 'format' => format, 'data' => data, 'rootfs' => rootfs })
       end
 
-      def run_alevin(file)
+      def run_alevin()
+         post_json("/vplatform/alevin",{})
+      end
+
+      def load_physical_topo(file)
          params = {}
          params['file'] = file
-         post_json("/vplatform/alevin",params)
+         post_json("/vplatform/loadphystopo",params)
       end
 
       # Get the full description of the platform

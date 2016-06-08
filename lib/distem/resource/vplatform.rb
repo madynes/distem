@@ -5,7 +5,7 @@ require 'graphviz'
 
 class  GraphViz
   module Constants
-    NODESATTRS.merge!({"cpu" => :EscString,"type" => :EscString})
+    NODESATTRS.merge!({"cpu" => :EscString,"type" => :EscString, "ip" =>:EscString })
     EDGESATTRS.merge!({"bandwidth" => :EscString})
   end
 end
@@ -260,6 +260,18 @@ module Distem
         return true
       end
 
+      def load_physical_topo(physical_topo)
+        map_distem_physical_topo = {}
+        raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
+        p_topo = GraphViz.parse(physical_topo)
+        p_topo.each_node do |node_name, node|
+          node.each_attribute{ |attr_name,value|
+            # There are escaped characters returned by graphviz
+            map_distem_physical_topo[node_name] = value.to_s.delete('\\"') if attr_name =="ip"
+          }
+        end
+        return map_distem_physical_topo
+      end
       # Delete a resource from the virtual platform
       # ==== Attributes
       # * +resource+ The resource object (have to be of class: PNode,VNode,VNetwork or VRoute)

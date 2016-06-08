@@ -837,8 +837,16 @@ module Distem
 
       post '/vplatform/alevin/?' do
         check do
+          @body = @daemon.run_alevin()
+        end
+
+        return result!
+      end
+
+      post '/vplatform/loadphystopo/?' do
+        check do
           file = CGI.unescape(params['file'])
-          @body = @daemon.run_alevin(file)
+          @body = @daemon.load_physical_topo(file)
         end
 
         return result!

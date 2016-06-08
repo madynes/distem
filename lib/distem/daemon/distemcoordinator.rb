@@ -32,6 +32,9 @@ module Distem
       @@vxlan_mcast_id = 0
       @@vxlan_id_lock = Mutex.new
 
+      @map_distem_physical_topo = {}
+      @physical_topo_file = nil
+
       WINDOW_SIZE = 250
 
       ADMIN_NETWORK_IP = '220.0.0.0/8'
@@ -298,17 +301,27 @@ module Distem
         return pnode.memory
       end
 
+      def load_physical_topo(physical_topo)
+        # mapping names from physical topologies into ips
+        @map_distem_physical_topo = @daemon_resources.load_physical_topo(physical_topo)
+        #Putting file into a temporary file that will be used by Distem
+        @physical_topo_file = Tempfile.new("physical_topo")
+        FileUtils.cp(physical_topo,@physical_topo_file.path)
+      end
+
       # Runs Alevin and maps vnodes into pnodes
       # ==== Attributes
       # * +physical_net+ DOT file that represents the physical infrastructure
 
-      def run_alevin(physical_net)
+      def run_alevin()
 
         virtual_net = Tempfile.new('virtual')
         vnodes_to_dot(virtual_net.path)
         mapping = Tempfile.new('mapping')
 
-        cmd = "java -jar #{PATH_DEFAULT_BIN}/alevin.jar #{physical_net} #{virtual_net.path} #{mapping.path}"
+        raise "you need to load a physical topology file first" if @physical_topo_file.nil?
+
+        cmd = "java -jar #{PATH_DEFAULT_BIN}/alevin.jar #{@physical_topo_file.path} #{virtual_net.path} #{mapping.path}"
         Lib::Shell.run(cmd)
         # Check result of mapping file
         # I'm not sure if it should raise an exception
@@ -1491,9 +1504,8 @@ module Distem
         mapping = parse_mapping(file)
         # we get rid of vs
         mapping.delete(:vs)
-
         mapping.each do |vnode, pnode|
-          pnode_ip = Resolv.getaddress(pnode.to_s)
+          pnode_ip = @map_distem_physical_topo[pnode.to_s]
           vnode_attach(vnode.to_s,pnode_ip.to_s)
         end
       end
