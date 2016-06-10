@@ -246,7 +246,7 @@ module Distem
         vnodes = visitor.visit(@vnodes)
 
         graph_g = GraphViz.graph( "G" ) do |graph_g|
-          vs= graph_g.add_nodes("vs", :cpu =>0, :type => "switch")
+          vs = graph_g.add_nodes("vs", :cpu =>0, :type => "switch")
           vnodes.each do |n,vnode|
             vcores = vnode["vcpu"]["vcores"].length
             # Bandwidth units are set to bps

@@ -42,7 +42,7 @@ module Distem
 
       PATH_DEFAULT_BIN="/tmp/distem/bin/"
 
-      def initialize(enable_admin_network = false, vxlan_id = 1)
+      def initialize(enable_admin_network = false, vxlan_id = 1, alevin = false)
         #Thread::abort_on_exception = true
         @node_name = Socket::gethostname
         @daemon_resources = Resource::VPlatform.new
@@ -59,6 +59,7 @@ module Distem
                                            {'network_type' => 'vxlan',
                                             'vxlan_id' => vxlan_id})
         end
+        @alevin = alevin
       end
 
       # Initialise a physical machine (launching daemon, creating cgroups, ...)
@@ -315,6 +316,7 @@ module Distem
 
       def run_alevin()
 
+        raise "Unable to run alevin, you should run the coordinator with the parameter --alevin" unless @alevin
         virtual_net = Tempfile.new('virtual')
         vnodes_to_dot(virtual_net.path)
         mapping = Tempfile.new('mapping')

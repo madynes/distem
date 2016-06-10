@@ -897,13 +897,15 @@ module Distem
       end
     end
 
-
+    # Parameters for the coordinator server are passed as a Hash in the method run!
+    # The Hash will be mapped as properties which are accessible using methods inherited from Sinatra::Base
+    # notably the 'settings' method
     class CoordinatorServer < Server
       set :port, 4567
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id)
+        @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id, settings.alevin)
       end
 
       def run
