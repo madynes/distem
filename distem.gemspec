@@ -14,6 +14,8 @@ EOS
   s.homepage = 'http://distem.gforge.inria.fr/'
   s.require_paths = ["lib"]
   s.summary = 'Distem'
+  s.add_development_dependency "rspec", "~> 3.1"
+
   s.add_runtime_dependency 'rest-client'
   s.add_runtime_dependency 'ipaddress'
   s.add_runtime_dependency 'sinatra'

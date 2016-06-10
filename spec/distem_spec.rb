@@ -18,8 +18,20 @@ describe Distem do
     expect(subject.pnodes_info().keys.length).to be > 1
   end
 
-  it "checks vnodes running" do
+  it "checks that no vnode running" do
     expect(subject.vnodes_info().keys.length).to be 0
   end
 
+  it "checks that no vnetwork has been created" do
+    expect(subject.vnetworks_info.empty?).to be true
+  end
+
+  it "creates a vnetwork" do
+    expect{ subject.vnetwork_create("test","10.0.0.0/22")}.not_to raise_error
+  end
+
+  after :all do
+    cl = Distem::NetAPI::Client.new(ENV['DISTEM_COORDINATOR'])
+    cl.pnodes_quit()
+  end
 end
