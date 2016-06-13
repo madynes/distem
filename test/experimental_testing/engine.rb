@@ -171,6 +171,13 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{NET} /tmp/ip #{IMAGE}")
       end
+    when '1node_def'
+      # It will create the definition and it wont start the vnode
+      if cli
+        return false
+      else
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-def.rb')} #{NET} /tmp/ip #{IMAGE}")
+      end
     when '2nodes'
       if cli
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
@@ -377,5 +384,14 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-events.rb')}"))
     }
   end
+
+    def test_15_alevin
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_def'})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-alevin.rb')}"))
+    }
+  end
+
 
 end

@@ -175,7 +175,7 @@ options[:init_pnodes] = true
 options[:coordinator] = nil
 options[:node_list]   = nil
 options[:debpackages] = []
-options[:gempackages] = ["ruby-graphviz"]
+options[:gempackages] = []
 options[:git]         = nil
 options[:gerrit]      = nil
 options[:ssh_key]     = nil
@@ -227,10 +227,10 @@ optparse = OptionParser.new do |opts|
     options[:ssh_key] = k
   end
   opts.on( '-p', '--debpackages <package1>,<package2>,<...>', Array, 'Additional debian packages to install on coordinator' ) do |p|
-    options[:debpackages] += p
+    options[:debpackages] = p
   end
   opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to install on coordinator' ) do |p|
-    options[:gempackages] += p
+    options[:gempackages] = p
   end
   opts.on( '--distem-version <distem_version>', 'Version of distem to install (default: latest)' ) do |v|
     options[:distem_version] = v
@@ -390,6 +390,9 @@ else
 end
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
+
+options[:gempackages].push("ruby-graphviz") if options[:alevin]
+
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
   begin
@@ -522,9 +525,9 @@ Net::SSH::Multi.start do |session|
   end
 
   if options[:alevin]
-    msg("Transferring  Alevin to coordinator #{coordinator} into Distem temporary directory '/tmp/distem'",MSG_INFO)
-    exec(session,"mkdir -p /tmp/distem/bin/",:coord)
-    `scp #{options[:alevin]} root@#{coordinator}:/tmp/distem/bin/alevin.jar`
+    msg("Transferring  Alevin to coordinator #{coordinator} into Distem temporary directory #{TMP_DIR}",MSG_INFO)
+    exec(session,"mkdir -p #{TMP_DIR}/bin/",:coord)
+    `scp #{options[:alevin]} root@#{coordinator}:#{TMP_DIR}/bin/alevin.jar`
   end
   if options[:init_pnodes]
     launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",nil,false,false)

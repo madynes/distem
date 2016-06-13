@@ -906,6 +906,7 @@ module Distem
       def initialize
         super
         @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id, settings.alevin)
+        require 'distem/resource/alevingraphviz' if settings.alevin
       end
 
       def run
