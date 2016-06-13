@@ -5,7 +5,6 @@ describe Distem do
   subject { Distem::NetAPI::Client.new(ENV['DISTEM_COORDINATOR']) }
 
   before :all do
-
     cmd_distem_bootstrap = `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
     puts cmd_distem_bootstrap
   end
@@ -18,7 +17,7 @@ describe Distem do
     expect(subject.pnodes_info().keys.length).to be > 1
   end
 
-  it "checks that no vnode running" do
+  it "checks that no vnode exists" do
     expect(subject.vnodes_info().keys.length).to be 0
   end
 
@@ -28,6 +27,18 @@ describe Distem do
 
   it "creates a vnetwork" do
     expect{ subject.vnetwork_create("test","10.0.0.0/22")}.not_to raise_error
+  end
+
+  it "checks if a vnetwork exists" do
+    expect(subject.vnetworks_info.empty?).to be false
+  end
+
+  it "creates a fake vnode" do
+    expect{subject.vnode_create("test1",{},{})}.not_to raise_error
+  end
+
+  it "checks that a vnode has been created" do
+    expect(subject.vnodes_info().keys.length).to be 0
   end
 
   after :all do
