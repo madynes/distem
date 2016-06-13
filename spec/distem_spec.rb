@@ -5,8 +5,14 @@ describe Distem do
   subject { Distem::NetAPI::Client.new(ENV['DISTEM_COORDINATOR']) }
 
   before :all do
-    cmd_distem_bootstrap = `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
-    puts cmd_distem_bootstrap
+
+    # Distem installation
+    if ENV['COMPILE_PACKAGE']
+      puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']} -g --ci #{ENV['PWD']}`
+      # for G5K when distem has not been installed before
+    end
+      puts `scripts/distem-devbootstrap -u distemfiles.yml -f #{ENV['MACHINEFILE']}`
+      puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
   end
 
   it "checks distem is running" do
@@ -14,7 +20,7 @@ describe Distem do
   end
 
   it "checks the number of pnodes running" do
-    expect(subject.pnodes_info().keys.length).to be > 1
+    expect(subject.pnodes_info().keys.length).to be > 0
   end
 
   it "checks that no vnode exists" do
@@ -38,7 +44,7 @@ describe Distem do
   end
 
   it "checks that a vnode has been created" do
-    expect(subject.vnodes_info().keys.length).to be 0
+    expect(subject.vnodes_info().keys.length).to be > 0
   end
 
   after :all do
