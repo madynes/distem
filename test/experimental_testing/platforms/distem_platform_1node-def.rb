@@ -40,16 +40,8 @@ Distem.client { |cl|
   res = cl.vnode_create('node1',
                   {
                     'vfilesystem' =>{'image' => image, 'shared' => true},
-                    'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
+                    'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true,'output' =>{"bandwidth" =>{"rate" => "100mbps"}}}]
                   })
   iplist << res['vifaces'][0]['address'].split('/')[0]
   cl.vcpu_create('node1', 1, 'ratio', 1)
-  cl.vnode_start('node1')
-  sleep(10)
-  puts "Checking if the node is up"
-  exit 1 if not wait_ssh(iplist[0], 300)
-
-  File.open(ip_file,'w') do |f|
-    f.puts(iplist[0])
-  end
 }

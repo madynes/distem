@@ -1,5 +1,7 @@
---- 
-bandwidth: 
+---
+bandwidth:
   error: 25
-latency: 
+latency:
   error: 20
+alevin:
+  source: "https://gforge.inria.fr/frs/download.php/file/35944/alevin-ext.jar"
