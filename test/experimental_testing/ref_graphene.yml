@@ -1,7 +1,7 @@
---- 
-bandwidth: 
+---
+bandwidth:
   error: 25
-latency: 
+latency:
   error: 20
 hpcc:
   error: 35
@@ -57,3 +57,5 @@ hpcc:
         - 16.95
         - 19.04
         - 22.0
+alevin:
+  source: "https://gforge.inria.fr/frs/download.php/file/35944/alevin-ext.jar"

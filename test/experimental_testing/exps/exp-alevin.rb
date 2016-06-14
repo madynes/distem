@@ -39,8 +39,7 @@ Distem.client do |cl|
 
   cl.load_physical_topo(platform_file.path)
   cl.run_alevin()
-  cl.vnodes_start(["node1"])
-
+  cl.vnode_start("node1")
   cl.wait_vnodes()
 end
 
