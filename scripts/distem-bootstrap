@@ -192,6 +192,7 @@ options[:deb_repo] = 'http://distem.gforge.inria.fr/deb-jessie'
 options[:deb_version] = 'jessie'
 options[:enable_admin_network] = false
 options[:vxlan_id] = nil
+options[:alevin] = nil
 
 args = ARGV.dup
 
@@ -252,6 +253,12 @@ optparse = OptionParser.new do |opts|
   opts.on( '--ci <path>', 'Path to the distem source directory (used only for CI purpose)' ) do |path|
    options[:ci] = path
   end
+
+  opts.on( '--alevin <path>', 'Path to the alevin JAR file' ) do |path|
+    raise "File provided for Alevin does not exist" unless File.exist?(path)
+    options[:alevin] = path
+  end
+
   opts.on( '--debian-version <version>', 'Choose the Debian version (squeeze, wheezy or jessie)') do |v|
     case v
     when 'squeeze'
@@ -375,6 +382,7 @@ allnodes.each do |node|
 end
 if File.exist?("#{sshkeyfile}.pub")
   allnodes.each do |node|
+
     `scp #{sshkeyfile}.pub root@#{node}:/root/.ssh/`
   end
 else
@@ -382,6 +390,9 @@ else
 end
 
 msg("Establishing SSH connections to all nodes", MSG_INFO)
+
+options[:gempackages].push("ruby-graphviz") if options[:alevin]
+
 Net::SSH::Multi.start do |session|
   nodeobjlist = {}
   begin
@@ -510,10 +521,14 @@ Net::SSH::Multi.start do |session|
   end
   options[:gempackages].each do |gempkg|
     msg("Installing additional gem package '#{gempkg}'",MSG_INFO)
-    exec(session,"gem install #{gempkg}",
-         :coord)
+    exec(session,"gem install #{gempkg}")
   end
 
+  if options[:alevin]
+    msg("Transferring  Alevin to coordinator #{coordinator} into Distem temporary directory #{TMP_DIR}",MSG_INFO)
+    exec(session,"mkdir -p #{TMP_DIR}/bin/",:coord)
+    `scp #{options[:alevin]} root@#{coordinator}:#{TMP_DIR}/bin/alevin.jar`
+  end
   if options[:init_pnodes]
     launched = exec(session,"lsof -Pnl -i4 | egrep ':4567 |:4568 '",nil,false,false)
     unless launched.empty?
@@ -540,6 +555,7 @@ Net::SSH::Multi.start do |session|
       exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} \
                                    #{options[:enable_admin_network] ? '--enable-admin-network' : ''} \
                                    #{options[:vxlan_id] ? '--vxlan-id ' + options[:vxlan_id] : ''} \
+                                   #{options[:alevin] ? '--alevin ' : ''} \
                                    -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd-coord.log')}&",
            :coord)
       [ '4567', '4568' ].each { |port|

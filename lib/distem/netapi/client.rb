@@ -598,6 +598,16 @@ module Distem
         post_json("/vplatform", { 'format' => format, 'data' => data, 'rootfs' => rootfs })
       end
 
+      def run_alevin()
+         post_json("/vplatform/alevin",{})
+      end
+
+      def load_physical_topo(file)
+         params = {}
+         params['file'] = file
+         post_json("/vplatform/loadphystopo",params)
+      end
+
       # Get the full description of the platform
       #
       # @return [String] The description in the wished format
@@ -606,6 +616,11 @@ module Distem
         return JSON.pretty_generate(ret)
       end
 
+      def vnodes_to_dot(output_file)
+        params = {}
+        params['outputfile'] = output_file
+        post_json("/vplatform/vnodesdotfile",params)
+      end
       # Add an event trace to a resource
       #
       # @param [Hash] resource_desc A descrition of the affected resource

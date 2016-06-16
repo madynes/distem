@@ -36,3 +36,5 @@ hpcc:
         - 3.79
         - 9.7
         - 15.1
+alevin:
+  source: "https://gforge.inria.fr/frs/download.php/file/35944/alevin-ext.jar"	

@@ -19,7 +19,8 @@ DISTEMROOT = ARGV[1]
 
 DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
-USER = `id -nu`.strip
+# USER = `id -nu`.strip
+USER = "root"
 NET = '10.144.0.0/18'
 
 if MODE == 'g5k'
@@ -123,7 +124,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         t.shift + "-kavlan-#{@@vlan}." + t.join('.')
       }
     else
-      nodes = [ 'distem-n1','distem-n1' ]
+      nodes = [ 'distem-jessie','distem-jessie' ]
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
@@ -140,7 +141,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     assert(str.include?("TEST PASSED"), str)
   end
 
-  def install_distem
+  def install_distem(extra_params = "")
     f = Tempfile.new("distemnodes")
     @@pnodes.uniq.each { |pnode|
       f.puts(pnode)
@@ -154,7 +155,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
-    distemcmd += ' --max-vifaces 250'
+    distemcmd += " --max-vifaces 250 #{extra_params}"
     system(distemcmd)
   end
 
@@ -170,6 +171,13 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         return false
       else
         return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+      end
+    when '1node_def'
+      # It will create the definition and it wont start the vnode
+      if cli
+        return false
+      else
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-def.rb')} #{NET} /tmp/ip #{IMAGE}")
       end
     when '2nodes'
       if cli
@@ -229,7 +237,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   def setup
     plateform_init if not @@initialized
     clean_env
-    install_distem
   end
 
   def teardown
@@ -242,12 +249,14 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   ##############################
 
   def test_00_setup_ok
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     assert(@@coordinator != nil)
     assert(@@pnodes != nil)
   end
 
   def test_01_platform_api
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -255,6 +264,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_02_platform_cli
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes, 'cli' => true})
@@ -262,6 +272,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_03_latency_input
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -270,6 +281,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_04_latency_output
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -278,6 +290,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_05_bandwidth_input
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -286,6 +299,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_06_bandwidth_output
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
@@ -294,6 +308,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_07_hpcc_gov
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
@@ -307,6 +322,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_08_hpcc_hogs
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
@@ -320,6 +336,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_09_vectorized_init_and_connectivity
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '50nodes'})
@@ -335,6 +352,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_10_set_peers_latency
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '50nodes'})
@@ -343,6 +361,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_11_set_arptables
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '50nodes'})
@@ -351,6 +370,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_12_wait_vnodes
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '200nodes', 'pnodes' => @@pnodes})
@@ -358,6 +378,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_13_cpu_update
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
@@ -371,11 +392,25 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_14_events
+    install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-events.rb')}"))
     }
   end
+
+  def test_15_alevin
+    temp_alevin = "/tmp/alevin.jar"
+    puts "\n\n Downloading Alevin ***"
+    `wget #{@@ref['alevin']['source']} -O #{temp_alevin} -q`
+    install_distem("--alevin #{temp_alevin} -p default-jdk,graphviz")
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_def'})
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-alevin.rb')}"))
+    }
+  end
+
 
 end

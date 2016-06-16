@@ -727,6 +727,15 @@ module Distem
         end
       end
 
+      post '/vplatform/vnodesdotfile/?' do
+        check do
+          output_file = CGI.unescape(params['outputfile'])
+          @body = @daemon.vnodes_to_dot(output_file)
+        end
+
+        return result!
+      end
+
       # Add a event trace to a resource
       post '/events/trace/?' do
         check do
@@ -826,6 +835,23 @@ module Distem
         return result!
       end
 
+      post '/vplatform/alevin/?' do
+        check do
+          @body = @daemon.run_alevin()
+        end
+
+        return result!
+      end
+
+      post '/vplatform/loadphystopo/?' do
+        check do
+          file = CGI.unescape(params['file'])
+          @body = @daemon.load_physical_topo(file)
+        end
+
+        return result!
+      end
+
       protected
 
       # Setting up result (auto generate JSON if @body is a {Distem::Resource})
@@ -871,13 +897,16 @@ module Distem
       end
     end
 
-
+    # Parameters for the coordinator server are passed as a Hash in the method run!
+    # The Hash will be mapped as properties which are accessible using methods inherited from Sinatra::Base
+    # notably the 'settings' method
     class CoordinatorServer < Server
       set :port, 4567
 
       def initialize
         super
-        @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id)
+        @daemon = Daemon::DistemCoordinator.new(settings.enable_admin_network, settings.vxlan_id, settings.alevin)
+        require 'distem/resource/alevingraphviz' if settings.alevin
       end
 
       def run

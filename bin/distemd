@@ -30,6 +30,10 @@ optparse = OptionParser.new(USAGE) do |opts|
   opts.on( '--vxlan-id <id>', 'Set the VXLAN id (value beetween 0 and 15)' ) do |id|
     options['f_vxlan_id'] = id
   end
+  opts.on( '--alevin', 'Activate Alevin for performing the mapping of vnodes into pnodes' ) do
+    options['f_alevin'] = true
+  end
+
 end
 optparse.parse!
 
@@ -38,7 +42,8 @@ Distem::Lib::Shell.run('killall lxc-wait') if str and !str.empty?
 opts = {
   'verbose' => options['f_verbose'],
   'enable_admin_network' => options['f_enable_admin_network'],
-  'vxlan_id' => options['f_vxlan_id']
+  'vxlan_id' => options['f_vxlan_id'],
+  'alevin' => options['f_alevin']
 }
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"

@@ -228,6 +228,39 @@ module Distem
         vnetwork.remove_vroute(vroute)
       end
 
+      # Creates a dot file with the contents of the vnodes
+      def vnodes_to_dot(output_file)
+
+        visitor = TopologyStore::HashWriter.new
+        vnodes = visitor.visit(@vnodes)
+
+        graph_g = GraphViz.graph( "G" ) do |graph_g|
+          vs = graph_g.add_nodes("vs", :cpu =>0, :type => "switch")
+          vnodes.each do |n,vnode|
+            vcores = vnode["vcpu"]["vcores"].length
+            # Bandwidth units are set to bps
+            bandwidth = vnode["vifaces"].inject(0){ |sum, b| sum + to_mps(b["output"]["bandwidth"]["rate"])}
+            gnode = graph_g.add_nodes( n,:cpu => vcores,:type => "host")
+            graph_g.add_edges( gnode, vs, :bandwidth => bandwidth)
+          end
+
+        end
+        graph_g.output(:none => output_file)
+        return true
+      end
+
+      def load_physical_topo(physical_topo)
+        map_distem_physical_topo = {}
+        raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
+        p_topo = GraphViz.parse(physical_topo)
+        p_topo.each_node do |node_name, node|
+          node.each_attribute{ |attr_name,value|
+            # There are escaped characters returned by graphviz
+            map_distem_physical_topo[node_name] = value.to_s.delete('\\"') if attr_name =="ip"
+          }
+        end
+        return map_distem_physical_topo
+      end
       # Delete a resource from the virtual platform
       # ==== Attributes
       # * +resource+ The resource object (have to be of class: PNode,VNode,VNetwork or VRoute)
@@ -243,6 +276,14 @@ module Distem
           remove_vroute(resource)
         end
       end
+
+      def to_mps(rate)
+        rates_def = {"bps"=>1, "kbps"=>1000, "mbps"=>1000000, "bgps"=>1000000000}
+        conversion = rates_def.keys.select{ |k| rate.include?(k)}.pop
+        real_value = rates_def[conversion]*rate.split(conversion).pop.to_i
+        return real_value
+      end
+
     end
 
   end
