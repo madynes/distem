@@ -31,7 +31,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_vxlan_id'] = id
   end
   opts.on( '--alevin', 'Activate Alevin for performing the mapping of vnodes into pnodes' ) do
-    options['alevin'] = true
+    options['f_alevin'] = true
   end
 
 end
@@ -43,7 +43,7 @@ opts = {
   'verbose' => options['f_verbose'],
   'enable_admin_network' => options['f_enable_admin_network'],
   'vxlan_id' => options['f_vxlan_id'],
-  'alevin' => options['alevin']
+  'alevin' => options['f_alevin']
 }
 if (options['f_daemon'])
   puts "Starting the server in Coordinator mode"
