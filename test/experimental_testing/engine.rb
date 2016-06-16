@@ -154,9 +154,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       distemcmd += ' -g' if GIT
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
-      distemcmd += " #{extra_params}"
     end
-    distemcmd += ' --max-vifaces 250'
+    distemcmd += " --max-vifaces 250 #{extra_params}"
     system(distemcmd)
   end
 
