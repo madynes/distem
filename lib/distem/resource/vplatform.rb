@@ -253,6 +253,7 @@ module Distem
         map_distem_physical_topo = {}
         raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
         p_topo = GraphViz.parse(physical_topo)
+        raise Lib::ParameterError, "Impossible to load topology file, probably a problem with DOT syntax" if p_topo.nil?
         p_topo.each_node do |node_name, node|
           node.each_attribute{ |attr_name,value|
             # There are escaped characters returned by graphviz

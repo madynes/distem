@@ -25,7 +25,7 @@ module Distem
 
       # Download a file using a specific protocol and store it on the local machine
       # ==== Attributes
-      # * +uri_str+ The URI of the file to download
+      # * +uri_str+ The URI object of the file to download
       # * +dir+ The directory to save the file to
       # ==== Returns
       # String value describing the path to the downloaded file on the local machine
@@ -34,19 +34,15 @@ module Distem
       # * +ResourceNotFoundError+ if can't reach the specified file
       # * +NotImplementedError+ if the protocol specified in the URI is not supported (atm only file:// is supported)
       #
-      def self.download(uri_str,dir=PATH_DEFAULT_DOWNLOAD)
-        begin
-          uri = URI.parse(CGI.unescape(uri_str))
-        rescue URI::InvalidURIError
-          raise Lib::InvalidParameterError, uri_str
-        end
+      def self.download(uri,dir=PATH_DEFAULT_DOWNLOAD)
 
         ret = ""
-
         case uri.scheme
           when "file"
+            raise Lib::ResourceNotFoundError, uri.path unless File.exist?(uri.path)
             ret = uri.path
-            raise Lib::ResourceNotFoundError, ret unless File.exist?(ret)
+        when "http"
+          ret = CGI.escape(uri.path)
           else
             raise Lib::NotImplementedError, uri.scheme
         end

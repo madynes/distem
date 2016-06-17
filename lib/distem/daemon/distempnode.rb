@@ -807,7 +807,8 @@ module Distem
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
         desc['disk_throttling'] = nil if !desc.has_key?('disk_throttling')
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
+
+        vnode.filesystem = Resource::FileSystem.new(vnode,CGI.unescape(desc['image']),desc['shared'],desc['cow'],desc['disk_throttling'])
 
         return vnode.filesystem
       end

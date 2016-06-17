@@ -24,7 +24,10 @@ module Distem
       # Create a new FileSystem
       def initialize(vnode,image,shared = false,cow = false, disk_throttling = {})
         @vnode = vnode
-        @image = CGI.escape(image)
+        # checking image
+        @image = URI.parse(image) # It should not be CGI.escaped
+        @image.scheme = "file" if @image.scheme.nil?
+
         @shared = shared
         @cow = cow
         @path = nil
@@ -33,7 +36,7 @@ module Distem
       end
 
       def to_s
-        return "vnode: #{@vnode.name}, image: #{CGI.unescape(@image)}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}, disk_throttling: #{@disk_throttling ? @disk_throttling.to_s : nil}"
+        return "vnode: #{@vnode.name}, image: #{CGI.unescape(@image.path)}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}, disk_throttling: #{@disk_throttling ? @disk_throttling.to_s : nil}"
       end
     end
 
