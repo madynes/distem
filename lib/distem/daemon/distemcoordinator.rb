@@ -326,8 +326,11 @@ module Distem
         cmd = "java -jar #{PATH_DEFAULT_BIN}/alevin.jar #{@physical_topo_file.path} #{virtual_net.path} #{mapping.path}"
         Lib::Shell.run(cmd)
         # Check result of mapping file
-        # I'm not sure if it should raise an exception
-        raise "Problem running alevin mapping" if parse_mapping(mapping.path).empty?
+        # It aborts in case alevin is not able to map all the vnodes into the physical platform.
+        result = parse_mapping(mapping.path)
+        result.delete(:vs)
+        raise "Problem running Alevin mapping" if result.empty?
+        raise "Alevin could not map all the vnodes, aborting ..." if result.length < @daemon_resources.vnodes.length
         map_vnodes_pnodes(mapping)
 #        mapping.close # keeping the file for the moment for debugging purposes
       end
@@ -590,7 +593,7 @@ module Distem
               }
 
               n = vnodes_to_create.map { |vnode| vnode.name }
-              # we want the node to be runned
+              # we want the node to be run
               ret = cl.vnodes_create(n,descs)
               vnodes_to_create.each_index { |i|
                 updateobj_vnode(vnodes_to_create[i],ret[i])
