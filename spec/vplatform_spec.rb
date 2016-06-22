@@ -54,5 +54,9 @@ describe Distem::Resource::VPlatform do
     expect(@vplatform.load_physical_topo("spec/input/physical-net.dot")).to be_an_instance_of(Hash)
   end
 
+  it "raises an error to a problem with the syntax on the DOT file"  do
+    expect{@vplatform.load_physical_topo("spec/input/complex-physical-topo.dot")}.to raise_error(Distem::Lib::ParameterError)
+  end
+
 
 end
