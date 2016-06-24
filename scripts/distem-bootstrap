@@ -175,7 +175,6 @@ options[:node_list]   = nil
 options[:debpackages] = []
 options[:gempackages] = []
 options[:git]         = nil
-options[:gerrit]      = nil
 options[:ssh_key]     = nil
 options[:debug]       = false
 options[:distem_version] = nil
@@ -238,9 +237,6 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-U', '--git-url <git_repository>', "Overwrite the default distem git repository" ) do |repo|
     options[:git_url] = repo
-  end
-  opts.on( '-G', '--gerrit <gerrit_ref>', "Checkout a gerrit ref (e.g refs/changes/94/94/1) and rebuild a Debian package" ) do |n|
-    options[:gerrit] = n
   end
   opts.on( '-S', '--stealth-mode', 'Do not report usage statistics (Grid\'5000 only)' ) do |c|
     options[:stats] = false
@@ -445,7 +441,7 @@ Net::SSH::Multi.start do |session|
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')
 
-  if options[:git] or options[:gerrit]
+  if options[:git]
     msg("Installing debian build packages on #{coordinator}",MSG_INFO)
     exec(session,"apt-get build-dep -y --force-yes distem",:coord)
     exec(session,"DEBIAN_FRONTEND=noninteractive apt-get install -q -y #{pkg_build * ' '}",
@@ -459,7 +455,7 @@ Net::SSH::Multi.start do |session|
     exec(session,"rm -Rf #{gitdir}",:coord, false, false)
     if options[:git]
       if options[:ci] != nil
-        msg("Syncing source repository on #{coordinator} with the current Gerrit repository",MSG_INFO)
+        msg("Syncing source repository on #{coordinator} with the current Git repository",MSG_INFO)
 
         system("rsync -rlut --delete #{options[:ci]}/* root@#{coordinator}:#{gitdir}")
       else
@@ -476,12 +472,8 @@ Net::SSH::Multi.start do |session|
                :coord)
         end
       end
-    else # gerrit
-      msg("Setting up git repository from gerrit ref:#{options[:gerrit]} on #{coordinator}",
-          MSG_INFO)
-      exec(session,"git clone #{GERRIT_REPOSITORY} #{gitdir}",:coord)
-      exec(session,"cd #{gitdir} && git fetch #{GERRIT_REPOSITORY} #{options[:gerrit]} && git checkout FETCH_HEAD", :coord)
     end
+
     msg("Building debian package of distem on #{coordinator}",MSG_INFO)
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord)
