@@ -78,7 +78,6 @@ benchs.each_key { |key|
   if (stats.mean > ((1 + ERROR) * benchs[key]['ref'])) || (stats.mean < ((1 - ERROR) * benchs[key]['ref']))
     puts "ERROR #{key} bench: requested #{benchs[key]['ref']}, measured #{stats.mean}"
     error = true
-    break
   end
 }
 
