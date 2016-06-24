@@ -13,7 +13,8 @@ describe Distem do
     end
       puts `scripts/distem-devbootstrap -u distemfiles.yml -f #{ENV['MACHINEFILE']}`
       puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
-      @image_path = "file:///vagrant/tmp/ubuntu-wily-lxc.tar.gz"
+      @image_path = "file:///vagrant/tmp/ubuntu-xenial-lxc.tar.gz"
+      @vplatform_file = Tempfile.new("vplatform")
   end
 
   it "checks distem is running" do
@@ -63,8 +64,26 @@ describe Distem do
     expect(subject.vnodes_info()).to be_an_instance_of(Hash)
   end
 
+  it "gets info from the platform" do
+    expect{subject.vplatform_info()}.not_to raise_error
+    File.open(@vplatform_file.path,'w') { |f| f.puts(subject.vplatform_info()) }
+  end
+
+  it "loads a platform from a file" do
+    subject.pnodes_quit()
+    puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
+    subject.vplatform_create(File.read(@vplatform_file.path))
+  end
+
+  it "gets info from the vnode after loading the platform" do
+    expect(subject.vnodes_info()).to be_an_instance_of(Hash)
+  end
+
+
   after :all do
     cl = Distem::NetAPI::Client.new(ENV['DISTEM_COORDINATOR'])
     cl.pnodes_quit()
+    # Waiting some seconds to not perturb other test
+    sleep 5
   end
 end

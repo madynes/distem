@@ -1570,14 +1570,6 @@ module Distem
       def vplatform_get()
         visitor = TopologyStore::HashWriter.new
         h = visitor.visit(@daemon_resources)
-        if h["vplatform"]["vnodes"] && !h["vplatform"]["vnodes"].empty?
-          h["vplatform"]["vnodes"].each { |v|
-            vnode = v[1]
-            if vnode["vfilesystem"]["image"]
-              vnode["vfilesystem"]["image"] = CGI.unescape(vnode["vfilesystem"]["image"])
-            end
-          }
-        end
         return JSON.pretty_generate(h)
       end
 
