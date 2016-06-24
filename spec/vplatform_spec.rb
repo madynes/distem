@@ -26,8 +26,18 @@ describe Distem::Resource::VPlatform do
     expect{@vplatform.vnodes_to_dot(@dot_file)}.not_to raise_error
   end
 
-  it "creates dot file 2 vnodes with network interface" do
+  it "creates a dot file with network interfaces without bandwidth" do
     vnode = Distem::Resource::VNode.new("node3","")
+    vnode.add_vcpu(1,1,0)
+    viface = Distem::Resource::VIface.new("if-adm",vnode,{})
+    vnode.add_viface(viface)
+    @vplatform.add_vnode(vnode)
+    expect{@vplatform.vnodes_to_dot(@dot_file)}.not_to raise_error
+  end
+
+
+  it "creates dot file 2 vnodes with network interface" do
+    vnode = Distem::Resource::VNode.new("node4","")
     vnode.add_vcpu(1,1,0)
     viface = Distem::Resource::VIface.new("if1",vnode,{})
     viface.voutput = Distem::Resource::VIface::VTraffic.new(viface,
@@ -37,8 +47,8 @@ describe Distem::Resource::VPlatform do
     expect{@vplatform.vnodes_to_dot(@dot_file)}.not_to raise_error
   end
 
-  it "creates dot file 2 vnodes with multiple network interfaces network interface" do
-    vnode = Distem::Resource::VNode.new("node4","")
+  it "creates dot file 2 vnodes with multiple network interfaces network interfaces" do
+    vnode = Distem::Resource::VNode.new("node5","")
     vnode.add_vcpu(1,1,0)
     (1..2).each do |n|
       viface = Distem::Resource::VIface.new("if#{n}",vnode,{})
@@ -49,6 +59,23 @@ describe Distem::Resource::VPlatform do
     @vplatform.add_vnode(vnode)
     expect{@vplatform.vnodes_to_dot(@dot_file)}.not_to raise_error
   end
+
+  it "creates dot file 2 vnodes with multiple network interfaces network interfaces and one interface without bandwidth" do
+    vnode = Distem::Resource::VNode.new("node6","")
+    vnode.add_vcpu(1,1,0)
+    (1..2).each do |n|
+      viface = Distem::Resource::VIface.new("if#{n}",vnode,{})
+      viface.voutput = Distem::Resource::VIface::VTraffic.new(viface,
+                                                              Distem::Resource::VIface::VTraffic::Direction::OUTPUT,{"bandwidth" =>{"rate" => "#{n}00mbps"}})
+      vnode.add_viface(viface)
+    end
+    #Adding interface without bandwidth definition
+    viface = Distem::Resource::VIface.new("if-adm",vnode,{})
+    vnode.add_viface(viface)
+    @vplatform.add_vnode(vnode)
+    expect{@vplatform.vnodes_to_dot(@dot_file)}.not_to raise_error
+  end
+
 
   it "loads a physical topology"  do
     expect(@vplatform.load_physical_topo("spec/input/physical-net.dot")).to be_an_instance_of(Hash)
