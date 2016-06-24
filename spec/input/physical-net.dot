@@ -1,0 +1,11 @@
+graph G {
+physwitch[cpu=0];
+pv40[cpu=2 ip="172.16.72.6" ];
+pv47[cpu=1 ip="172.16.72.44" ];
+pv48[cpu=1 ip="172.16.72.45" ];
+pv49[cpu=1 ip="172.16.72.46" ];
+physwitch--pv40 [bandwidth=1000];
+physwitch--pv47 [bandwidth=400];
+physwitch--pv48 [bandwidth=400];
+physwitch--pv49 [bandwidth=400];
+}
