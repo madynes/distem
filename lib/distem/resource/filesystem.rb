@@ -6,7 +6,6 @@ module Distem
     # Abstract description of the filesystem used on a VNode
     class FileSystem
       # The VNode associated to this FileSystem
-      attr_accessor :vnode
       # The URI to the -bootstrapped and compressed- image file
       attr_accessor :image
       # Is the file system shared between several nodes ?
@@ -22,8 +21,7 @@ module Distem
 
 
       # Create a new FileSystem
-      def initialize(vnode,image,shared = false,cow = false, disk_throttling = {})
-        @vnode = vnode
+      def initialize(image,shared = false,cow = false, disk_throttling = {})
         # checking image
         @image = URI.parse(image) # It should not be CGI.escaped
         @image.scheme = "file" if @image.scheme.nil?
@@ -35,9 +33,6 @@ module Distem
         @disk_throttling = disk_throttling
       end
 
-      def to_s
-        return "vnode: #{@vnode.name}, image: #{CGI.unescape(@image.path)}, path: #{@path}, sharedpath: #{@sharedpath}, shared #{@shared}, cow #{@cow}, disk_throttling: #{@disk_throttling ? @disk_throttling.to_s : nil}"
-      end
     end
 
   end

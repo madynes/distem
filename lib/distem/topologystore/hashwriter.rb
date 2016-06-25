@@ -161,7 +161,6 @@ module Distem
       # See the visit_vplatform documentation
       def visit_filesystem(filesystem)
         return {
-          'vnode' => filesystem.vnode,
           'image' => filesystem.image,
           'shared' => filesystem.shared,
           'path' => filesystem.path,

@@ -48,7 +48,7 @@ describe Distem do
     expect{@daemon.pnode_create('255.255.255.255')}.to raise_error(Distem::Lib::UnreachableResourceError)
   end
 
-  it "gets an resource not found exception" do
+  it "gets a resource not found exception" do
     expect{@daemon.pnode_get('255.255.255.255')}.to raise_error(Distem::Lib::ResourceNotFoundError)
   end
 

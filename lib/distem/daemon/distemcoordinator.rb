@@ -1170,7 +1170,7 @@ module Distem
         else
           desc['disk_throttling'] = nil
         end
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
+        vnode.filesystem = Resource::FileSystem.new(desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
         return vnode.filesystem
       end
 

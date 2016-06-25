@@ -208,7 +208,6 @@ module Distem
         rescue Exception
           raise
         end
-
       end
 
       def vnodes_stop(names,async=false)
@@ -808,7 +807,7 @@ module Distem
         desc['cow'] = parse_bool(desc['cow'])
         desc['disk_throttling'] = nil if !desc.has_key?('disk_throttling')
 
-        vnode.filesystem = Resource::FileSystem.new(vnode,CGI.unescape(desc['image']),desc['shared'],desc['cow'],desc['disk_throttling'])
+        vnode.filesystem = Resource::FileSystem.new(CGI.unescape(desc['image']),desc['shared'],desc['cow'],desc['disk_throttling'])
 
         return vnode.filesystem
       end
