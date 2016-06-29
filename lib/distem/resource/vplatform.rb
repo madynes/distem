@@ -239,12 +239,19 @@ module Distem
           vnodes.each do |n,vnode|
             vcores = vnode["vcpu"].nil?? 0 : vnode["vcpu"]["vcores"].length
             # Bandwidth units are set to bps
-            bandwidth = vnode["vifaces"].inject(0){ |sum, b| sum + to_mps(b["output"]["bandwidth"]["rate"])}
+            bandwidth = vnode["vifaces"].inject(0) do |sum, b|
+              if b["output"] && b["output"]["bandwidth"]
+                rate = b["output"]["bandwidth"]["rate"]
+              else
+                rate = "0bps"
+              end
+              sum + to_mps(rate)
+            end
             gnode = graph_g.add_nodes( n,:cpu => vcores,:type => "host")
             graph_g.add_edges( gnode, vs, :bandwidth => bandwidth)
           end
-
         end
+
         graph_g.output(:none => output_file)
         return true
       end
@@ -253,6 +260,7 @@ module Distem
         map_distem_physical_topo = {}
         raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
         p_topo = GraphViz.parse(physical_topo)
+        raise Lib::ParameterError, "Impossible to load topology file, probably a problem with DOT syntax" if p_topo.nil?
         p_topo.each_node do |node_name, node|
           node.each_attribute{ |attr_name,value|
             # There are escaped characters returned by graphviz

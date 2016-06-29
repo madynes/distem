@@ -326,8 +326,11 @@ module Distem
         cmd = "java -jar #{PATH_DEFAULT_BIN}/alevin.jar #{@physical_topo_file.path} #{virtual_net.path} #{mapping.path}"
         Lib::Shell.run(cmd)
         # Check result of mapping file
-        # I'm not sure if it should raise an exception
-        raise "Problem running alevin mapping" if parse_mapping(mapping.path).empty?
+        # It aborts in case alevin is not able to map all the vnodes into the physical platform.
+        result = parse_mapping(mapping.path)
+        result.delete(:vs)
+        raise "Problem running Alevin mapping" if result.empty?
+        raise "Alevin could not map all the vnodes, aborting ..." if result.length < @daemon_resources.vnodes.length
         map_vnodes_pnodes(mapping)
 #        mapping.close # keeping the file for the moment for debugging purposes
       end
@@ -335,20 +338,12 @@ module Distem
       # Get the description of a vnode
       def vnode_get_info(vnodename)
         vnode = vnode_get(vnodename).dup
-        if vnode.filesystem && vnode.filesystem.image
-          vnode.filesystem.image = CGI.unescape(vnode.filesystem.image)
-        end
         return vnode
       end
 
       # Get the description of the vnodes
       def vnodes_get_info()
         vnodes = vnodes_get().dup
-        vnodes.each_value { |vnode|
-          if vnode.filesystem && vnode.filesystem.image
-            vnode.filesystem.image = CGI.unescape(vnode.filesystem.image)
-          end
-        }
         return vnodes
       end
 
@@ -598,7 +593,7 @@ module Distem
               }
 
               n = vnodes_to_create.map { |vnode| vnode.name }
-              # we want the node to be runned
+              # we want the node to be run
               ret = cl.vnodes_create(n,descs)
               vnodes_to_create.each_index { |i|
                 updateobj_vnode(vnodes_to_create[i],ret[i])
@@ -1175,7 +1170,7 @@ module Distem
         else
           desc['disk_throttling'] = nil
         end
-        vnode.filesystem = Resource::FileSystem.new(vnode,desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
+        vnode.filesystem = Resource::FileSystem.new(desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
         return vnode.filesystem
       end
 
@@ -1575,14 +1570,6 @@ module Distem
       def vplatform_get()
         visitor = TopologyStore::HashWriter.new
         h = visitor.visit(@daemon_resources)
-        if h["vplatform"]["vnodes"] && !h["vplatform"]["vnodes"].empty?
-          h["vplatform"]["vnodes"].each { |v|
-            vnode = v[1]
-            if vnode["vfilesystem"]["image"]
-              vnode["vfilesystem"]["image"] = CGI.unescape(vnode["vfilesystem"]["image"])
-            end
-          }
-        end
         return JSON.pretty_generate(h)
       end
 

@@ -13,6 +13,8 @@ describe Distem do
     end
       puts `scripts/distem-devbootstrap -u distemfiles.yml -f #{ENV['MACHINEFILE']}`
       puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
+      @image_path = "file:///vagrant/tmp/ubuntu-xenial-lxc.tar.gz"
+      @vplatform_file = Tempfile.new("vplatform")
   end
 
   it "checks distem is running" do
@@ -32,7 +34,7 @@ describe Distem do
   end
 
   it "creates a vnetwork" do
-    expect{ subject.vnetwork_create("test","10.0.0.0/22")}.not_to raise_error
+    expect{ subject.vnetwork_create("test","10.144.0.0/22")}.not_to raise_error
   end
 
   it "checks if a vnetwork exists" do
@@ -47,8 +49,41 @@ describe Distem do
     expect(subject.vnodes_info().keys.length).to be > 0
   end
 
+  it "creates a real vnode" do
+    desc = {'vfilesystem' =>{'image' => @image_path,'shared' => true},
+            'vifaces' => [{'name' => 'if0', 'vnetwork' => "test" }]}
+
+    expect{subject.vnode_create("node1",desc,{})}.not_to raise_error
+  end
+
+  it "start a vnode" do
+    expect{subject.vnode_start("node1")}.not_to raise_error
+  end
+
+  it "gets info from the vnode" do
+    expect(subject.vnodes_info()).to be_an_instance_of(Hash)
+  end
+
+  it "gets info from the platform" do
+    expect{subject.vplatform_info()}.not_to raise_error
+    File.open(@vplatform_file.path,'w') { |f| f.puts(subject.vplatform_info()) }
+  end
+
+  it "loads a platform from a file" do
+    subject.pnodes_quit()
+    puts `scripts/distem-bootstrap -f #{ENV['MACHINEFILE']}`
+    subject.vplatform_create(File.read(@vplatform_file.path))
+  end
+
+  it "gets info from the vnode after loading the platform" do
+    expect(subject.vnodes_info()).to be_an_instance_of(Hash)
+  end
+
+
   after :all do
     cl = Distem::NetAPI::Client.new(ENV['DISTEM_COORDINATOR'])
     cl.pnodes_quit()
+    # Waiting some seconds to not perturb other test
+    sleep 5
   end
 end

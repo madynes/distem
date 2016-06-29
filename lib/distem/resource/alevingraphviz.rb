@@ -3,7 +3,7 @@ require 'graphviz'
 
 class  GraphViz
   module Constants
-    NODESATTRS.merge!({"cpu" => :EscString,"type" => :EscString, "ip" =>:EscString })
-    EDGESATTRS.merge!({"bandwidth" => :EscString})
+    NODESATTRS.merge!({"cpu" => :EscString,"type" => :EscString, "ip" =>:EscString,"bandwidth" => :EscString, "kind" => :EscString})
+    EDGESATTRS.merge!({"bandwidth" => :EscString, "key" => :EscString})
   end
 end
