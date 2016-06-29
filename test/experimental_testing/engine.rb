@@ -155,7 +155,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
-    distemcmd += " --max-vifaces 250 #{extra_params}"
+    distemcmd += " --max-vifaces 250 -r net-ssh-multi #{extra_params}"
     system(distemcmd)
   end
 
