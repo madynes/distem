@@ -1581,7 +1581,7 @@ module Distem
 
       def vnodes_to_dot(output_file)
         raise Lib::MissingParameterError, 'output file' unless output_file
-        @daemon_resources.vnodes_to_dot(output_file)
+        @daemon_resources.vnodes_to_dot(output_file,ADMIN_NETWORK_NAME)
       end
 
       def set_peers_latencies(vnodes, matrix)

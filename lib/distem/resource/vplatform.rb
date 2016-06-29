@@ -229,12 +229,14 @@ module Distem
       end
 
       # Creates a dot file with the contents of the vnodes
-      def vnodes_to_dot(output_file)
+      def vnodes_to_dot(output_file,admin_network=nil)
 
         visitor = TopologyStore::HashWriter.new
         vnodes = visitor.visit(@vnodes)
         vnetworks = visitor.visit(@vnetworks)
         graph_g = GraphViz.graph( "G" ) do |graph_g|
+          # we got rid of admin network first
+          vnetworks.delete(admin_network)
           vnetworks.each do |name,vnetwork|
             vs = graph_g.add_nodes(name, :cpu =>0, :type => "switch")
             vnetwork["vnodes"].each do |vname|
