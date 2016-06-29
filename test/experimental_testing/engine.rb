@@ -149,7 +149,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     f.close
     distemcmd = ''
     if (MODE == 'g5k')
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --debian-version jessie"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --vxlan-id #{rand(16)} --debian-version jessie"
       distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
     else
