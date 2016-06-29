@@ -401,10 +401,10 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   end
 
   def test_15_alevin
-    temp_alevin = "/tmp/alevin.jar"
+    temp_alevin = Tempfile.new("alevin.jar")
     puts "\n\n Downloading Alevin ***"
-    `wget #{@@ref['alevin']['source']} -O #{temp_alevin} -q`
-    install_distem("--alevin #{temp_alevin} -p default-jdk,graphviz")
+    `wget #{@@ref['alevin']['source']} -O #{temp_alevin.path} -q`
+    install_distem("--alevin #{temp_alevin.path} -p default-jdk,graphviz")
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_def'})
