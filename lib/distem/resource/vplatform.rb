@@ -233,22 +233,27 @@ module Distem
 
         visitor = TopologyStore::HashWriter.new
         vnodes = visitor.visit(@vnodes)
-
+        vnetworks = visitor.visit(@vnetworks)
         graph_g = GraphViz.graph( "G" ) do |graph_g|
-          vs = graph_g.add_nodes("vs", :cpu =>0, :type => "switch")
-          vnodes.each do |n,vnode|
-            vcores = vnode["vcpu"].nil?? 0 : vnode["vcpu"]["vcores"].length
-            # Bandwidth units are set to bps
-            bandwidth = vnode["vifaces"].inject(0) do |sum, b|
-              if b["output"] && b["output"]["bandwidth"]
-                rate = b["output"]["bandwidth"]["rate"]
-              else
-                rate = "0bps"
+          vnetworks.each do |name,vnetwork|
+            vs = graph_g.add_nodes(name, :cpu =>0, :type => "switch")
+            vnetwork["vnodes"].each do |vname|
+              vnode = vnodes[vname]
+              if vnode
+                vcores = vnode["vcpu"].nil?? 0 : vnode["vcpu"]["vcores"].length
+                # Bandwidth units are set to bps
+                bandwidth = vnode["vifaces"].inject(0) do |sum, b|
+                  if b["output"] && b["output"]["bandwidth"]
+                    rate = b["output"]["bandwidth"]["rate"]
+                  else
+                    rate = "0bps"
+                  end
+                  sum + to_mps(rate)
+                end
+                gnode = graph_g.add_nodes(vname,:cpu => vcores,:type => "host")
+                graph_g.add_edges(gnode, vs, :bandwidth => bandwidth)
               end
-              sum + to_mps(rate)
             end
-            gnode = graph_g.add_nodes( n,:cpu => vcores,:type => "host")
-            graph_g.add_edges( gnode, vs, :bandwidth => bandwidth)
           end
         end
 

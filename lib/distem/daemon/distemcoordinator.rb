@@ -327,8 +327,7 @@ module Distem
         Lib::Shell.run(cmd)
         # Check result of mapping file
         # It aborts in case alevin is not able to map all the vnodes into the physical platform.
-        result = parse_mapping(mapping.path)
-        result.delete(:vs)
+        result = delete_mapped_vnet(parse_mapping(mapping.path))
         raise "Problem running Alevin mapping" if result.empty?
         raise "Alevin could not map all the vnodes, aborting ..." if result.length < @daemon_resources.vnodes.length
         map_vnodes_pnodes(mapping)
@@ -1497,10 +1496,17 @@ module Distem
         mapping
       end
 
+      # we get rid of vnetwork in the vnode DOT file
+      def delete_mapped_vnet(mapping)
+        visitor = TopologyStore::HashWriter.new
+        vnetworks = visitor.visit(@daemon_resources.vnetworks)
+        vnetworks.each{ |name,vnetwork|  mapping.delete(name.to_sym) }
+        return mapping
+      end
+
       def map_vnodes_pnodes(file)
-        mapping = parse_mapping(file)
-        # we get rid of vs
-        mapping.delete(:vs)
+        mapping = delete_mapped_vnet(parse_mapping(file))
+
         mapping.each do |vnode, pnode|
           pnode_ip = @map_distem_physical_topo[pnode.to_s]
           vnode_attach(vnode.to_s,pnode_ip.to_s)
