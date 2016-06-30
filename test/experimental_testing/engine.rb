@@ -26,7 +26,6 @@ NET = '10.144.0.0/18'
 if MODE == 'g5k'
   GIT = (ARGV[2] == 'true')
   CLUSTER = ARGV[3]
-  GITREPO = ARGV[4]
   KADEPLOY_ENVIRONMENT = 'jessie-x64-nfs'
   IMAGE = 'file:///home/ejeanvoine/public/distem/distem-fs-wheezy.tar.gz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
@@ -76,7 +75,7 @@ class CommonTools
       msg("Deploying #{pnodes.join(',')} (attempt #{i+1})")
       ok = Tempfile.new("nodes_ok")
       node_list = "-m #{pnodes.join(' -m ')}"
-      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u ejeanvoine -k -o #{ok.path} --vlan #{vlan}")
+      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u deploy -k -o #{ok.path} --vlan #{vlan}")
       next if not File.exist?(ok.path)
       deployed_pnodes = IO.readlines(ok.path).collect { |line| line.strip }
       break if (deployed_pnodes.length == pnodes.length)
@@ -150,7 +149,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     distemcmd = ''
     if (MODE == 'g5k')
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --vxlan-id #{rand(16)} --debian-version jessie"
-      distemcmd += " -U #{GITREPO}" if GITREPO
       distemcmd += ' -g' if GIT
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
