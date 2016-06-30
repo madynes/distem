@@ -1500,7 +1500,11 @@ module Distem
       def delete_mapped_vnet(mapping)
         visitor = TopologyStore::HashWriter.new
         vnetworks = visitor.visit(@daemon_resources.vnetworks)
-        vnetworks.each{ |name,vnetwork|  mapping.delete(name.to_sym) }
+
+        vnetworks.each do |name,vnetwork|
+          encoded_name = "net#{Distem.encode16(name)}"
+          mapping.delete(encoded_name.to_sym)
+        end
         return mapping
       end
 
@@ -1509,7 +1513,10 @@ module Distem
 
         mapping.each do |vnode, pnode|
           pnode_ip = @map_distem_physical_topo[pnode.to_s]
-          vnode_attach(vnode.to_s,pnode_ip.to_s)
+          # We got rid of the node at the beginning
+          temp_name = vnode.to_s.split("node")[1]
+          decoded_name = Distem.decode16(temp_name)
+          vnode_attach(decoded_name,pnode_ip.to_s)
         end
       end
 

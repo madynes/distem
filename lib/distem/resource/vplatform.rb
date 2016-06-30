@@ -231,6 +231,8 @@ module Distem
       # Creates a dot file with the contents of the vnodes
       def vnodes_to_dot(output_file,admin_network=nil)
 
+        # We encode the names using the string node or net followed by the encoded name in Hex
+        # The name should be encoded in order to be compatible with Alevin
         visitor = TopologyStore::HashWriter.new
         vnodes = visitor.visit(@vnodes)
         vnetworks = visitor.visit(@vnetworks)
@@ -238,7 +240,8 @@ module Distem
           # we got rid of admin network first
           vnetworks.delete(admin_network)
           vnetworks.each do |name,vnetwork|
-            vs = graph_g.add_nodes(name, :cpu =>0, :type => "switch")
+            encoded_name = "net#{Distem.encode16(name)}"
+            vs = graph_g.add_nodes(encoded_name, :cpu =>0, :type => "switch")
             vnetwork["vnodes"].each do |vname|
               vnode = vnodes[vname]
               if vnode
@@ -252,7 +255,8 @@ module Distem
                   end
                   sum + to_mps(rate)
                 end
-                gnode = graph_g.add_nodes(vname,:cpu => vcores,:type => "host")
+                encoded_name = "node#{Distem.encode16(vname)}"
+                gnode = graph_g.add_nodes(encoded_name,:cpu => vcores,:type => "host")
                 graph_g.add_edges(gnode, vs, :bandwidth => bandwidth)
               end
             end
