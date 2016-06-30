@@ -268,15 +268,24 @@ module Distem
       end
 
       def load_physical_topo(physical_topo)
+
+        visitor = TopologyStore::HashWriter.new
+        pnodes = visitor.visit(@pnodes)
         map_distem_physical_topo = {}
         raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
         p_topo = GraphViz.parse(physical_topo)
         raise Lib::ParameterError, "Impossible to load topology file, probably a problem with DOT syntax" if p_topo.nil?
         p_topo.each_node do |node_name, node|
-          node.each_attribute{ |attr_name,value|
-            # There are escaped characters returned by graphviz
-            map_distem_physical_topo[node_name] = value.to_s.delete('\\"') if attr_name =="ip"
-          }
+          node_attributes = {}
+          # There are escaped characters returned by graphviz
+          node.each_attribute{ |attr_name,value| node_attributes[attr_name] = value.to_s.delete('\\"') }
+
+          if node_attributes["ip"].length > 0
+            physical_node_ip = node_attributes["ip"]
+            raise Lib::ResourceNotFoundError, "physical node #{physical_node_ip} does not belong to Distem's pnodes" unless pnodes.keys.include?(physical_node_ip)
+            map_distem_physical_topo[node_name] = physical_node_ip
+          end
+
         end
         return map_distem_physical_topo
       end
