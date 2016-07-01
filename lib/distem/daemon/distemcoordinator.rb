@@ -327,8 +327,7 @@ module Distem
         Lib::Shell.run(cmd)
         # Check result of mapping file
         # It aborts in case alevin is not able to map all the vnodes into the physical platform.
-        result = parse_mapping(mapping.path)
-        result.delete(:vs)
+        result = delete_mapped_vnet(parse_mapping(mapping.path))
         raise "Problem running Alevin mapping" if result.empty?
         raise "Alevin could not map all the vnodes, aborting ..." if result.length < @daemon_resources.vnodes.length
         map_vnodes_pnodes(mapping)
@@ -1497,13 +1496,27 @@ module Distem
         mapping
       end
 
+      # we get rid of vnetwork in the vnode DOT file
+      def delete_mapped_vnet(mapping)
+        visitor = TopologyStore::HashWriter.new
+        vnetworks = visitor.visit(@daemon_resources.vnetworks)
+
+        vnetworks.each do |name,vnetwork|
+          encoded_name = "net#{Distem.encode16(name)}"
+          mapping.delete(encoded_name.to_sym)
+        end
+        return mapping
+      end
+
       def map_vnodes_pnodes(file)
-        mapping = parse_mapping(file)
-        # we get rid of vs
-        mapping.delete(:vs)
+        mapping = delete_mapped_vnet(parse_mapping(file))
+
         mapping.each do |vnode, pnode|
           pnode_ip = @map_distem_physical_topo[pnode.to_s]
-          vnode_attach(vnode.to_s,pnode_ip.to_s)
+          # We got rid of the node at the beginning
+          temp_name = vnode.to_s.split("node")[1]
+          decoded_name = Distem.decode16(temp_name)
+          vnode_attach(decoded_name,pnode_ip.to_s)
         end
       end
 
@@ -1575,7 +1588,7 @@ module Distem
 
       def vnodes_to_dot(output_file)
         raise Lib::MissingParameterError, 'output file' unless output_file
-        @daemon_resources.vnodes_to_dot(output_file)
+        @daemon_resources.vnodes_to_dot(output_file,ADMIN_NETWORK_NAME)
       end
 
       def set_peers_latencies(vnodes, matrix)

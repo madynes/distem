@@ -229,26 +229,37 @@ module Distem
       end
 
       # Creates a dot file with the contents of the vnodes
-      def vnodes_to_dot(output_file)
+      def vnodes_to_dot(output_file,admin_network=nil)
 
+        # We encode the names using the string node or net followed by the encoded name in Hex
+        # The name should be encoded in order to be compatible with Alevin
         visitor = TopologyStore::HashWriter.new
         vnodes = visitor.visit(@vnodes)
-
+        vnetworks = visitor.visit(@vnetworks)
         graph_g = GraphViz.graph( "G" ) do |graph_g|
-          vs = graph_g.add_nodes("vs", :cpu =>0, :type => "switch")
-          vnodes.each do |n,vnode|
-            vcores = vnode["vcpu"].nil?? 0 : vnode["vcpu"]["vcores"].length
-            # Bandwidth units are set to bps
-            bandwidth = vnode["vifaces"].inject(0) do |sum, b|
-              if b["output"] && b["output"]["bandwidth"]
-                rate = b["output"]["bandwidth"]["rate"]
-              else
-                rate = "0bps"
+          # we got rid of admin network first
+          vnetworks.delete(admin_network)
+          vnetworks.each do |name,vnetwork|
+            encoded_name = "net#{Distem.encode16(name)}"
+            vs = graph_g.add_nodes(encoded_name, :cpu =>0, :type => "switch")
+            vnetwork["vnodes"].each do |vname|
+              vnode = vnodes[vname]
+              if vnode
+                vcores = vnode["vcpu"].nil?? 0 : vnode["vcpu"]["vcores"].length
+                # Bandwidth units are set to bps
+                bandwidth = vnode["vifaces"].inject(0) do |sum, b|
+                  if b["output"] && b["output"]["bandwidth"]
+                    rate = b["output"]["bandwidth"]["rate"]
+                  else
+                    rate = "0bps"
+                  end
+                  sum + to_mps(rate)
+                end
+                encoded_name = "node#{Distem.encode16(vname)}"
+                gnode = graph_g.add_nodes(encoded_name,:cpu => vcores,:type => "host")
+                graph_g.add_edges(gnode, vs, :bandwidth => bandwidth)
               end
-              sum + to_mps(rate)
             end
-            gnode = graph_g.add_nodes( n,:cpu => vcores,:type => "host")
-            graph_g.add_edges( gnode, vs, :bandwidth => bandwidth)
           end
         end
 
@@ -257,15 +268,24 @@ module Distem
       end
 
       def load_physical_topo(physical_topo)
+
+        visitor = TopologyStore::HashWriter.new
+        pnodes = visitor.visit(@pnodes)
         map_distem_physical_topo = {}
         raise "Physical topology file #{physical_topo} not found" unless File.exist?(physical_topo)
         p_topo = GraphViz.parse(physical_topo)
         raise Lib::ParameterError, "Impossible to load topology file, probably a problem with DOT syntax" if p_topo.nil?
         p_topo.each_node do |node_name, node|
-          node.each_attribute{ |attr_name,value|
-            # There are escaped characters returned by graphviz
-            map_distem_physical_topo[node_name] = value.to_s.delete('\\"') if attr_name =="ip"
-          }
+          node_attributes = {}
+          # There are escaped characters returned by graphviz
+          node.each_attribute{ |attr_name,value| node_attributes[attr_name] = value.to_s.delete('\\"') }
+
+          if node_attributes["ip"].length > 0
+            physical_node_ip = node_attributes["ip"]
+            raise Lib::ResourceNotFoundError, "physical node #{physical_node_ip} does not belong to Distem's pnodes" unless pnodes.keys.include?(physical_node_ip)
+            map_distem_physical_topo[node_name] = physical_node_ip
+          end
+
         end
         return map_distem_physical_topo
       end
