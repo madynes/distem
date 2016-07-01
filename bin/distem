@@ -186,7 +186,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['vnetwork'] = str if str
   end
   opts.on(
-    '--create-viface vnode=VNODE,iface=IFACE[,vnetwork=VNET,address=ADDRESS,default=true|false]',
+    '--create-viface vnode=VNODE,iface=IFACE,vnetwork=VNET,address=ADDRESS,default=true|false',
     'Create VIFACE on VNODE'
   ) do |str|
     options['f_options'] << 'create_viface'
@@ -219,7 +219,7 @@ optparse = OptionParser.new(USAGE) do |opts|
     options['f_options'] << 'complete_vroutes'
   end
   opts.on(
-    '--config-viface vnode=VNODE,iface=IFACE[,bw=VALUE|unlimited,latency=VALUE|none,direction=INPUT|OUTPUT]',
+    '--config-viface vnode=VNODE,iface=IFACE,bw=VALUE|unlimited,latency=VALUE|none,direction=INPUT|OUTPUT',
     'Set a bandwidth or a latency limitation on IFACE with a given value and eventually a given direction'
   ) do |str|
     options['f_options'] << 'config_viface'
