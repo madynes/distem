@@ -57,7 +57,7 @@ module Distem
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
           end
 
-          str = Lib::Shell.run("tc qdisc show | grep #{iface} | grep ingress || true")
+          str = Lib::Shell.run("tc qdisc show | grep \" #{iface} \"| grep ingress || true")
           if str and !str.empty?
             inputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
@@ -65,7 +65,7 @@ module Distem
 
           @@ifballocator.free_ifb(ifb)
 
-          str = Lib::Shell.run("tc qdisc show | grep #{iface}")
+          str = Lib::Shell.run("tc qdisc show | grep \" #{iface} \"")
           if str and !str.empty? and !str.include?('pfifo_fast')
             outputroot = TCWrapper::QdiscRoot.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
