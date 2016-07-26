@@ -15,24 +15,24 @@ module Distem
       attr_reader :daemon_resources
       @vnet_id = nil
 
-      @@lockslock = Mutex.new
-      @@locks = {
+      @lockslock = Mutex.new
+      @locks = {
         :vnetsync => {},
       }
 
-      @@threads = {
+      @threads = {
         :pnode_init => {},
         :vnode_stop => {},
       }
       # See https://en.wikipedia.org/wiki/MAC_address#Address_details for allowed addresses
       MAC_PREFIX = "fe:#{rand(256).to_s(16).rjust(2,"0")}:#{rand(256).to_s(16).rjust(2,"0")}"
-      @@mac_id = 0
-      @@mac_id_lock = Mutex.new
-      @@vxlan_id = 0
-      @@vxlan_mcast_id = 0
-      @@vxlan_id_lock = Mutex.new
-      @@viface_id = 0
-      @@viface_id_lock = Mutex.new
+      @mac_id = 0
+      @mac_id_lock = Mutex.new
+      @vxlan_id = 0
+      @vxlan_mcast_id = 0
+      @vxlan_id_lock = Mutex.new
+      @viface_id = 0
+      @viface_id_lock = Mutex.new
       @map_distem_physical_topo = {}
       @physical_topo_file = nil
 
@@ -53,8 +53,8 @@ module Distem
         @event_manager = Events::EventManager.new(@event_trace)
         @admin_network = nil
         # Since a vxlan_id is a 24 bits value, this allows to hage 16 instances of 2^20 vxlan networks
-        @@vxlan_id = vxlan_id.to_i * 2**20
-        @@vxlan_mcast_id = vxlan_id.to_i
+        @vxlan_id = vxlan_id.to_i * 2**20
+        @vxlan_mcast_id = vxlan_id.to_i
         if enable_admin_network
           @admin_network = vnetwork_create(ADMIN_NETWORK_NAME, ADMIN_NETWORK_IP,
                                            {'network_type' => 'vxlan',
@@ -93,8 +93,8 @@ module Distem
             }
 
             if async
-              #thr = @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
-              @@threads[:pnode_init][pnode.address.to_s] = Thread.new {
+              #thr = @threads[:pnode_init][pnode.address.to_s] = Thread.new {
+              @threads[:pnode_init][pnode.address.to_s] = Thread.new {
                 block.call
               }
               #thr.abort_on_exception = true
@@ -152,8 +152,8 @@ module Distem
       def pnode_wait(target)
         pnode = pnode_get(target)
 
-        @@threads[:pnode_init][pnode.address.to_s].join if \
-        @@threads[:pnode_init][pnode.address.to_s]
+        @threads[:pnode_init][pnode.address.to_s].join if \
+        @threads[:pnode_init][pnode.address.to_s]
       end
 
       # Quit distem on all the physical machines (remove everything that was created)
@@ -816,9 +816,9 @@ module Distem
           downkeys(desc)
           default = desc.has_key?('default') ? desc['default'] : false
           viface = nil
-          @@viface_id_lock.synchronize {
-            viface = Resource::VIface.new(vifacename,@@viface_id,vnode,default)
-            @@viface_id += 1
+          @viface_id_lock.synchronize {
+            viface = Resource::VIface.new(vifacename,@viface_id,vnode,default)
+            @viface_id += 1
           }
           vnode.add_viface(viface)
           viface_update(vnode.name,viface.name,desc)
@@ -904,10 +904,10 @@ module Distem
           end
 
           if (!desc.has_key?('macaddress')) || (desc['macaddress'] == nil) || (desc['macaddress'] == '')
-            @@mac_id_lock.synchronize {
-              mac_suffix = [@@mac_id/65536, @@mac_id%65536/256, @@mac_id%65536%256].map {|i| i.to_s(16).rjust(2,"0")}.join(":")
+            @mac_id_lock.synchronize {
+              mac_suffix = [@mac_id/65536, @mac_id%65536/256, @mac_id%65536%256].map {|i| i.to_s(16).rjust(2,"0")}.join(":")
               viface.macaddress = "#{MAC_PREFIX}:#{mac_suffix}"
-              @@mac_id += 1
+              @mac_id += 1
             }
           else
             if desc['macaddress'].match(/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/)
@@ -1263,12 +1263,12 @@ module Distem
         end
 
         if lock
-          @@lockslock.synchronize {
-            @@locks[:vnetsync][pnode] = Mutex.new unless \
-            @@locks[:vnetsync][pnode]
+          @lockslock.synchronize {
+            @locks[:vnetsync][pnode] = Mutex.new unless \
+            @locks[:vnetsync][pnode]
           }
 
-          @@locks[:vnetsync][pnode].synchronize do
+          @locks[:vnetsync][pnode].synchronize do
             block.call
           end
         else
@@ -1303,11 +1303,11 @@ module Distem
           end
 
           if opts['network_type'] == 'vxlan'
-            opts['vxlan_id'] = @@vxlan_id
-            @@vxlan_id_lock.synchronize {
-              @@vxlan_id += 1
+            opts['vxlan_id'] = @vxlan_id
+            @vxlan_id_lock.synchronize {
+              @vxlan_id += 1
             }
-            opts['vxlan_mcast_id'] = @@vxlan_mcast_id
+            opts['vxlan_mcast_id'] = @vxlan_mcast_id
           end
           vnetwork = Resource::VNetwork.new(address, name, @daemon_resources.pnodes.length, opts)
           @daemon_resources.add_vnetwork(vnetwork)

@@ -14,15 +14,6 @@ module Distem
       # The NodeConfig object that allows to apply virtual resources specifications on physical nodes
       attr_reader  :node_config
 
-      @@lockslock = Mutex.new
-      @@locks = {
-        :vnetsync => {},
-      }
-
-      @@threads = {
-        :pnode_init => {},
-      }
-
       # Hash[root_interface] = bridge_name
       attr_reader :linux_bridges
       attr_reader :default_network_interface
