@@ -34,7 +34,7 @@ module Distem
           latency_mapping = viface.latency_filters.values.uniq
           nb_filters = latency_mapping.length
           if nb_filters > 255
-            raise "Too much different latency values for #{viface.vnode.name}"
+            raise "Too many different latency values for #{viface.vnode.name}"
           end
 
           ingressroot = TCWrapper::QdiscIngress.new(baseiface)

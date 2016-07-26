@@ -236,7 +236,7 @@ module Distem
         visitor = TopologyStore::HashWriter.new
         vnodes = visitor.visit(@vnodes)
         vnetworks = visitor.visit(@vnetworks)
-        graph_g = GraphViz.graph( "G" ) do |graph_g|
+        g = GraphViz.graph( "G" ) do |graph_g|
           # we got rid of admin network first
           vnetworks.delete(admin_network)
           vnetworks.each do |name,vnetwork|
@@ -263,7 +263,7 @@ module Distem
           end
         end
 
-        graph_g.output(:none => output_file)
+        g.output(:none => output_file)
         return true
       end
 
