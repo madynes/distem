@@ -9,8 +9,6 @@ module Distem
       VXLAN_BRIDGE_PREFIX='vxlanbr'
       VXLAN_INTERFACE_PREFIX='vxlan'
       LOCALHOST='localhost' # :nodoc:
-      # Maximal size for a network interface name (from GNU/Linux specifications)
-      IFNAMEMAXSIZE=15
       @@nic_count=1
       @@addr_default=nil
       # Hash containing the (interface name, interface address, interface netmask) triplet
@@ -186,14 +184,9 @@ module Distem
       # ==== Returns
       # String object
       #
-      def self.get_iface_name(vnode,viface)
-        # >>> TODO: Remove vnode parameter)
-        raise unless vnode.is_a?(Resource::VNode)
+      def self.get_iface_name(viface)
         raise unless viface.is_a?(Resource::VIface)
-
-        ret = "#{vnode.name}-#{viface.name}-#{viface.id}"
-        binf = (ret.size >= IFNAMEMAXSIZE ? ret.size-IFNAMEMAXSIZE : 0)
-        ret = ret[binf..ret.size]
+        return "veth#{viface.id}"
       end
 
       # Gets the current MTU of a virtual network interface
@@ -203,9 +196,8 @@ module Distem
       # ==== Returns
       # Integer object
       #
-      def self.get_iface_mtu(vnode,viface)
-        iface = "#{vnode.name}-#{viface.name}-#{viface.id}"
-        cmdret = Shell.run("/sbin/ifconfig #{iface}")
+      def self.get_iface_mtu(viface)
+        cmdret = Shell.run("/sbin/ifconfig #{get_iface_name(viface)}")
         return cmdret.split("\n").grep(/.*MTU.*/)[0].gsub(/.*MTU:(\d+) .*/, '\1').to_i
       end
 

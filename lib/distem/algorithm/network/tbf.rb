@@ -30,7 +30,7 @@ module Distem
 
 
         def apply_filters(viface)
-          baseiface = Lib::NetTools::get_iface_name(viface.vnode, viface)
+          baseiface = Lib::NetTools::get_iface_name(viface)
           latency_mapping = viface.latency_filters.values.uniq
           nb_filters = latency_mapping.length
           if nb_filters > 255
@@ -130,8 +130,7 @@ module Distem
           @limited_bw_input = false
           @limited_lat_input = false
 
-          iface = Lib::NetTools::get_iface_name(vtraffic.viface.vnode,
-                                                vtraffic.viface)
+          iface = Lib::NetTools::get_iface_name(vtraffic.viface)
           baseiface = iface
           action = nil
           direction = nil
@@ -177,7 +176,7 @@ module Distem
               # cf. http://www.juniper.net/techpubs/en_US/junos11.2/topics/reference/general/policer-guidelines-burst-size-calculating.html
               # buffer size = rate * latency (here latency is 50ms)
               # warning, the buffer size should be at least equal to the MTU (plus some bytes...)
-              'buffer' => [Integer(bwlim.to_bytes * 0.05), Lib::NetTools::get_iface_mtu(vtraffic.viface.vnode, vtraffic.viface) + 20].max,
+              'buffer' => [Integer(bwlim.to_bytes * 0.05), Lib::NetTools::get_iface_mtu(vtraffic.viface) + 20].max,
               'latency' => '50ms',
               #mtu parameter fixed because of a kernel bug, see http://comments.gmane.org/gmane.linux.network/252860
               'mtu' => '65536'
@@ -250,7 +249,7 @@ module Distem
             @@store[viface] = {}
           }
 
-          iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
+          iface = Lib::NetTools::get_iface_name(viface)
 
           if (@limited_bw_output || @limited_lat_output)
             outputroot = TCWrapper::QdiscRoot.new(viface.ifb)
