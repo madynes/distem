@@ -31,7 +31,8 @@ module Distem
       @@vxlan_id = 0
       @@vxlan_mcast_id = 0
       @@vxlan_id_lock = Mutex.new
-
+      @@viface_id = 0
+      @@viface_id_lock = Mutex.new
       @map_distem_physical_topo = {}
       @physical_topo_file = nil
 
@@ -814,7 +815,11 @@ module Distem
           vnode = vnode_get(vnodename)
           downkeys(desc)
           default = desc.has_key?('default') ? desc['default'] : false
-          viface = Resource::VIface.new(vifacename,vnode,default)
+          viface = nil
+          @@viface_id_lock.synchronize {
+            viface = Resource::VIface.new(vifacename,@@viface_id,vnode,default)
+            @@viface_id += 1
+          }
           vnode.add_viface(viface)
           viface_update(vnode.name,viface.name,desc)
           return viface

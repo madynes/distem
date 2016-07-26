@@ -86,8 +86,6 @@ module Distem
         end
       end
 
-
-      @@ids = 0
       # The unique identifier of the network interface
       attr_reader :id
       # The name of the network interface
@@ -116,12 +114,13 @@ module Distem
       # Create a new VIface
       # ==== Attributes
       # * +name+ The name of the virtual network interface
+      # * +id+ Unique id of the virtual network interface
       # * +vnode+ The VNode object describing the virtual node associated to this virtual network interface
       # * +default+ Specify if it has to be set as the default interface
-      def initialize(name,vnode,default = false)
+      def initialize(name,id,vnode,default = false)
         raise if name.empty? or not name.is_a?(String)
 
-        @id = @@ids
+        @id = id
         @name = name
         @vnode = vnode
         @address = IPAddress::IPv4.new("0.0.0.0/0")
@@ -130,7 +129,6 @@ module Distem
         @vinput = nil
         @voutput = nil
         @vroutes = []
-        @@ids += 1
         @ifb = nil
         @filters = nil
         @default = default

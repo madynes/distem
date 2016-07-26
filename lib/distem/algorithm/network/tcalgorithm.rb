@@ -1,6 +1,6 @@
 
 module Distem
-  module Algorithm 
+  module Algorithm
     module Network
 
       # A common interface for TC based algorithms
@@ -48,7 +48,7 @@ module Distem
             @@store[viface] = {}
           }
 
-          iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
+          iface = Lib::NetTools::get_iface_name(viface)
           ifb = viface.ifb
 
           str = Lib::Shell.run("tc qdisc show || true").split(/\n/).grep(/ dev #{ifb} /)

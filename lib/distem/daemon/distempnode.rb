@@ -255,7 +255,7 @@ module Distem
               if vnode.get_viface_by_name(ifdesc['name'])
                 viface_update(vnode.name,ifdesc['name'],ifdesc)
               else
-                viface_create(vnode.name,ifdesc['name'],ifdesc)
+                viface_create(vnode.name,ifdesc['id'],ifdesc['name'],ifdesc)
               end
             end
           end
@@ -457,11 +457,11 @@ module Distem
       # Resource::VIface object
       # ==== Exceptions
       #
-      def viface_create(vnodename,vifacename,desc)
+      def viface_create(vnodename,id,vifacename,desc)
         begin
           vifacename = vifacename.gsub(' ','_')
           vnode = vnode_get(vnodename)
-          viface = Resource::VIface.new(vifacename,vnode)
+          viface = Resource::VIface.new(vifacename,id,vnode)
           vnode.add_viface(viface)
           downkeys(desc)
           viface_update(vnode.name,viface.name,desc)
