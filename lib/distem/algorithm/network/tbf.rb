@@ -30,7 +30,7 @@ module Distem
 
 
         def apply_filters(viface)
-          baseiface = Lib::NetTools::get_iface_name(viface.vnode, viface)
+          baseiface = Lib::NetTools::get_iface_name(viface)
           latency_mapping = viface.latency_filters.values.uniq
           nb_filters = latency_mapping.length
           if nb_filters > 255
@@ -130,8 +130,7 @@ module Distem
           @limited_bw_input = false
           @limited_lat_input = false
 
-          iface = Lib::NetTools::get_iface_name(vtraffic.viface.vnode,
-                                                vtraffic.viface)
+          iface = Lib::NetTools::get_iface_name(vtraffic.viface)
           baseiface = iface
           action = nil
           direction = nil
@@ -250,7 +249,7 @@ module Distem
             @@store[viface] = {}
           }
 
-          iface = Lib::NetTools::get_iface_name(viface.vnode,viface)
+          iface = Lib::NetTools::get_iface_name(viface)
 
           if (@limited_bw_output || @limited_lat_output)
             outputroot = TCWrapper::QdiscRoot.new(viface.ifb)
