@@ -415,9 +415,19 @@ This parameters are also taken in account:
     * __rate__ <small>[r/w]</small>: The speed of the connection (linux/tc units, see _man tc_)
 * __latency__ <small>[r/w]</small>: The latency description
     * __delay__ <small>[r/w]</small>: The delay of the connection (linux/tc units, see _man tc_)
+    * __jitter__ <small>[r/w]</small>: The jitter of the connection (linux/tc units, see _man tc_)
+* __loss__ <small>[r/w]</small>: The loss description
+    * __percent__ <small>[r/w]</small>: The percentage of lost packets
+* __corruption__ <small>[r/w]</small>: The corruption description
+    * __percent__ <small>[r/w]</small>: The percentage of corrputed packets
+* __duplication__ <small>[r/w]</small>: The duplication description
+    * __percent__ <small>[r/w]</small>: The percentage of duplicated packets
+* __reordering__ <small>[r/w]</small>: The reordering description
+    * __percent__ <small>[r/w]</small>: The percentage of reordered packets
 
 <tt>Sample</tt>:
     {
       "bandwidth"=>{"rate" => "20mbps"},
-      "latency"=>{"delay" => "5ms"}
+      "latency"=>{"delay" => "5ms", "jitter" => "2ms"},
+      "reordering"=>{"percent" => "10%"}
     }

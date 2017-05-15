@@ -11,10 +11,8 @@ module Distem
         @@ifballocator = nil
 
         def initialize()
-          @limited_bw_output = false
-          @limited_lat_output = false
-          @limited_bw_input = false
-          @limited_lat_input = false
+          @limited_netem_output = false
+          @limited_netem_input = false
           if @@ifballocator.nil?
             @@ifballocator = Node::IFBAllocator::new
           end
@@ -26,24 +24,18 @@ module Distem
             @@store[viface] = {} if !@@store[viface]
           }
 
-          bw_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Bandwidth.name) != nil) && (viface.voutput.get_property(Resource::Bandwidth.name).rate != nil)
-          lat_output = (viface.voutput != nil) && (viface.voutput.get_property(Resource::Latency.name) != nil) && (viface.voutput.get_property(Resource::Latency.name).delay != nil)
-          bw_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Bandwidth.name) != nil) && (viface.vinput.get_property(Resource::Bandwidth.name).rate != nil)
-          lat_input = (viface.vinput != nil) && (viface.vinput.get_property(Resource::Latency.name) != nil) && (viface.vinput.get_property(Resource::Latency.name).delay != nil)
+          netem_output = (viface.voutput != nil) && viface.voutput.limited?
+          netem_input = (viface.vinput != nil) && viface.vinput.limited?
 
-          clean(viface) if (bw_output != @limited_bw_output) ||
-            (lat_output != @limited_lat_output) ||
-            (bw_input != @limited_bw_input) ||
-            (lat_input != @limited_lat_input) ||
+          clean(viface) if (netem_input != @limited_netem_input) ||
+            (netem_output != @limited_netem_output) ||
             viface.latency_filters
         end
 
         # Clean every previous run config
         def clean(viface)
-          @limited_bw_output = false
-          @limited_lat_output = false
-          @limited_bw_input = false
-          @limited_lat_input = false
+          @limited_netem_output = false
+          @limited_netem_input = false
           @@lock.synchronize {
             @@store[viface] = {}
           }

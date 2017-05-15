@@ -6,6 +6,7 @@ module Distem
       class Latency < VIface::VTraffic::Property
         # The delay (String at 'tc' form such as "3ms")
         attr_reader :delay
+        attr_reader :jitter
         # Create a new Bandwidth
         # ==== Attributes
         # * +paramshash+ The Hash of the parameters to set (in the form "paramname" => value)
@@ -13,6 +14,7 @@ module Distem
         def initialize(paramshash={})
           super()
           @delay = nil
+          @jitter = nil
           parse_params(paramshash)
         end
 
@@ -20,25 +22,7 @@ module Distem
         def parse_params(paramshash)
           super(paramshash)
           @delay = paramshash['delay']
-        end
-
-        # adjust 'limit' parameter to netem so that it works sensibly
-        # bandwidth is the rate that this link will emulate (in bytes/s)
-        # it can be nil, then we assume it is 1Gbit/s
-        def limit_from_bandwidth(bandwidth)
-          bandwidth = (1024 ** 3) if bandwidth.nil?
-          capacity = bandwidth * to_secs()
-          # on average the packet has ~ 1500 bytes (Ethernet MTU?)
-          packets = capacity / 1500.0
-          # we give additional space (10%), just in case
-          limit = (packets * 1.1).to_i
-          limit = 1000 if limit < 1000
-          return limit
-        end
-
-        def tc_params(bandwidth)
-            return { 'delay' => @delay } if @delay.nil?
-            return { 'delay' => @delay, 'limit' => limit_from_bandwidth(bandwidth) } 
+          @jitter = paramshash['jitter']
         end
 
         # converts the latency/delay to seconds (floating point)

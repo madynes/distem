@@ -83,6 +83,25 @@ module Distem
         def parse_properties(hash)
           add_property(Bandwidth.new(hash['bandwidth'])) if hash['bandwidth']
           add_property(Latency.new(hash['latency'])) if hash['latency']
+          add_property(Loss.new(hash['loss'])) if hash['loss']
+          add_property(Corruption.new(hash['corruption'])) if hash['corruption']
+          add_property(Duplication.new(hash['duplication'])) if hash['duplication']
+          add_property(Reordering.new(hash['reordering'])) if hash['reordering']
+        end
+
+        def limited?()
+          bandwidth = get_property(Resource::Bandwidth.name)
+          latency = get_property(Resource::Latency.name)
+          loss = get_property(Resource::Loss.name)
+          corruption = get_property(Resource::Corruption.name)
+          duplication = get_property(Resource::Duplication.name)
+          reordering = get_property(Resource::Reordering.name)
+          return ((bandwidth && bandwidth.rate) || 
+                  (latency && latency.delay) || 
+                  (loss && loss.percent) ||
+                  (corruption && corruption.percent) ||
+                  (duplication && duplication.percent) ||
+                  (reordering && reordering.percent) )
         end
       end
 

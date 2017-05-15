@@ -120,121 +120,94 @@ module Distem
         #
         def apply_vtraffic(vtraffic)
 
-          limited_bw_output = @limited_bw_output
-          limited_lat_output = @limited_lat_output
-          limited_bw_input = @limited_bw_input
-          limited_lat_input = @limited_lat_input
+          limited_netem_output = @limited_netem_output
+          limited_netem_input = @limited_netem_input
 
-          @limited_bw_output = false
-          @limited_lat_output = false
-          @limited_bw_input = false
-          @limited_lat_input = false
+          @limited_netem_output = false
+          @limited_netem_input = false
 
           iface = Lib::NetTools::get_iface_name(vtraffic.viface)
           baseiface = iface
           action = nil
           direction = nil
-          bwlim = vtraffic.get_property(Resource::Bandwidth.name)
-          latlim = vtraffic.get_property(Resource::Latency.name)
           case vtraffic.direction
           when Resource::VIface::VTraffic::Direction::INPUT
-            if !(limited_bw_input || limited_lat_input)
-              tcroot = TCWrapper::QdiscRoot.new(iface)
-              tmproot = tcroot
-            end
             direction = 'input'
           when Resource::VIface::VTraffic::Direction::OUTPUT
-            if !(limited_bw_output || limited_lat_output) &&
-                ((bwlim && bwlim.rate) || (latlim && latlim.delay))
-              tcroot = TCWrapper::QdiscIngress.new(iface)
-              Lib::Shell.run(tcroot.get_cmd(TCWrapper::Action::ADD))
+            if !(limited_netem_output) && vtraffic.limited?
+              Lib::Shell.run("tc qdisc add dev #{iface} ingress")
               vtraffic.viface.ifb = @@ifballocator.get_ifb if vtraffic.viface.ifb.nil?
               iface = vtraffic.viface.ifb
-              tmproot = TCWrapper::QdiscRoot.new(iface)
             end
             direction = 'output'
           else
             raise "Invalid direction"
           end
 
-          primroot = nil
-          bandwidth = nil
-          if bwlim && bwlim.rate
-            existing_root = nil
-            if eval("limited_bw_#{direction}")
-              action = TCWrapper::Action::CHANGE
+          if vtraffic.limited?
+            existing_netem_params = nil
+            if eval("limited_netem_#{direction}")
+              action = :change
               @@lock.synchronize {
-                existing_root = @@store[vtraffic.viface]["bw_#{direction}"]
+                existing_netem_params = @@store[vtraffic.viface]["netem_#{direction}"]
               }
             else
-              action = TCWrapper::Action::ADD
+              action = :add
             end
-            self.instance_variable_set("@limited_bw_#{direction}", true)
-            bandwidth = bwlim.to_bytes()
-            params = {
-              'rate' => "#{bwlim.rate}",
-              # cf. http://www.juniper.net/techpubs/en_US/junos11.2/topics/reference/general/policer-guidelines-burst-size-calculating.html
-              # buffer size = rate * latency (here latency is 50ms)
-              # warning, the buffer size should be at least equal to the MTU (plus some bytes...)
-              'buffer' => [Integer(bwlim.to_bytes * 0.05), Lib::NetTools::get_iface_mtu(vtraffic.viface) + 20].max,
-              'latency' => '50ms',
-              #mtu parameter fixed because of a kernel bug, see http://comments.gmane.org/gmane.linux.network/252860
-              'mtu' => '65536'
-            }
-            if existing_root
-              tmproot = existing_root
+            self.instance_variable_set("@limited_netem_#{direction}", true)
+            params = vtraffic.properties
+            if existing_netem_params
+              netem_params = existing_netem_params
               params.each_pair { |k,v|
-                tmproot.add_param(k,v)
+                netem_params[k] = v
               }
             else
-              tmproot = TCWrapper::QdiscTBF.new(iface,tmproot,params)
+              netem_params = params
             end
             @@lock.synchronize {
-              @@store[vtraffic.viface]["bw_#{direction}"] = tmproot
+              @@store[vtraffic.viface]["netem_#{direction}"] = netem_params
             }
-            primroot = tmproot
-            Lib::Shell.run(tmproot.get_cmd(action))
-          end
+            netem = TCWrapper::Netem.new(action, iface)
 
-          if latlim && latlim.delay
-            existing_root = nil
-            if eval("limited_lat_#{direction}")
-              # if bandwidth limitation has been set before, netem is removed, so we have
-              # to add it again
-              action = primroot ? TCWrapper::Action::ADD : TCWrapper::Action::CHANGE
-              @@lock.synchronize {
-                existing_root = @@store[vtraffic.viface]["lat_#{direction}"]
-              }
-            else
-              action = TCWrapper::Action::ADD
+            bandwidth = netem_params[Resource::Bandwidth.name]
+            if bandwidth && bandwidth.rate
+              netem.bandwidth = {:rate => bandwidth.rate}
             end
-            self.instance_variable_set("@limited_lat_#{direction}", true)
-            if existing_root
-              tmproot = existing_root
-              latlim.tc_params(bandwidth).each_pair { |k,v|
-                tmproot.add_param(k,v)
-              }
-            else
-              tmproot = TCWrapper::QdiscNetem.new(
-                                                  iface, tmproot,
-                                                  latlim.tc_params(bandwidth)
-                                                  )
+
+            latency = netem_params[Resource::Latency.name]
+            if latency && latency.delay
+              netem.latency = {:delay => latency.delay}
+              if latency.jitter
+                netem.latency[:jitter] = latency.jitter
+              end
             end
-            @@lock.synchronize {
-              @@store[vtraffic.viface]["lat_#{direction}"] = tmproot
-            }
-            primroot = tmproot unless primroot
-            Lib::Shell.run(tmproot.get_cmd(action))
+
+            loss = netem_params[Resource::Loss.name]
+            if loss && loss.percent
+              netem.loss = {:percent => loss.percent}
+            end
+
+            corruption = netem_params[Resource::Corruption.name]
+            if corruption && corruption.percent
+              netem.corruption = {:percent => corruption.percent}
+            end
+
+            duplication = netem_params[Resource::Duplication.name]
+            if duplication && duplication.percent
+              netem.duplication = {:percent => duplication.percent}
+            end
+
+            reordering = netem_params[Resource::Reordering.name]
+            if reordering && reordering.percent
+              netem.percent = {:percent => reordering.percent}
+            end
+
+            Lib::Shell.run(netem.get_cmd())
           end
 
           if (vtraffic.direction == Resource::VIface::VTraffic::Direction::OUTPUT) &&
-              !(limited_bw_output || limited_lat_output) &&
-              ((bwlim && bwlim.rate) || (latlim && latlim.delay))
-            filter = TCWrapper::FilterU32.new(baseiface,tcroot,primroot)
-            filter.add_match_u32('0','0')
-            filter.add_param("action","mirred egress")
-            filter.add_param("redirect","dev #{iface}")
-            Lib::Shell.run(filter.get_cmd(TCWrapper::Action::ADD))
+             (vtraffic.limited?)
+            Lib::Shell.run("tc filter add dev #{baseiface} parent ffff: protocol ip u32 match u32 0 0 flowid 1:0x1 action mirred egress redirect dev #{iface}")
           end
         end
 
@@ -251,20 +224,18 @@ module Distem
 
           iface = Lib::NetTools::get_iface_name(viface)
 
-          if (@limited_bw_output || @limited_lat_output)
+          if (@limited_netem_output)
             outputroot = TCWrapper::QdiscRoot.new(viface.ifb)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
             outputroot = TCWrapper::QdiscIngress.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
-            @limited_bw_output = false
-            @limited_lat_output = false
+            @limited_netem_output = false
           end
 
-          if (@limited_bw_input || @limited_lat_input)
+          if (@limited_netem_input)
             inputroot = TCWrapper::QdiscRoot.new(iface)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
-            @limited_bw_intput = false
-            @limited_lat_intput = false
+            @limited_netem_intput = false
           end
         end
       end

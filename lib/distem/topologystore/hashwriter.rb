@@ -217,8 +217,38 @@ module Distem
       def visit_latency(limitlat)
         return {
           'delay' => limitlat.delay,
+          'jitter' => limitlat.jitter,
         }
       end
+
+      # See the visit_vplatform documentation
+      def visit_loss(loss)
+        return {
+          'percent' => loss.percent,
+        }
+      end
+
+      # See the visit_vplatform documentation
+      def visit_corruption(corruption)
+        return {
+          'percent' => corruption.percent,
+        }
+      end
+
+      # See the visit_vplatform documentation
+      def visit_duplication(duplication)
+        return {
+          'percent' => duplication.percent,
+        }
+      end
+
+      # See the visit_vplatform documentation
+      def visit_reordering(reordering)
+        return {
+          'percent' => reordering.percent,
+        }
+      end
+
     end
 
   end

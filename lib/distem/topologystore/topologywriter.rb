@@ -64,6 +64,22 @@ module Distem
         raise unless limitlat.is_a?(Resource::Latency)
       end
 
+      def visit_loss(loss) # :nodoc:
+        raise unless loss.is_a?(Resource::Loss)
+      end
+
+      def visit_corruption(corruption) # :nodoc:
+        raise unless corruption.is_a?(Resource::Corruption)
+      end
+
+      def visit_duplication(duplication) # :nodoc:
+        raise unless duplication.is_a?(Resource::Duplication)
+      end
+
+      def visit_reordering(reordering) # :nodoc:
+        raise unless reordering.is_a?(Resource::Reordering)
+      end
+
       def visit_nilclass(obj) # :nodoc:
         return nil
       end
