@@ -221,6 +221,7 @@ If a resource name is specified between [] that mean that its a table of this re
     * name
     * vnetwork
     * address
+    * macaddress
     * <a href="#vnode_traffic">input</a>
         * bandwidth
         * latency
@@ -394,6 +395,7 @@ This parameters are also taken in account:
       "name"=>"if0",
       "address"=>"10.144.2.1/24",
       "vnetwork"=>"network1",
+      "macaddress"=>"00:16:3E:00:00:05"
       "output"=>{
         "bandwidth"=>{"rate" => "100mbps"},
         "latency"=>{"delay" => "2ms"}
