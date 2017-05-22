@@ -199,7 +199,7 @@ module Distem
 
             reordering = netem_params[Resource::Reordering.name]
             if reordering && reordering.percent
-              netem.percent = {:percent => reordering.percent}
+              netem.reordering = {:percent => reordering.percent}
             end
 
             Lib::Shell.run(netem.get_cmd())

@@ -38,7 +38,7 @@ module TCWrapper # :nodoc: all
       if @duplication && @duplication[:percent]
         cmd += " duplicate #{@duplication[:percent]}"
       end
-      if @reoredering && @reordering[:percent]
+      if @reordering && @reordering[:percent]
         cmd += " reorder #{@reordering[:percent]}"
       end
       if @bandwidth && @bandwidth[:rate]
