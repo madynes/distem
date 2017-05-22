@@ -13,7 +13,7 @@ module Distem
 
         raise "No viface name given" if @resource_desc['type']=='viface' and not @resource_desc['vifacename']
         raise "Resource power change must be applied on a vcpu,not a #{@resource_desc['type']}" if @change_type == 'power' and @resource_desc['type'] != 'vcpu'
-        raise "Bandwith or latency power change must be applied on a viface,not a #{@resource_desc['type']}" if (@change_type == 'bandwith' or  @change_type == 'latency') and @resource_desc['type'] != 'viface'
+        raise "Network change must be applied on a viface,not a #{@resource_desc['type']}" if (@change_type == 'bandwith' or  @change_type == 'latency' or @change_type == 'loss' or @change_type == 'corruption' or @change_type == 'duplication' or @change_type == 'reordering') and @resource_desc['type'] != 'viface'
         raise "Churn cannot be applied on a vcpu" if (@change_type == 'churn' and @resource_desc['type'] == 'vcpu')
         raise "A churn event must take an 'up' or 'down' value" if (@change_type == 'churn' and @event_value != 'up' and @event_value != 'down' and @event_value != 'freeze' and @event_value != 'unfreeze')
         raise "The direction of the viface must be 'input' or 'output'" if @resource_desc['viface_direction'] and @resource_desc['viface_direction'] != 'output' and @resource_desc['viface_direction'] != 'input'
@@ -47,7 +47,7 @@ module Distem
             else
               cl.vcpu_update(@resource_desc['vnodename'], @event_value, 'ratio')
             end
-          elsif (@change_type == 'bandwidth' or @change_type == 'latency')
+          elsif (@change_type == 'bandwidth' or @change_type == 'latency' or @change_type == 'loss' or @change_type == 'corruption' or @change_type == 'duplication' or @change_type == 'reordering')
             # we must get the previous state
             desc = { 'input' => {}, 'output' => {} }
             vnode_desc = cl.vnode_info(@resource_desc['vnodename'])
@@ -74,7 +74,7 @@ module Distem
                 desc['output']['bandwidth'] = { 'rate' => @event_value }
               end
 
-            else # latency change
+            elsif @change_type == 'latency'
               # If no unit is given, we assume the value is in milliseconds
               @event_value = "#{@event_value}ms" unless @event_value.is_a?(String) and @event_value.include?('s')
               if @resource_desc['viface_direction']
@@ -83,6 +83,50 @@ module Distem
               else
                 desc['input']['latency'] = { 'delay' => @event_value }
                 desc['output']['latency'] = { 'delay' => @event_value }
+              end
+
+            elsif @change_type == 'loss'
+              # If no unit is given, we assume the value is in percent
+              @event_value = "#{@event_value}%" unless @event_value.is_a?(String) and @event_value.include?('%')
+              if @resource_desc['viface_direction']
+                desc[@resource_desc['viface_direction']] = { 'loss' => { 'percent' => @event_value } }
+                desc.delete_if { |direction, property| direction != @resource_desc['viface_direction'] }
+              else
+                desc['input']['loss'] = { 'percent' => @event_value }
+                desc['output']['loss'] = { 'percent' => @event_value }
+              end
+
+            elsif @change_type == 'corruption'
+              # If no unit is given, we assume the value is in percent
+              @event_value = "#{@event_value}%" unless @event_value.is_a?(String) and @event_value.include?('%')
+              if @resource_desc['viface_direction']
+                desc[@resource_desc['viface_direction']] = { 'corruption' => { 'percent' => @event_value } }
+                desc.delete_if { |direction, property| direction != @resource_desc['viface_direction'] }
+              else
+                desc['input']['corruption'] = { 'percent' => @event_value }
+                desc['output']['corruption'] = { 'percent' => @event_value }
+              end
+
+            elsif @change_type == 'duplication'
+              # If no unit is given, we assume the value is in percent
+              @event_value = "#{@event_value}%" unless @event_value.is_a?(String) and @event_value.include?('%')
+              if @resource_desc['viface_direction']
+                desc[@resource_desc['viface_direction']] = { 'duplication' => { 'percent' => @event_value } }
+                desc.delete_if { |direction, property| direction != @resource_desc['viface_direction'] }
+              else
+                desc['input']['duplication'] = { 'percent' => @event_value }
+                desc['output']['duplication'] = { 'percent' => @event_value }
+              end
+
+            else # Reordering
+              # If no unit is given, we assume the value is in percent
+              @event_value = "#{@event_value}%" unless @event_value.is_a?(String) and @event_value.include?('%')
+              if @resource_desc['viface_direction']
+                desc[@resource_desc['viface_direction']] = { 'reordering' => { 'percent' => @event_value } }
+                desc.delete_if { |direction, property| direction != @resource_desc['viface_direction'] }
+              else
+                desc['input']['reordering'] = { 'percent' => @event_value }
+                desc['output']['reordering'] = { 'percent' => @event_value }
               end
             end
 
