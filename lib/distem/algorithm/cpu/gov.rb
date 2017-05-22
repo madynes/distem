@@ -1,6 +1,6 @@
 require 'pp'
 module Distem
-  module Algorithm 
+  module Algorithm
     module CPU
 
       # Algorithm based on CPU throttling methods (see http://en.wikipedia.org/wiki/Dynamic_frequency_scaling). A core is changing his frequency periodatically between two values to reach the wished one i.e. if our physical core can change it's frequency to 1.5GHz, 2.0GHz and 2.5GHz and we want it to be set at 2.3GHz, this algorithm will make the core work 40% of the time at 2GHz and 60% at 2.5GHz.
@@ -40,7 +40,7 @@ module Distem
             else
               hfreq = freqs.select{|val| val >= wfreq}[0]
               if hfreq == freqs[0]
-                lfreq = 0 
+                lfreq = 0
               else
                 lfreq = freqs[freqs.index(hfreq) - 1]
               end

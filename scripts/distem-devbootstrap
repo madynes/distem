@@ -241,66 +241,66 @@ optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Options:"
 
-	opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
-  	options[:node_list] = n
-	end
+  opts.on( '-f', '--node-list <nodelist_file>', 'File containing the list of nodes to install. If not specified, will use $GOOD_NODES or $OAR_NODEFILE') do |n|
+    options[:node_list] = n
+  end
 
   opts.on( '-u', '--update <updatefile>', "Update distem (the YAML update file should contain the local path for keys {#{DISTEM_UPDATE_PATH_CHECK.keys * ','}} to be symlinked on distem daemons using NFS)" ) do |u|
-  	options[:update_file] = u
-	end
+    options[:update_file] = u
+  end
 
-	opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
-  	options[:coordinator] = c || nil
-	end
+  opts.on( '-c', '--coordinator <coordinator_address>', 'Address of the coordinator (default: first node)' ) do |c|
+    options[:coordinator] = c || nil
+  end
 
-	opts.on( '-i', '--init-pnodes', 'Initialize pnodes' ) do |c|
+  opts.on( '-i', '--init-pnodes', 'Initialize pnodes' ) do |c|
     options[:init_pnodes] = true
-	end
+  end
 
     opts.on( '--max-vifaces <nb>', 'Set the maximum number of vifaces on a physical node (used only with --init-pnodes)' ) do |n|
       options[:max_vifaces] = n
     end
 
-	opts.on( '-k', '--kill-pnodes', 'Kill pnodes' ) do |c|
+  opts.on( '-k', '--kill-pnodes', 'Kill pnodes' ) do |c|
     options[:kill_pnodes] = true
-	end
+  end
 
-	opts.on( '-s', '--status-pnodes', 'Get the status of pnodes' ) do |c|
+  opts.on( '-s', '--status-pnodes', 'Get the status of pnodes' ) do |c|
     options[:status_pnodes] = true
-	end
+  end
 
-	opts.on( '-l', '--list', 'Get the list of the nodes and their number' ) do |c|
+  opts.on( '-l', '--list', 'Get the list of the nodes and their number' ) do |c|
     options[:list] = true
-	end
+  end
 
-	opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get distemd logs (#{File.join(PATH_DISTEMD_LOGS,'distemd*.log')}) on <node_number> [see --list]" ) do |d|
+  opts.on( '-D', '--daemon-logs <node1_number>,<node2_number>,<...>', Array, "Get distemd logs (#{File.join(PATH_DISTEMD_LOGS,'distemd*.log')}) on <node_number> [see --list]" ) do |d|
     options[:logs_daemon] = d
-	end
+  end
 
-	opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get commands logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
+  opts.on( '-C', '--commands-logs <node_number>,<node2_number>,<...>', Array, "Get commands logs (#{File.join(PATH_DISTEMD_LOGS,'distemd.cmd')}) on <node_number> [see --list]" ) do |c|
     options[:logs_commands] = c
-	end
+  end
 
-	opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to be installed' ) do |p|
-  	options[:gempackages] = p
-	end
+  opts.on( '-r', '--gempackages <package1>,<package2>,<...>', Array, 'Additional gem packages to be installed' ) do |p|
+    options[:gempackages] = p
+  end
 
-	opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
-  	options[:debug] = true
-	end
+  opts.on( '-d', '--debug', 'Debug mode (display commands executed on nodes)' ) do
+    options[:debug] = true
+  end
 
-	opts.on( '', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
-  	options[:debug_distem] = true
-	end
+  opts.on( '', '--distem-debug', Array, 'Show distem output when executing distem commands (script, node init)' ) do
+    options[:debug_distem] = true
+  end
 
-        opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
-        options[:verbose] = true
-        end
+  opts.on( '--verbose', 'Activate the verbose mode on Distem servers' ) do
+    options[:verbose] = true
+  end
 
-	opts.on( '-h', '--help', 'Display this screen' ) do
-  		puts opts
-  		exit
-	end
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
 
   opts.separator ""
   opts.separator "When executing a script, the file containing the list of nodes is available in the #{VAR_DISTEM_NODES}"
@@ -321,11 +321,11 @@ end
 nodelist = []
 
 if options[:node_list]
-	nodelist_file = options[:node_list]
+  nodelist_file = options[:node_list]
 elsif (ENV['GOOD_NODES'])
-	nodelist_file = ENV['GOOD_NODES']
+  nodelist_file = ENV['GOOD_NODES']
 elsif (ENV['OAR_NODEFILE'])
-	nodelist_file = ENV['OAR_NODEFILE']
+  nodelist_file = ENV['OAR_NODEFILE']
 else
   msg("nodelist parameter not set",MSG_ERROR,true)
 end
@@ -333,8 +333,8 @@ end
 begin
   nodelist = IO::readlines(nodelist_file).map { |l| l.strip }.uniq
 rescue Errno::ENOENT
-	puts "File '#{nodelist_file}' not found"
-	exit 1
+  puts "File '#{nodelist_file}' not found"
+  exit 1
 end
 
 if nodelist.empty?
@@ -346,15 +346,15 @@ allnodes = nodelist.dup
 coordinator = options[:coordinator] || nodelist[0]
 
 if nodelist.include?(coordinator)
-	nodelist.delete(coordinator)
+  nodelist.delete(coordinator)
 else
   tmp = nodelist.select { |node| node =~ /^#{coordinator}/ }
   if tmp.empty?
-	  msg("Coordinator not present in <nodes_file>",MSG_WARNING)
-	else
-	  msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
-	  coordinator = tmp[0]
-	end
+    msg("Coordinator not present in <nodes_file>",MSG_WARNING)
+  else
+    msg("Coordinator '#{coordinator}' assumed to be '#{tmp[0]}' (which is present in <nodes_file>)",MSG_WARNING)
+    coordinator = tmp[0]
+  end
 end
 
 if options[:list]
@@ -414,7 +414,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       msg("can't connect to #{coordinator}",MSG_ERROR,true)
     end
 
-  	session.group :nodes do
+    session.group :nodes do
       nodelist.each do |node|
         begin
           nodeobjlist[node] = session.use("root@#{node}")
@@ -433,7 +433,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       msg("NFS do not seems to be mounted on #{node} (check that you have deployed with NFS env)",MSG_WARNING)
     end
 
-  	msg("Installing debian misc packages",MSG_INFO)
+    msg("Installing debian misc packages",MSG_INFO)
     exec(session,"apt-get install -q -y --force-yes #{pkg_tmp_dependencies * ' '}") \
       unless pkg_tmp_dependencies.empty?
     options[:debpackages].each do |debpkg|
@@ -467,11 +467,11 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
       killall(session,nodeobjlist)
     end
 
-  	if options[:init_pnodes] or ARGV[0]
+    if options[:init_pnodes] or ARGV[0]
       killall(session,nodeobjlist)
 
-  	  msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
-  	  exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
+      msg("Starting coordinator daemon on #{coordinator}",MSG_INFO)
+      exec(session,"mkdir -p #{PATH_DISTEMD_LOGS}",:coord)
       exec(session,"LANG=C distemd #{options[:verbose] ? '--verbose' : ''} -d &>#{File.join(PATH_DISTEMD_LOGS,'distemd-coord.log')} &",
         :coord)
 
@@ -521,7 +521,7 @@ if options[:init_pnodes] or options[:kill_pnodes] or !options[:debpackages].empt
             "export #{VAR_DISTEM_COORD}='#{coordinator}';" \
             "#{filename} #{script_args}",:coord,true,true,true)
           exec(session,"rm #{filename}",:coord)
-  			end
+        end
         msg('Script execution done',MSG_INFO)
       rescue Errno::ENOENT
         msg("script file '#{ARGV[0]}' not found",MSG_ERROR,true)

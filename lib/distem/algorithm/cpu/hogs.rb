@@ -1,6 +1,6 @@
 
 module Distem
-  module Algorithm 
+  module Algorithm
     module CPU
 
       # Algorithm based on CPU burning methods. A process is launched in background and consume 100-wished_% percent of the core calculation resources i.e. if the cpu have to be set at 80% of this performancy, the algorithm will consume 20% permanently
@@ -21,7 +21,7 @@ module Distem
 
           if vnode.vcpu and vnode.vcpu.vcores
             vnode.vcpu.vcores.each_value do |vcore|
-              coresdesc[vcore.pcore.physicalid.to_i] = 
+              coresdesc[vcore.pcore.physicalid.to_i] =
                 vcore.frequency.to_f / vcore.pcore.frequency.to_f if \
                 vcore.frequency < vcore.pcore.frequency
             end

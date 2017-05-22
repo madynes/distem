@@ -19,7 +19,7 @@ module TCWrapper # :nodoc: all
       parse_params
     end
 
-    #params such as: 
+    #params such as:
     # {
     #   FilterU32::U32T_IP => ["ip protocol 6 0xff", "ip sport 80 0xffff"],
     #   FilterU32::U32T_U32 => ["0x48545450 0xffffffff at 52"]

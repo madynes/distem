@@ -55,7 +55,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     tmpaddr = ''
 
     ### Daemon mode tests
-  
+
     #No problems
     pnode = @daemon_d.pnode_init(localaddr)
     assert_not_nil(pnode)
@@ -132,7 +132,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     properties2  = { 'image' => image, 'target' => localaddr }
 
     ### Daemon mode test
-    
+
     #Creation without having any pnode available
     assert_raise(Distem::Lib::UnavailableResourceError) {
       @daemon_d.vnode_create(name,properties)
@@ -195,7 +195,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     assert_raise(Distem::Lib::ResourceNotFoundError) {
       @daemon_d.vnode_get(name3)
     }
-    
+
     #Protocol not supported
     properties['image'] = 'http://public.nancy.grid5000.fr/~lsarzyniec/rootfs.tar.bz2'
     assert_raise(Distem::Lib::NotImplementedError) {
@@ -253,7 +253,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     assert_raise(Distem::Lib::ResourceNotFoundError) {
       @daemon_d.vnode_start(random_string)
     }
-    
+
   end
 
   def test_vnode_stop
@@ -388,7 +388,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     viface3 =@daemon_d.viface_create(vnode3.name,vifacename)
     vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
     vnetwork2 = @daemon_d.vnetwork_create(vnetworkname2,'10.144.16.0/24')
-    
+
     assert_not_nil(vnode)
     assert_not_nil(vnode2)
     assert_not_nil(vnode3)
@@ -435,7 +435,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     assert_equal(false,viface3.connected_to?(vnetwork))
     assert_equal(false,vnode3.connected_to?(vnetwork))
     assert_equal(false,vnode3.connected_to?(vnetwork))
-    
+
     #Automatic address hop
     @daemon_d.viface_attach(vnode3.name,vifacename,{'vnetwork' => vnetworkname})
     assert_equal('10.144.8.3',viface3.address.to_s)
@@ -483,7 +483,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     assert_equal(false,viface.attached?)
     assert_equal(false,viface.connected_to?(vnetwork))
     assert_equal(false,vnode.connected_to?(vnetwork))
-    
+
     #Invalid vnodename
     assert_raise(Distem::Lib::ResourceNotFoundError) {
       @daemon_d.viface_attach(random_string,vifacename,{'vnetwork' => vnetworkname2})
@@ -543,7 +543,7 @@ class TestDistemDaemonDistemDaemon < Test::Unit::TestCase
     init_testvnode
     viface = @daemon_d.viface_create(@vnodename,vifacename)
     vnetwork = @daemon_d.vnetwork_create(vnetworkname,'10.144.8.0/24')
-    
+
     assert_not_nil(viface)
     assert_not_nil(vnetwork)
 

@@ -27,17 +27,17 @@ end
 node = 'node1'
 machine = machines[0]
 ifprops = {
-	'vnetwork' => networks[0],
-	'vtraffic' => { 
-		"OUTPUT" => { 
-			"bandwidth" => {"rate" => "20mbps"},
-			"latency" => {"delay" => "5ms"}
-		},
-		"INPUT" => { 
-			"bandwidth" => {"rate" => "100mbps"},
-			"latency" => {"delay" => "2ms"}
-		}
-	}
+  'vnetwork' => networks[0],
+  'vtraffic' => {
+    "OUTPUT" => {
+      "bandwidth" => {"rate" => "20mbps"},
+      "latency" => {"delay" => "5ms"}
+    },
+    "INPUT" => {
+      "bandwidth" => {"rate" => "100mbps"},
+      "latency" => {"delay" => "2ms"}
+    }
+  }
 }
 pp client.vnode_create(node, { 'image' => IMAGE })
 pp client.viface_create(node, 'if0')
@@ -49,9 +49,9 @@ ifprops['network'] = nil
 ifprops['address'] = '10.144.3.7'
 ifprops['vtraffic']['OUTPUT'] = nil
 ifprops['vtraffic']['INPUT'] = nil
-ifprops['vtraffic']['FULLDUPLEX'] = { 
-	"bandwidth" => {"rate" => "2mbps"},
-	"latency" => {"delay" => "50ms"}
+ifprops['vtraffic']['FULLDUPLEX'] = {
+  "bandwidth" => {"rate" => "2mbps"},
+  "latency" => {"delay" => "50ms"}
 }
 
 pp client.vnode_create(node, { 'image' => IMAGE })

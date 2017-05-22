@@ -126,7 +126,7 @@ Connect a virtual node (specified with -n) on a virtual network (specified with 
 
 =over
 
-=item -i 
+=item -i
 
 =item --vtraffic-input
 

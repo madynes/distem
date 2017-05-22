@@ -1,8 +1,8 @@
- 
+
 /* RngStream.h for ANSI C */
 #ifndef RNGSTREAM_H
 #define RNGSTREAM_H
- 
+
 
 
 typedef struct RngStream_InfoState * RngStream;
@@ -58,8 +58,8 @@ double RngStream_RandU01 (RngStream g);
 
 
 int RngStream_RandInt (RngStream g, int i, int j);
- 
+
 
 #endif
- 
+
 

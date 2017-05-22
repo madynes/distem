@@ -34,7 +34,7 @@ void rng_free(void* ptr) {
 VALUE rng_set_seed(VALUE self, VALUE seed) {
   unsigned long seed_arr[6];
   int i;
-  
+
   for(i=0 ; i<6 ; i++) {
     seed_arr[i] = NUM2ULONG(rb_ary_entry(seed, i));
   }

@@ -37,7 +37,7 @@ module Distem
       # * +tmp+ An object used to pass arguments through the methods
       # ==== Returns
       # Hash object that describes the virtual platform (see Lib::Validator)
-      # 
+      #
       def parse_platform(xmldoc,result,tmp={})
         raise Lib::NotImplementedError unless xmldoc.root.attributes['version'] == '2'
         result['vplatform'] = {}
@@ -145,7 +145,7 @@ module Distem
             }
           }
           tmp['switches'] = [] unless tmp['switches']
-          tmp['switches'] << { 
+          tmp['switches'] << {
             'name' => nodename,
             'bw' => xmldoc.attribute('bandwidth').to_s.to_f.to_s + 'bps',
             'lat' => xmldoc.attribute('latency').to_s.to_f.to_s + 's',
@@ -301,7 +301,7 @@ module Distem
       protected
 
       # Connect a virtual node to a virtual network
-      def self.connect_vnode(result,gw,vnodename,vnetworkname) 
+      def self.connect_vnode(result,gw,vnodename,vnetworkname)
         vnode = result['vnodes'].select{ |node| node['name'] == switch['name'] }[0]
         viface = {
           'name' => 'if' + switch['ifnb'].to_s,

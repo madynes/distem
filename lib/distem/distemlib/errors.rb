@@ -78,7 +78,7 @@ module Distem
 
       def to_s
         if body.is_a?(Hash) or body.is_a?(Array)
-          body = @body.inspect 
+          body = @body.inspect
         else
           body = @body
         end

@@ -4,7 +4,7 @@
  * Language:       ANSI C
  * Copyright:      Pierre L'Ecuyer, University of Montreal
  * Date:           14 August 2001
- * License: 	   GPL version 2 or later
+ * License:        GPL version 2 or later
  *
  * Notice:         Please contact P. L'Ecuyer at <lecuyer@iro.UMontreal.ca>
  *                 for commercial purposes.
@@ -70,19 +70,19 @@ static double A2p0[3][3] = {
           };
 
 static double A1p76[3][3] = {
-          {      82758667.0, 1871391091.0, 4127413238.0 }, 
-          {    3672831523.0,   69195019.0, 1871391091.0 }, 
+          {      82758667.0, 1871391091.0, 4127413238.0 },
+          {    3672831523.0,   69195019.0, 1871391091.0 },
           {    3672091415.0, 3528743235.0,   69195019.0 }
           };
 
 static double A2p76[3][3] = {
-          {    1511326704.0, 3759209742.0, 1610795712.0 }, 
-          {    4292754251.0, 1511326704.0, 3889917532.0 }, 
+          {    1511326704.0, 3759209742.0, 1610795712.0 },
+          {    4292754251.0, 1511326704.0, 3889917532.0 },
           {    3859662829.0, 4292754251.0, 3708466080.0 }
           };
 
 static double A1p127[3][3] = {
-          {    2427906178.0, 3580155704.0,  949770784.0 }, 
+          {    2427906178.0, 3580155704.0,  949770784.0 },
           {     226153695.0, 1230515664.0, 3580155704.0 },
           {    1988835001.0,  986791581.0, 1230515664.0 }
           };
@@ -269,30 +269,30 @@ static int CheckSeed (unsigned long seed[6])
 
    for (i = 0; i < 3; ++i) {
       if (seed[i] >= m1) {
-	 fprintf (stderr, "****************************************\n"
-		 "ERROR: Seed[%1d] >= m1, Seed is not set.\n"
-		 "****************************************\n\n", i);
-	 return (-1);
+        fprintf (stderr, "****************************************\n"
+         "ERROR: Seed[%1d] >= m1, Seed is not set.\n"
+         "****************************************\n\n", i);
+     return (-1);
        }
    }
    for (i = 3; i < 6; ++i) {
       if (seed[i] >= m2) {
-	 fprintf (stderr, "****************************************\n"
-		 "ERROR: Seed[%1d] >= m2, Seed is not set.\n"
-		 "****************************************\n\n", i);
-	 return (-1);
+     fprintf (stderr, "****************************************\n"
+         "ERROR: Seed[%1d] >= m2, Seed is not set.\n"
+         "****************************************\n\n", i);
+     return (-1);
        }
    }
    if (seed[0] == 0 && seed[1] == 0 && seed[2] == 0) {
       fprintf (stderr, "****************************\n"
-	      "ERROR: First 3 seeds = 0.\n"
-	      "****************************\n\n");
+          "ERROR: First 3 seeds = 0.\n"
+          "****************************\n\n");
       return (-1);
    }
    if (seed[3] == 0 && seed[4] == 0 && seed[5] == 0) {
       fprintf (stderr, "****************************\n"
-	      "ERROR: Last 3 seeds = 0.\n"
-	      "****************************\n\n");
+          "ERROR: Last 3 seeds = 0.\n"
+          "****************************\n\n");
       return (-1);
    }
 
@@ -395,7 +395,7 @@ int RngStream_SetSeed (RngStream g, unsigned long seed[6])
       return -1;                    /* FAILURE */
    for (i = 0; i < 6; ++i)
       g->Cg[i] = g->Bg[i] = g->Ig[i] = seed[i];
-   return 0;                       /* SUCCESS */ 
+   return 0;                       /* SUCCESS */
 }
 
 /*-------------------------------------------------------------------------*/

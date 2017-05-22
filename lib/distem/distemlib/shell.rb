@@ -34,7 +34,7 @@ module Distem
               ret = stdout.read
               err = stderr.read
               log = "#{cmdlog}\n#{ret}"
-              log += "\nError: #{err}" unless err.empty? 
+              log += "\nError: #{err}" unless err.empty?
               error = !$?.success? or !err.empty?
             end
           when '1.9','2.0','2.1'
@@ -42,7 +42,7 @@ module Distem
               ret = stdout.read
               err = stderr.read
               log = "#{cmdlog}\n#{ret}"
-              log += "\nError: #{err}" unless err.empty? 
+              log += "\nError: #{err}" unless err.empty?
               error = !thr.value.success? or !err.empty?
             end
           else

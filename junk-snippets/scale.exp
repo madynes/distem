@@ -21,7 +21,7 @@ start = Time.now
 
 Distem.client do |cl|
   pp cl.vnetwork_create("network",'10.144.0.0/16')
-  
+
   puts 'Starting PNodes ...'
   pnodes.each do |pnode|
     cl.pnode_init(pnode,{'max_vifaces' => MAX_VNODES.to_s})
@@ -29,7 +29,7 @@ Distem.client do |cl|
   end
   puts 'done'
   puts "Time: #{Time.now - start}"
-  
+
   str = ""
   tot=0
   puts 'Creating the VNodes ...'
@@ -64,7 +64,7 @@ Distem.client do |cl|
           puts "\n\tWaiting for #{node}"
           newnode = false
         end
-        sleep(0.5) 
+        sleep(0.5)
       end
       ret = cl.vnode_info(node)
       prevrdy = (ret['status'] == Distem::Resource::Status::READY)
@@ -106,7 +106,7 @@ Distem.client do |cl|
           puts "\n\tWaiting for #{node}"
           newnode = false
         end
-        sleep(0.5) 
+        sleep(0.5)
       end
       ret = cl.vnode_info(node)
       prevrdy = (ret['status'] == Distem::Resource::Status::RUNNING)

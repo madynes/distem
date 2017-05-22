@@ -25,7 +25,7 @@ begin
     ext.ext_dir = 'ext/distem/rngstream'
     ext.lib_dir = 'lib/ext'
   end
-  
+
 rescue LoadError
   puts "You need the 'rake-compiler' to build extensions from the Rakefile"
 end

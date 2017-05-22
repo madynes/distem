@@ -130,8 +130,8 @@ end
 
 class AutoHash < Hash
   def initialize()
-    super { 
-      |ht, k| ht[k] = AutoHash.new 
+    super {
+      |ht, k| ht[k] = AutoHash.new
     }
   end
 
@@ -199,14 +199,14 @@ end
 
 class Tables < Hash
   def initialize(headers = [ 'x', 'y', 'error' ])
-    super() { |ht, k| 
+    super() { |ht, k|
       ht[k] = Table.new(headers)
     }
   end
 
   def show_all
     # shows all tables
-    self.each { |k, v| 
+    self.each { |k, v|
       puts "# table '#{k}'"
       v.show
       puts

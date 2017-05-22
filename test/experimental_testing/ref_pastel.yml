@@ -1,7 +1,7 @@
---- 
-bandwidth: 
+---
+bandwidth:
   error: 25
-latency: 
+latency:
   error: 20
 hpcc:
   error: 35

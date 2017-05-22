@@ -37,7 +37,7 @@ end
 Distem.client { |cl|
   iplist = []
   cl.vnetwork_create('vnet', "#{net}/#{netmask}")
-  res = cl.vnode_create('node1', 
+  res = cl.vnode_create('node1',
                   {
                     'vfilesystem' =>{'image' => image, 'shared' => true},
                     'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]

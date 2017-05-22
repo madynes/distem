@@ -21,7 +21,7 @@ machines.each do |machine|
     puts client.vnode_create(machine, name, IMAGE)
     puts client.viface_create(machine, name, 'if0', ipaddr.to_s)
     puts client.vnode_start(machine,name)
-    
+
     i += 1
     ipaddr = ipaddr.succ
   end

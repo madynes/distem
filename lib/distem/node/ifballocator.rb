@@ -5,7 +5,7 @@ module Distem
 
     # Class that manages the allocation of IFB devices on a pnode
     class IFBAllocator
-      
+
       # Initialize the allocator. Will automatically guess the number of ifb devices.
       def initialize
         @allocmutex = Mutex::new
@@ -23,7 +23,7 @@ module Distem
         Lib::Shell.run("ip link set dev #{ifb} up")
         return ifb
       end
-      
+
       # Free an IFB device
       def free_ifb(ifb)
         @allocmutex.lock

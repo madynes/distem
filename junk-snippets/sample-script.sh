@@ -13,9 +13,9 @@ NET1='network1'
 NET2='network2'
 
 #Physical node init
-$WREKAVOC $COORD -i $MACHINE1 
+$WREKAVOC $COORD -i $MACHINE1
 $WREKAVOC $COORD -i $MACHINE2
-$WREKAVOC $COORD -i $MACHINE3 
+$WREKAVOC $COORD -i $MACHINE3
 
 #VNetworks creation
 $WREKANET $COORD -c ${NET1},'10.144.2.1/24'
@@ -40,7 +40,7 @@ $WREKAVOC $COORD -n 'node3' -s
 $WREKAVOC $COORD -n 'nodegw' -s
 
 #Limitations
-$WREKANET $COORD -n 'nodegw' -I 'if0' -o -L '{ "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} }' 
+$WREKANET $COORD -n 'nodegw' -I 'if0' -o -L '{ "bandwidth" : {"rate" : "20mbps"}, "latency" : {"delay" : "5ms"} }'
 $WREKANET $COORD -n 'nodegw' -I 'if0' -i -L '{ "bandwidth" : {"rate" : "10mbps"}, "latency" : {"delay" : "15ms"} }'
 $WREKANET $COORD -n 'nodegw' -I 'if1' -o -L '{ "bandwidth" : {"rate" : "2mbps"}, "latency" : {"delay" : "50ms"} }'
 $WREKANET $COORD -n 'nodegw' -I 'if1' -i -L '{ "bandwidth" : {"rate" : "4mbps"}, "latency" : {"delay" : "25ms"} }'

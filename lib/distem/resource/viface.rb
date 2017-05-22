@@ -96,8 +96,8 @@ module Distem
           corruption = get_property(Resource::Corruption.name)
           duplication = get_property(Resource::Duplication.name)
           reordering = get_property(Resource::Reordering.name)
-          return ((bandwidth && bandwidth.rate) || 
-                  (latency && latency.delay) || 
+          return ((bandwidth && bandwidth.rate) ||
+                  (latency && latency.delay) ||
                   (loss && loss.percent) ||
                   (corruption && corruption.percent) ||
                   (duplication && duplication.percent) ||

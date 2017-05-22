@@ -3,7 +3,7 @@ require 'resolv'
 module Distem
   module Resource
 
-    # Abstract representation of a physical machine/node (the machine that will be used to launch some virtual nodes) 
+    # Abstract representation of a physical machine/node (the machine that will be used to launch some virtual nodes)
     class PNode
       @@ids = 0
       # The unique id of the machine
@@ -26,7 +26,7 @@ module Distem
 
       # Create a new PNode
       # ==== Attributes
-      # * +hostname+ The hostname/address of the physical machine 
+      # * +hostname+ The hostname/address of the physical machine
       # ==== Examples
       #   pnode = PNode.new("10.16.0.1")
       #   OR
@@ -63,5 +63,5 @@ module Distem
       end
     end
 
-  end  
+  end
 end
