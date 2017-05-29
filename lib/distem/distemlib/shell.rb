@@ -37,7 +37,7 @@ module Distem
               log += "\nError: #{err}" unless err.empty?
               error = !$?.success? or !err.empty?
             end
-          when '1.9','2.0','2.1'
+          when '1.9','2.0','2.1','2.2','2.3'
             Open3.popen3(cmd) do |stdin, stdout, stderr, thr|
               ret = stdout.read
               err = stderr.read
@@ -66,7 +66,7 @@ module Distem
             res[:err] = stderr.read
             res[:success] = ($?.success? and res[:err].empty?) ? 'ok' : 'ko'
           end
-        when '1.9','2.0','2.1'
+        when '1.9','2.0','2.1','2.2','2.3'
           Open3.popen3(cmd) do |stdin, stdout, stderr, thr|
             res[:out] = stdout.read
             res[:err] = stderr.read

@@ -864,7 +864,7 @@ module Distem
         case main_version
         when '1.8'
           classname = @body.class.name.split('::').last
-        when '1.9','2.0','2.1'
+        when '1.9','2.0','2.1','2.2','2.3'
           classname = (@body.class.name.split('::').last).to_sym
         else
           raise "Unsupported Ruby version: #{RUBY_VERSION}"
