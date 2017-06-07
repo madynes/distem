@@ -61,10 +61,11 @@ static VALUE cpugov_run(
 
       rb_iterate(rb_each, rb_iv_get(self,"@cores"), cpugov_parse_core, Qnil);
 
+      VALUE tmp = rb_iv_get(self,"@cgrouppath");
       extrun(
 	     (unsigned long long) (NUM2DBL(rb_iv_get(self, "@pitch")) * 1000000),
 	     NUM2INT(low_freq),NUM2INT(high_freq),NUM2DBL(low_rate),
-	     STR2CSTR(rb_iv_get(self,"@cgrouppath"))
+	     StringValueCStr(tmp)
 	     );
       exit(0);
     }
