@@ -27,14 +27,16 @@ module Distem
         end
       end
 
-      # Get the netmask of an interface
+      # Get the netmask of an interface in CIDR Notation
       # ==== Attributes
       # * +iface+ The network interface name (String)
       # ==== Returns
       # String object
       def self.get_netmask(iface)
-        cmd = Shell.run("ifconfig #{iface}")
-        return cmd.split(/\n/).grep(/Mask/).first.gsub(/.*Mask:(.*)$/,'\1')
+        cmdret = Shell.run("/bin/ip -4 addr show dev #{iface}")
+        ret = ""
+        cmdret.each_line { |s| ret=s.split[1].split("/")[1] if s.include?("inet ") }
+        return ret
       end
 
       # Gets the IP address of a specified network interface
@@ -44,10 +46,9 @@ module Distem
       # String object
       #
       def self.get_iface_addr(iface)
-        cmdret = Shell.run("/sbin/ifconfig #{iface}")
-        # | grep 'inet addr' | awk '{print \$2}' | cut -d':' -f2 | tr -d '\n'")
+        cmdret = Shell.run("/bin/ip -4 addr show dev #{iface}")
         ret=""
-        cmdret.each_line { |s| ret=s.split[1].split(":")[1] if s.include?("inet addr") }
+        cmdret.each_line { |s| ret=s.split[1].split("/")[0] if s.include?("inet ") }
         return ret
       end
 
@@ -81,7 +82,7 @@ module Distem
       end
 
       def self.set_bridge(root_interface, default_gw)
-        str = Shell.run("ifconfig")
+        str = Shell.run("/bin/ip link show") #TODO: Getting only iface name and no garbage
         bridge_name = "br_#{root_interface}"
         unless str.include?(bridge_name)
           @@br_info[bridge_name] = [root_interface, self.get_iface_addr(root_interface), self.get_netmask(root_interface)]
@@ -97,15 +98,16 @@ module Distem
           Shell.run("/bin/ip link set dev #{bridge_name} promisc on")
           Shell.run("/bin/ip link set dev #{bridge_name} up")
           Shell.run("brctl addif #{bridge_name} #{root_interface}")
-          Shell.run("ifconfig #{root_interface} 0.0.0.0 up")
+          Shell.run("/bin/ip addr flush dev #{root_interface}")
+          Shell.run("/bin/ip link set up dev #{root_interface}")
           # Set the default route only if the default interface has been added into the bridge, in
           # this case the default gateway is passed as a parameter to set_bridge
           if default_gw
             iface = self.get_default_iface()
             unless iface.empty?
-              Shell.run("ip route del default dev #{iface}")
+              Shell.run("/bin/ip route del default dev #{iface}")
             end
-            Shell.run("ip route add default dev #{bridge_name} via #{default_gw}")
+            Shell.run("/bin/ip route add default dev #{bridge_name} via #{default_gw}")
           end
           return bridge_name
         else
@@ -121,9 +123,9 @@ module Distem
         Dir.glob("/sys/class/net/#{brname}/brif/*").each { |i|
           cmd += "brctl delif #{brname} #{File.basename(i)};"
         }
-        cmd += "ip link set #{brname} down;"
+        cmd += "/bin/ip link set #{brname} down;"
         cmd += "brctl delbr #{brname};"
-        cmd += "ifconfig #{interface} #{ip} netmask #{netmask}"
+        cmd += "/bin/ip addr add #{ip}/#{netmask} add #{interface}"
         if default_gw
           cmd += ";route add -net 0.0.0.0 gw #{default_gw} dev #{interface}"
         end
@@ -152,14 +154,14 @@ module Distem
       # Create a new NIC network interface on the physical node (used to communicate with the VNodes, see Daemon::Admin)
       def self.set_new_nic(address,netmask,iface)
         new_iface = "#{iface}:#{@@nic_count}"
-        Shell.run("ifconfig #{new_iface} #{address} netmask #{netmask}")
+        Shell.run("/bin/ip addr add #{address}/#{netmask} dev #{new_iface}")
         @@nic_count += 1
         return new_iface
       end
 
       # Unset NIC
       def self.unset_nic(name)
-        Shell.run("ifconfig #{name} down")
+        Shell.run("/bin/ip set down dev #{name}")
       end
 
       # Disable IPv6
@@ -198,8 +200,8 @@ module Distem
       # Integer object
       #
       def self.get_iface_mtu(viface)
-        cmdret = Shell.run("/sbin/ifconfig #{get_iface_name(viface)}")
-        return cmdret.split("\n").grep(/.*MTU.*/)[0].gsub(/.*MTU:(\d+) .*/, '\1').to_i
+        cmdret = Shell.run("/bin/ip -o link show dev #{get_iface_name(viface)}")
+        return cmdret.split[cmdret.split.index('mtu')+1].to_i
       end
 
       # Check if an IP address is local to this physical node
@@ -254,8 +256,8 @@ module Distem
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         # First, we set up the VXLAN interface
         mcast_addr = IPAddress::IPv4::parse_u32(mcast_id + IPAddress("239.192.0.0").u32).address
-        Shell.run("ip link add #{vxlan_iface} type vxlan id #{id} group #{mcast_addr} ttl 10 dev #{root_interface} dstport 4789")
-        Shell.run("ip link set up dev #{vxlan_iface}")
+        Shell.run("/bin/ip link add #{vxlan_iface} type vxlan id #{id} group #{mcast_addr} ttl 10 dev #{root_interface} dstport 4789")
+        Shell.run("/bin/ip link set up dev #{vxlan_iface}")
         # Then, we create a bridge
         Shell.run("brctl addbr #{bridge}")
         Shell.run("brctl setfd #{bridge} 0")
@@ -264,7 +266,7 @@ module Distem
         Shell.run("/bin/ip link set dev #{bridge} up")
         # And we add the VXLAN interface into the bridge
         Shell.run("brctl addif #{bridge} #{vxlan_iface}")
-        Shell.run("ifconfig #{vxlan_iface} 0.0.0.0 up")
+        Shell.run("/bin/ip link set up dev #{vxlan_iface}")
       end
 
       # Remove a VXLAN interface and its related bridge
@@ -274,8 +276,8 @@ module Distem
         vxlan_iface = VXLAN_INTERFACE_PREFIX + id.to_s
         bridge = VXLAN_BRIDGE_PREFIX + id.to_s
         Shell.run("brctl delif #{bridge} #{vxlan_iface}")
-        Shell.run("ip link del #{vxlan_iface}")
-        Shell.run("ifconfig #{bridge} down")
+        Shell.run("/bin/ip link del #{vxlan_iface}")
+        Shell.run("/bin/ip link set down dev #{bridge}")
         Shell.run("brctl delbr #{bridge}")
       end
     end
