@@ -44,7 +44,7 @@ module Distem
           ifb = viface.ifb
 
           str = Lib::Shell.run("tc qdisc show || true").split(/\n/).grep(/ dev #{ifb} /)
-          if not str.empty? and not str[0].include?('pfifo_fast')
+          if not str.empty? and (not str[0].include?('pfifo_fast') and not str[0].include?('noqueue'))
             inputroot = TCWrapper::QdiscRoot.new(ifb)
             Lib::Shell.run(inputroot.get_cmd(TCWrapper::Action::DEL))
           end
@@ -58,7 +58,7 @@ module Distem
           @@ifballocator.free_ifb(ifb)
 
           str = Lib::Shell.run("tc qdisc show | grep \" #{iface} \"")
-          if str and !str.empty? and !str.include?('pfifo_fast')
+          if str and not str.empty? and ( not str.include?('pfifo_fast') and not str.include?('noqueue'))
             outputroot = TCWrapper::QdiscRoot.new(iface)
             Lib::Shell.run(outputroot.get_cmd(TCWrapper::Action::DEL))
           end
