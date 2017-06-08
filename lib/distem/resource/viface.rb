@@ -178,7 +178,7 @@ module Distem
       # ==== Returns
       # Boolean value
       def attached?
-        @vnetwork != nil and @address != nil
+        not @vnetwork.nil? and not @address.nil?
       end
 
       # Check if the virtual network interface is connected to a specified virtual network
