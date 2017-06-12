@@ -858,17 +858,7 @@ module Distem
       # @return [Array] An array of the format [@status,@headers,@body]
       # @private
       def result!
-        classname = nil
-        full_version = RUBY_VERSION.split('.')
-        main_version = full_version[0] + '.' + full_version[1]
-        case main_version
-        when '1.8'
-          classname = @body.class.name.split('::').last
-        when '1.9','2.0','2.1','2.2','2.3'
-          classname = (@body.class.name.split('::').last).to_sym
-        else
-          raise "Unsupported Ruby version: #{RUBY_VERSION}"
-        end
+        classname = (@body.class.name.split('::').last).to_sym
         if Distem::Resource.constants.include?(classname) \
           or @body.is_a?(Resource::VIface::VTraffic) \
           or @body.is_a?(Array) or @body.is_a?(Hash)
