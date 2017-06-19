@@ -43,7 +43,7 @@ Rake::RDocTask.new do |t|
   t.options << '--line-numbers'
   t.options << '--charset' << 'utf-8'
   t.options << '--diagram'
-  t.rdoc_files.include('README')
+  t.rdoc_files.include('README.md')
   t.rdoc_files.include('lib/**/*.rb')
 end
 
@@ -63,7 +63,7 @@ Rake::PackageTask::new("distem",DISTEM_VERSION) do |p|
   p.package_files.include('ext/**/*')
   p.package_files.include('bin/**/*')
   p.package_files.include('test/**/*')
-  p.package_files.include('Rakefile', 'COPYING','README')
+  p.package_files.include('Rakefile', 'COPYING','README.md')
 end
 
 begin

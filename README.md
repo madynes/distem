@@ -1,4 +1,4 @@
-== Distem
+# Distem
 
 Distem is a distributed systems emulator. When doing research on Cloud, P2P,
 High Performance Computing or Grid systems, it can be used to transform an
@@ -7,24 +7,26 @@ platform where nodes have different performance, and are linked together
 through a complex network topology, making it the ideal tool to benchmark
 applications targetting such environments.
 
-Key features:
-- Uses modern Linux technology to steal resources from your applications
-- Easy to install: on Grid'5000, you only need a few minutes to start to
+**Homepage: http://distem.gforge.inria.fr**
+
+## Key features
+* Uses modern Linux technology to steal resources from your applications
+* Easy to install: on Grid'5000, you only need a few minutes to start to
   use Distem
-- Easy to use: simple command-line interface for beginners, REST API for
+* Easy to use: simple command-line interface for beginners, REST API for
   more experienced users
-- Efficient and scalable: start a 10000-nodes virtual topology in less
+* Efficient and scalable: start a 10000-nodes virtual topology in less
   than 30 minutes
 
-* Homepage: http://distem.gforge.inria.fr
-* Authors:
-  * Lucas Nussbaum <lucas.nussbaum@loria.fr>
-  * Luc Sarzyniec <luc.sarzyniec@inria.fr>
-  * Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
 
-== License
+## Authors
+* Lucas Nussbaum <lucas.nussbaum@loria.fr>
+* Luc Sarzyniec <luc.sarzyniec@inria.fr>
+* Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
 
-Distem is Copyright (C) 2011 Lucas Nussbaum <lucas.nussbaum@loria.fr>
+## License
+
+Distem is Copyright © 2011 Lucas Nussbaum <lucas.nussbaum@loria.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,9 +43,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
-== Coding Style
+## Coding Style
 
 * comments + commit messages in english
 * documentation using rdoc
 * indent with two spaces. With Vim, that does the trick:
-   autocmd BufNewFile,BufRead *.rb set ts=2 expandtab sw=2
+```
+autocmd BufNewFile,BufRead *.rb set ts=2 expandtab sw=2
+```
