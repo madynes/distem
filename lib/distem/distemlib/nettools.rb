@@ -125,7 +125,7 @@ module Distem
         }
         cmd += "/bin/ip link set #{brname} down;"
         cmd += "brctl delbr #{brname};"
-        cmd += "/bin/ip addr add #{ip}/#{netmask} add #{interface}"
+        cmd += "/bin/ip addr add #{ip}/#{netmask} dev #{interface}"
         if default_gw
           cmd += ";route add -net 0.0.0.0 gw #{default_gw} dev #{interface}"
         end
@@ -161,7 +161,7 @@ module Distem
 
       # Unset NIC
       def self.unset_nic(name)
-        Shell.run("/bin/ip set down dev #{name}")
+        Shell.run("/bin/ip link set down dev #{name}")
       end
 
       # Disable IPv6
