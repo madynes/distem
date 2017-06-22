@@ -31,7 +31,7 @@ if MODE == 'g5k'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
 else
-  IMAGE = 'file:///builds/distem-fs-wheezy.tar.gz'
+  IMAGE = 'file:///builds/distem-image.tgz'
   REFFILE = "#{ROOT}/ref_ci.yml"
 end
 
@@ -123,7 +123,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         t.shift + "-kavlan-#{@@vlan}." + t.join('.')
       }
     else
-      nodes = [ 'distem-jessie','distem-jessie' ]
+      nodes = [ 'distem-ci-stretch1', 'distem-ci-stretch2' ]
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
