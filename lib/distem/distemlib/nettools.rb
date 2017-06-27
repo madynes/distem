@@ -59,8 +59,14 @@ module Distem
       # String object
       #
       def self.get_iface_config(iface)
-        return Shell.run("/bin/ip addr show dev #{iface}").split(/\n/).grep(/inet /)[0].gsub(/.*inet ([^\s]+ brd [^\s]+).*/, '\1').chomp
+        cmdret = Shell.run("/bin/ip addr show dev #{iface}").split(/\n/).grep(/inet /)[0]
+        if cmdret.include?('brd')
+            return cmdret.gsub(/.*inet ([^\s]+ brd [^\s]+).*/, '\1').chomp
+        else
+          return cmdret.gsub(/.*inet ([^\s]+).*/, '\1').chomp
+        end
       end
+
 
       # Gets the IP address of the default network interface used for network communications
       # ==== Returns

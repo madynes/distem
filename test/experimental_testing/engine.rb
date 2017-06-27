@@ -228,7 +228,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       end
     end
     ssh.loop
-    assert(exit_code == 0, "#STDOUT: #{stdout_data}\n#STDERR: #{stderr_data}\n#EXIT STATUS: #{exit_code}\n#EXIT SIGNAL #{exit_signal}\n")
     [stdout_data, stderr_data, exit_code, exit_signal]
   end
 

@@ -101,11 +101,11 @@ module LXCWrapper # :nodoc: all
           lxc_major_version = `lxc-start --version`.split('.').first
           if lxc_major_version == '1'
             Distem::Lib::Shell.run("lxc-stop -n #{contname} -k",true)
+          else
+            Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
           end
-        else
-          Distem::Lib::Shell.run("lxc-stop -n #{contname}",true)
-        end
         _wait(contname,Status::STOPPED) if wait
+        end
       end
     end
 
