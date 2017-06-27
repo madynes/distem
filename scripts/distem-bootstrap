@@ -478,7 +478,7 @@ Net::SSH::Multi.start do |session|
     exec(session,"rm -f #{TMP_DIR}/*.deb #{TMP_DIR}/*.changes #{TMP_DIR}/*.dsc #{TMP_DIR}/*.tar.gz",:coord)
     exec(session,"cd #{gitdir}; rake snapshot",:coord)
 
-    debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb",
+    debarchivefile = exec(session,"find #{TMP_DIR} -maxdepth 1 -name *.deb | grep -v dbgsym",
                           :coord)[coordinator][0]
     msg("Copying generated debian package #{File.basename(debarchivefile)}",
         MSG_INFO)
