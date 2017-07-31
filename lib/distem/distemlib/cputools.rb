@@ -10,12 +10,12 @@ module Distem
       #
       def self.set_resource(pcpu)
         raise InvalidParameterError, pcpu unless pcpu.is_a?(Resource::CPU)
-        strhwloc = Shell.run('hwloc-ls --no-useless-caches')
+        strhwloc = Shell.run('hwloc-ls --no-useless-caches --no-io')
         core = {}
 
         #Describe cores
-        #hwloc 1.0.2 (Debian Squeeze)
-        pattern1 = /\s*Core\s*#[0-9]+\s*\+\s*PU\s*#([0-9]+)\s*\(\s*phys\s*=\s*([0-9]+)\s*\)\s*/
+        #hwloc 1.10.0 (Debian jessie)
+        pattern1 = /^\s*PU\s*L#([0-9]+)\s*\(\s*P#([0-9]+)\s*\)\s*$/
         #hwloc 1.4.1 (Debian Wheezy)
         pattern2 = /\s*Core\s*L#[0-9]+\s*\+\s*PU\s*L#([0-9]+)\s*\(P#([0-9]+)\)\s*/
         strhwloc.each_line do |line|
@@ -51,11 +51,11 @@ module Distem
         end
 
         # Set cache links
-        #hwloc 1.0.2 (Debian Squeeze)
-        pattern1 = /\s*Core\s*p#[0-9]+\s*\+\s*PU\s*p#([0-9]+)\s*/
+        #hwloc 1.10.0 (Debian Jessie)
+        pattern1 = /^\s*PU\s*P#([0-9]+)\s*$/
         #hwloc 1.4.1 (Debian Wheezy)
         pattern2 = /\s*Core\s*P#[0-9]+\s*\+\s*PU\s*P#([0-9]+)\s*/
-        strhwloc = Shell.run('hwloc-ls -p --no-useless-caches')
+        strhwloc = Shell.run('hwloc-ls -p --no-useless-caches --no-io')
         cur = []
         cache_links = false
         strhwloc.each_line do |line|
