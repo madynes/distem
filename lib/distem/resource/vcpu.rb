@@ -16,7 +16,7 @@ module Distem
 
         # Create a new VCore
         # ==== Attributes
-        # * +val+ Frequency or ration to set ti this VCore. If it is a frequency, it has to be specified in KHz, if it is a ratio, it as to be between 0 and 1 (taken as a percentage of the frequency of the future physical Core frequency that will be attached to this virtual core)
+        # * +val+ Frequency or ratio to set ti this VCore. If it is a frequency, it has to be specified in KHz, if it is a ratio, it as to be between 0 and 1 (taken as a percentage of the frequency of the future physical Core frequency that will be attached to this virtual core)
         # * +unit Tell if val is a frequency or a ratio
         def initialize(val,unit)
           @pcore = nil
@@ -43,7 +43,7 @@ module Distem
         # Modify the frequency of this virtual one (to be used after attaching the vcore)
         # ==== Attributes
         # * +val+ The new value (frequency or ratio)
-        # * +unit+ The way val is defined (mhz or ration values are allowed)
+        # * +unit+ The way val is defined (mhz or ratio values are allowed)
         def update(val,unit)
           val = val.to_f
           if attached?
