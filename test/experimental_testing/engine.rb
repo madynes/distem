@@ -123,7 +123,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         t.shift + "-kavlan-#{@@vlan}." + t.join('.')
       }
     else
-      nodes = [ 'distem-ci-stretch1', 'distem-ci-stretch2' ]
+      nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
