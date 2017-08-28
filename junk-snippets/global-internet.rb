@@ -71,7 +71,7 @@ create_vifaces
 create_vroutes
 
 # start all vnodes
-$cl.vnodes_start($cl.vnodes_info.map { |vn| vn['name'] })
+$cl.vnodes_start($cl.vnodes_info.keys)
 $cl.set_global_etchosts
 
 pp $cl.vnodes_info
