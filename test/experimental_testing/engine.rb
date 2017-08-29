@@ -20,12 +20,10 @@ DISTEMROOT = ARGV[1]
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
 # USER = `id -nu`.strip
 USER = "root"
-NET = '10.144.0.0/18'
 
 if MODE == 'g5k'
   GIT = (ARGV[2] == 'true')
   CLUSTER = ARGV[3]
-  KADEPLOY_ENVIRONMENT = 'jessie-x64-nfs'
   IMAGE = 'file:///home/amerlin/public/distem-test-img.tgz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
@@ -33,6 +31,7 @@ if MODE == 'g5k'
 else
   IMAGE = 'file:///builds/distem-image.tgz'
   REFFILE = "#{ROOT}/ref_ci.yml"
+  NET = '10.144.0.0/18'
   DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 end
 
@@ -55,14 +54,13 @@ class CommonTools
     STDOUT.flush
   end
 
-  def CommonTools::reboot_nodes(pnodes, vlan)
-    system("kavlan -s -i DEFAULT")
+  def CommonTools::reboot_nodes(pnodes)
     nb_rebooted_nodes = nil
     10.times.each { |i|
       msg("Rebooting #{pnodes.join(',')} (attempt #{i+1})")
       ok = Tempfile.new("nodes_ok")
       node_list = "-m #{pnodes.join(' -m ')}"
-      system("kareboot3 -V 1 -r simple #{node_list} -o #{ok.path} --vlan #{vlan}")
+      system("kareboot3 -V 1 -r simple #{node_list} -o #{ok.path}")
       next if not File.exist?(ok.path)
       nb_rebooted_nodes = IO.readlines(ok.path).length
       break if (nb_rebooted_nodes == pnodes.length)
@@ -70,13 +68,13 @@ class CommonTools
     return (nb_rebooted_nodes == pnodes.length)
   end
 
-  def CommonTools::deploy_nodes(pnodes, vlan, environment)
+  def CommonTools::deploy_nodes(pnodes, environment)
     deployed_pnodes = nil
     10.times.each { |i|
       msg("Deploying #{pnodes.join(',')} (attempt #{i+1})")
       ok = Tempfile.new("nodes_ok")
       node_list = "-m #{pnodes.join(' -m ')}"
-      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u deploy -k -o #{ok.path} --vlan #{vlan}")
+      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u deploy -k -o #{ok.path}")
       next if not File.exist?(ok.path)
       deployed_pnodes = IO.readlines(ok.path).collect { |line| line.strip }
       break if (deployed_pnodes.length == pnodes.length)
@@ -101,7 +99,6 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   @@coordinator = nil
   @@pnodes = nil
   @@deployed_nodes = nil
-  @@vlan = nil
   @@ref = nil
 
   def self.test_order
@@ -112,22 +109,17 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     @@ref = YAML::load_file(REFFILE)
     if MODE == 'g5k'
       CommonTools::error("This script must be run inside an OAR reservation") if not ENV['OAR_JOB_ID']
-      @@vlan = `kavlan -V -j #{ENV['OAR_JOB_ID']}`.strip
-      CommonTools::error("No VLAN found") if @@vlan == 'no vlan found'
-      oar_nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
-      CommonTools::error("Not enough nodes") if oar_nodes.length < MIN_PNODES
-      system("kavlan -e")
-      @@deployed_nodes = CommonTools::deploy_nodes(oar_nodes, @@vlan, KADEPLOY_ENVIRONMENT)
-      CommonTools::error("Not enough nodes after deployment") if @@deployed_nodes.length < oar_nodes.length
-      nodes = @@deployed_nodes.collect { |node|
-        t = node.split('.')
-        t.shift + "-kavlan-#{@@vlan}." + t.join('.')
-      }
+      subnet = `g5k-subnets -p`.strip
+      CommonTools::error("No ip subnet reserved") if subnet.empty?
+      nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
+      CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
     else
       nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
+      subnet = NET
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
+    @@subnet = subnet
 
     @@initialized = true
   end
@@ -149,7 +141,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     f.close
     distemcmd = ''
     if (MODE == 'g5k')
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network --vxlan-id #{rand(16)} --debian-version jessie"
+      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network"
       distemcmd += ' -g' if GIT
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
@@ -169,32 +161,32 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       if cli
         return false
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-api.rb')} #{@@subnet} /tmp/ip #{IMAGE}")
       end
     when '1node_def'
       # It will create the definition and it wont start the vnode
       if cli
         return false
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-def.rb')} #{NET} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_1node-def.rb')} #{@@subnet} /tmp/ip #{IMAGE}")
       end
     when '2nodes'
       if cli
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{@@subnet} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{NET} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{@@subnet} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
       end
     when '50nodes'
       if cli
         return false
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_50nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_50nodes-api.rb')} #{@@subnet} /tmp/ip #{IMAGE}")
       end
     when '200nodes'
       if cli
         return false
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_200nodes-api.rb')} #{NET} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_200nodes-api.rb')} #{@@subnet} /tmp/ip #{IMAGE}")
       end
     else
       raise "Invalid platform kind"
