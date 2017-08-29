@@ -27,7 +27,7 @@ if MODE == 'g5k'
   GIT = (ARGV[2] == 'true')
   CLUSTER = ARGV[3]
   KADEPLOY_ENVIRONMENT = 'jessie-x64-nfs'
-  IMAGE = 'file:///home/ejeanvoine/public/distem/distem-fs-wheezy.tar.gz'
+  IMAGE = 'file:///home/amerlin/public/distem-test-img.tgz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
 else
