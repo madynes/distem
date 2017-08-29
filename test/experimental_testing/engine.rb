@@ -17,7 +17,6 @@ require 'net/ssh/multi'
 MODE = ARGV[0] #ci or g5k
 DISTEMROOT = ARGV[1]
 
-DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
 # USER = `id -nu`.strip
 USER = "root"
@@ -30,9 +29,11 @@ if MODE == 'g5k'
   IMAGE = 'file:///home/amerlin/public/distem-test-img.tgz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
+  DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
 else
   IMAGE = 'file:///builds/distem-image.tgz'
   REFFILE = "#{ROOT}/ref_ci.yml"
+  DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 end
 
 
