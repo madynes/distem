@@ -330,7 +330,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '50nodes'})
       @@pnodes.uniq.each { |pnode|
-        session.exec!("scp /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
+        session.exec!("scp -o StrictHostKeyChecking=no /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
       }
     }
     @@pnodes.uniq.each { |pnode|
