@@ -28,7 +28,7 @@ if MODE == 'g5k'
   MIN_PNODES = 2
   DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
   NET = ARGV[4]
-  NODES = ARGV[5].slpit(',')
+  NODES = ARGV[5].split(',')
 else
   IMAGE = 'file:///builds/distem-image.tgz'
   REFFILE = "#{ROOT}/ref_ci.yml"
