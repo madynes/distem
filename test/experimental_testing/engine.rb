@@ -27,6 +27,8 @@ if MODE == 'g5k'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
   DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
+  NET = ARGV[4]
+  NODES = ARGV[5].slpit(',')
 else
   IMAGE = 'file:///builds/distem-image.tgz'
   REFFILE = "#{ROOT}/ref_ci.yml"
@@ -107,11 +109,16 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
   def plateform_init
     @@ref = YAML::load_file(REFFILE)
     if MODE == 'g5k'
-      CommonTools::error("This script must be run inside an OAR reservation") if not ENV['OAR_JOB_ID']
-      subnet = `g5k-subnets -p`.strip
-      CommonTools::error("No ip subnet reserved") if subnet.empty?
-      nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
-      CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
+      if !NODES.empty? and !NET.empty?
+        nodes = NODES
+        subnet = NET
+      else
+        CommonTools::error("This script must be run inside an OAR reservation or the nodes and subnet must explicitly be set") if not ENV['OAR_JOB_ID']
+        subnet = `g5k-subnets -p`.strip
+        CommonTools::error("No ip subnet reserved") if subnet.empty?
+        nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
+        CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
+      end
     else
       nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
       subnet = NET
