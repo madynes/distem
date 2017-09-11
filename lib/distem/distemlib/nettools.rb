@@ -95,7 +95,7 @@ module Distem
           # needs to be done before we break eth0
           cfg = self.get_iface_config(root_interface)
           Shell.run("ethtool -G #{root_interface} rx 4096 tx 4096 || true")
-          Shell.run("/bin/ip link set mtu 1600 dev #{root_interface}")
+          #Shell.run("/bin/ip link set mtu 1600 dev #{root_interface}")
 
           Shell.run("brctl addbr #{bridge_name}")
           Shell.run("brctl setfd #{bridge_name} 0")
