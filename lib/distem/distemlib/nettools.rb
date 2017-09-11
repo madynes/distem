@@ -195,7 +195,7 @@ module Distem
       #
       def self.get_iface_name(viface)
         raise unless viface.is_a?(Resource::VIface)
-        return "veth#{viface.id}"
+        return "distem#{viface.id}-#{viface.vnode.name}-#{viface.name}"
       end
 
       # Gets the current MTU of a virtual network interface
