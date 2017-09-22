@@ -23,7 +23,8 @@ USER = "root"
 if MODE == 'g5k'
   GIT = (ARGV[2] == 'true')
   CLUSTER = ARGV[3]
-  IMAGE = 'file:///home/amerlin/public/distem-test-img.tgz'
+  IMAGE_FRONTEND = '/home/amerlin/public/distem-test-img.tgz'
+  IMAGE = '/tmp/distem-test-img.tgz'
   REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
   MIN_PNODES = 2
   DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
@@ -118,6 +119,9 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
         CommonTools::error("No ip subnet reserved") if subnet.empty?
         nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
         CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
+        nodes.each do |n|
+          `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{n}:#{IMAGE}`
+        end
       end
     else
       nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
@@ -148,7 +152,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     distemcmd = ''
     if (MODE == 'g5k')
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network"
-      distemcmd += ' -g' if GIT
+      distemcmd += ' -g -U https://github.com/alxmerlin/distem.git' if GIT
     else
       distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
     end
