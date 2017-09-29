@@ -15,19 +15,22 @@ ip = IO.readlines(IPFILE).collect { |line| line.strip }
 
 def run_exp(band, f, ip)
   ret = true
-
-  run_and_wait("distem --execute vnode=node1,command=\"iperf -s -P #{REPETS}\"") do
+  nums = Stats.new
+  Open3.popen3("distem --execute vnode=node1,command=\"iperf -s -y c -P #{REPETS}\"") do |i,o,e,w|
     sleep 1  # wait 1 second for iperf-server to start
-    nums = Stats.new
     REPETS.times { |i|  # repeat the measurement repets time
-      data = `distem --execute vnode=node2,command="iperf -t 10 -y c -c #{ip[0]}"`
-      result = data.split(',').last.to_f / 1e6
-      nums.push result
+      `distem --execute vnode=node2,command="iperf -t 10 -y c -c #{ip[0]}"`
     }
-    if ((nums.mean) > ((1 + ERROR) * band / f)) || ((nums.mean) < ((1 - ERROR) * band / f))
-      puts "ERROR: requested #{band / f}mbits, measured #{nums.mean}mbits"
-      ret = false
-    end
+  data = o.read
+  result = data.split(',').last.to_f / 1e6
+  nums.push result
+  end
+  if ((nums.mean) > ((1 + ERROR) * band / f)) || ((nums.mean) < ((1 - ERROR) * band / f))
+    puts "ERROR: requested #{band / f}mbits, measured #{nums.mean}mbits"
+    ret = false
+  else
+    puts "Requested: #{band / f}mbits, measured: #{nums.mean}mbits"
+    puts "#{(1-ERROR)*band/f} < #{nums.mean} < #{(1+ERROR)*band/f} => OK"
   end
   return ret
 end
