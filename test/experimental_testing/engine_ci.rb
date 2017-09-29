@@ -113,9 +113,9 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       end
     when '2nodes'
       if cli
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{@@subnet} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-cli.rb')} #{@@subnet} #{pnodes[0]} /tmp/ip #{IMAGE}")
       else
-        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{@@subnet} #{pnodes[0]},#{pnodes[1]} /tmp/ip #{IMAGE}")
+        return ssh_exec(ssh, "ruby #{File.join(ROOT,'platforms/distem_platform_2nodes-api.rb')} #{@@subnet} #{pnodes[0]} /tmp/ip #{IMAGE}")
       end
     when '50nodes'
       if cli
