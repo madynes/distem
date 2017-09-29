@@ -4,6 +4,12 @@ require 'socket'
 
 net,netmask = ARGV[0].split('/')
 pnodes = ARGV[1].split(',')
+if pnodes.length == 1
+  pnode1 = pnode2 = pnodes[0]
+else
+  pnode1 = pnodes[0]
+  pnode2 = pnodes[1]
+end
 ip_file = ARGV[2]
 image = ARGV[3]
 
@@ -36,8 +42,8 @@ def wait_ssh(host, timeout = 120)
 end
 
 res = system("distem --create-vnetwork vnetwork=vnet,address=#{net}/#{netmask}")
-res = res && system("distem --create-vnode vnode=node1,pnode=#{pnodes[0]},rootfs=#{image}")
-res = res && system("distem --create-vnode vnode=node2,pnode=#{pnodes[1]},rootfs=#{image}")
+res = res && system("distem --create-vnode vnode=node1,pnode=#{pnode0},rootfs=#{image}")
+res = res && system("distem --create-vnode vnode=node2,pnode=#{pnode1},rootfs=#{image}")
 res = res && system("distem --create-viface vnode=node1,iface=af0,vnetwork=vnet,default=true")
 res = res && system("distem --create-viface vnode=node2,iface=af0,vnetwork=vnet,default=true")
 res = res && system("distem --start-vnode node1")

@@ -13,29 +13,15 @@ require 'minitest/autorun'
 require 'net/ssh'
 require 'net/ssh/multi'
 
-MODE = ARGV[0] #ci or g5k
-DISTEMROOT = ARGV[1]
+DISTEMROOT = ARGV[0]
 
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
 # USER = `id -nu`.strip
 USER = "root"
 
-if MODE == 'g5k'
-  GIT = (ARGV[2] == 'true')
-  CLUSTER = ARGV[3]
-  IMAGE_FRONTEND = '/home/amerlin/public/distem-test-img.tgz'
-  IMAGE = '/tmp/distem-test-img.tgz'
-  REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
-  MIN_PNODES = 2
-  DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
-  NET = ARGV[4]
-  NODES = ARGV[5].split(',')
-else
-  IMAGE = 'file:///builds/distem-image.tgz'
-  REFFILE = "#{ROOT}/ref_ci.yml"
-  NET = '10.144.0.0/18'
-  DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
-end
+IMAGE = 'file:///builds/distem-image.tgz'
+REFFILE = "#{ROOT}/ref_ci.yml"
+DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
 
 
 module Kernel
@@ -54,34 +40,6 @@ class CommonTools
   def CommonTools::msg(str)
     puts "# #{str}"
     STDOUT.flush
-  end
-
-  def CommonTools::reboot_nodes(pnodes)
-    nb_rebooted_nodes = nil
-    10.times.each { |i|
-      msg("Rebooting #{pnodes.join(',')} (attempt #{i+1})")
-      ok = Tempfile.new("nodes_ok")
-      node_list = "-m #{pnodes.join(' -m ')}"
-      system("kareboot3 -V 1 -r simple #{node_list} -o #{ok.path}")
-      next if not File.exist?(ok.path)
-      nb_rebooted_nodes = IO.readlines(ok.path).length
-      break if (nb_rebooted_nodes == pnodes.length)
-    }
-    return (nb_rebooted_nodes == pnodes.length)
-  end
-
-  def CommonTools::deploy_nodes(pnodes, environment)
-    deployed_pnodes = nil
-    10.times.each { |i|
-      msg("Deploying #{pnodes.join(',')} (attempt #{i+1})")
-      ok = Tempfile.new("nodes_ok")
-      node_list = "-m #{pnodes.join(' -m ')}"
-      system("kadeploy3 -V 1 #{node_list} -e #{environment} -u deploy -k -o #{ok.path}")
-      next if not File.exist?(ok.path)
-      deployed_pnodes = IO.readlines(ok.path).collect { |line| line.strip }
-      break if (deployed_pnodes.length == pnodes.length)
-    }
-    return deployed_pnodes
   end
 
   def CommonTools::clean_nodes(pnodes)
@@ -109,33 +67,13 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
 
   def plateform_init
     @@ref = YAML::load_file(REFFILE)
-    if MODE == 'g5k'
-      if !NODES.empty? and !NET.empty?
-        nodes = NODES
-        subnet = NET
-      else
-        CommonTools::error("This script must be run inside an OAR reservation or the nodes and subnet must explicitly be set") if not ENV['OAR_JOB_ID']
-        subnet = `g5k-subnets -p`.strip
-        CommonTools::error("No ip subnet reserved") if subnet.empty?
-        nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
-        CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
-        nodes.each do |n|
-          `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{n}:#{IMAGE}`
-        end
-      end
-    else
-      nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
-      subnet = NET
-    end
-    @@coordinator = nodes.first
-    @@pnodes = nodes
-    @@subnet = subnet
-
+    @@pnodes = [ 'distem-jessie-1']
+    @@coordinator = @@pnodes.first
     @@initialized = true
+    @@subnet = '10.144.0.0/18'
   end
 
   def clean_env
-#    CommonTools::reboot_nodes(@@deployed_nodes, @@vlan) if MODE == 'g5k'
     CommonTools::clean_nodes(@@pnodes)
   end
 
@@ -149,14 +87,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       f.puts(pnode)
     }
     f.close
-    distemcmd = ''
-    if (MODE == 'g5k')
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network"
-      distemcmd += ' -g -U https://github.com/alxmerlin/distem.git' if GIT
-    else
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
-    end
-    distemcmd += " --max-vifaces 250 -r net-ssh-multi #{extra_params}"
+    distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT} --max-vifaces 250 -r net-ssh-multi #{extra_params}"
     system(distemcmd)
   end
 
@@ -276,7 +207,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input #{MODE == 'g5k' ? 3:1}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input 1"))
     }
   end
 
@@ -285,7 +216,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output #{MODE == 'g5k' ? 3:1}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output 1}"))
     }
   end
 
@@ -294,7 +225,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input #{MODE == 'g5k' ? 3:1}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input 1}"))
     }
   end
 
@@ -303,7 +234,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output #{MODE == 'g5k' ? 3:1}"))
+      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output 1}"))
     }
   end
 

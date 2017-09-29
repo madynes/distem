@@ -7,6 +7,12 @@ require 'socket'
 
 net,netmask = ARGV[0].split('/')
 pnodes = ARGV[1].split(',')
+if pnodes.length == 1
+  pnode1 = pnode2 = pnodes[0]
+else
+  pnode1 = pnodes[0]
+  pnode2 = pnodes[1]
+end
 ip_file = ARGV[2]
 image = ARGV[3]
 
@@ -43,7 +49,7 @@ Distem.client { |cl|
 
   res = cl.vnode_create('node1',
                         {
-                          'host' => pnodes[0],
+                          'host' => pnode1,
                           'vfilesystem' =>{'image' => image, 'shared' => true},
                           'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                         })
@@ -51,7 +57,7 @@ Distem.client { |cl|
 
   res = cl.vnode_create('node2',
                         {
-                          'host' => pnodes[1],
+                          'host' => pnode2,
                           'vfilesystem' =>{'image' => image, 'shared' => true},
                           'vifaces' => [{'name' => 'af0', 'vnetwork' => 'vnet', 'default' => true}]
                         })
