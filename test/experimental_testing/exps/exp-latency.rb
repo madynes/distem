@@ -21,6 +21,7 @@ Distem.client do |cl|
   latencies = [5, 10, 20, 50, 100]
 
   latencies.each { |lat|
+    puts "Setting the latency to #{lat}ms"
     ifnet = {}
     if lat != 0 then
       if WAY == 'input'
@@ -53,6 +54,9 @@ Distem.client do |cl|
         puts "ERROR: requested #{lat}ms, measured #{nums.mean}ms"
         error = true
         break
+      else
+        puts "Getting mean response time of #{nums.mean}"
+        puts "#{(1-ERROR)*lat} < #{nums.mean} < #{(1+ERROR)*lat} => OK"
       end
     end
   }
