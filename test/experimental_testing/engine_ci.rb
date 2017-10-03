@@ -242,17 +242,13 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     }
   end
 
-  def test_07_hpcc_gov
+  def test_07_cpu_hogs
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
-      [1,4].each { |nb_cpu|
-        cpu = "#{nb_cpu}cpu"
-        (0..(@@ref['hpcc']['freqs'].length - 1)).each { |i|
-          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-hpcc.rb')} #{nb_cpu} gov #{@@ref['hpcc']['freqs'][i]} #{@@ref['hpcc']['error']} #{@@ref['hpcc']['results'][cpu]['dgemm'][i]} #{@@ref['hpcc']['results'][cpu]['fft'][i]} #{@@ref['hpcc']['results'][cpu]['hpl'][i]}"))
-        }
-      }
+     puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{@@ref['cpu']['error']} hogs #{@@ref['cpu']['max']}")
+      check_result(res)
     }
   end
 
@@ -334,18 +330,5 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-events.rb')}"))
     }
   end
-
-  def test_15_alevin
-    temp_alevin = Tempfile.new("alevin.jar")
-    puts "\n\n Downloading Alevin ***"
-    `wget #{@@ref['alevin']['source']} -O #{temp_alevin.path} -q`
-    install_distem("--alevin #{temp_alevin.path} -p default-jdk,graphviz")
-    puts "\n\n**** Running #{this_method} ****"
-    Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '1node_def'})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-alevin.rb')}"))
-    }
-  end
-
 
 end

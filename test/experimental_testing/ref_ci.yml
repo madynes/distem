@@ -3,5 +3,8 @@ bandwidth:
   error: 25
 latency:
   error: 20
+cpu:
+  error: 20
+  max: 2600
 alevin:
   source: "https://gforge.inria.fr/frs/download.php/file/35944/alevin-ext.jar"
