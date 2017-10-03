@@ -35,8 +35,8 @@ module Distem
               core['frequencies'] = strcpufreq.strip.split.collect{ |val| val.to_i }
               core['frequencies'].sort!
             else
-              core['frequency'] = 1000000
-              core['frequencies'] = [ 1000000 ]
+              core['frequency'] = 2600000
+              core['frequencies'] = [ 2600000 ]
             end
           end
 
