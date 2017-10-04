@@ -262,6 +262,16 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     }
   end
 
+  def test_09_cpu_nb
+    install_distem
+    puts "\n\n**** Running #{this_method} ****"
+    Net::SSH.start(@@coordinator, USER) { |session|
+      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu-nb.rb')} #{@@ref['cpu']['error']}")
+      check_result(res)
+    }
+  end
+
   def test_10_cpu_update
     install_distem
     puts "\n\n**** Running #{this_method} ****"
