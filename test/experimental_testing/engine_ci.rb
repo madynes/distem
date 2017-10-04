@@ -277,8 +277,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
-      max_freq = @@ref['hpcc']['freqs'].last
-      [1,2,4].each { |nb_cpu|
+      max_freq = @@ref['cpu']['max']
+      [1,2].each { |nb_cpu|
         ['HOGS','GOV'].each { |policy|
           check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu-update.rb')} #{nb_cpu} #{policy} #{max_freq}"))
         }
