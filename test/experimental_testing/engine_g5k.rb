@@ -13,29 +13,20 @@ require 'minitest/autorun'
 require 'net/ssh'
 require 'net/ssh/multi'
 
-MODE = ARGV[0] #ci or g5k
-DISTEMROOT = ARGV[1]
+DISTEMROOT = ARGV[0]
 
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
 # USER = `id -nu`.strip
 USER = "root"
-
-if MODE == 'g5k'
-  GIT = (ARGV[2] == 'true')
-  CLUSTER = ARGV[3]
-  IMAGE_FRONTEND = '/home/amerlin/public/distem-test-img.tgz'
-  IMAGE = '/tmp/distem-test-img.tgz'
-  REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
-  MIN_PNODES = 2
-  DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
-  NET = ARGV[4]
-  NODES = ARGV[5].split(',')
-else
-  IMAGE = 'file:///builds/distem-image.tgz'
-  REFFILE = "#{ROOT}/ref_ci.yml"
-  NET = '10.144.0.0/18'
-  DISTEMBOOTSTRAP = "#{DISTEMROOT}/scripts/distem-bootstrap"
-end
+GIT = (ARGV[1] == 'true')
+CLUSTER = ARGV[2]
+IMAGE_FRONTEND = '/home/amerlin/public/distem-test-img.tgz'
+IMAGE = '/tmp/distem-test-img.tgz'
+REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
+MIN_PNODES = 2
+DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
+NET = ARGV[3]
+NODES = ARGV[4].split(',')
 
 
 module Kernel
@@ -109,23 +100,18 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
 
   def plateform_init
     @@ref = YAML::load_file(REFFILE)
-    if MODE == 'g5k'
-      if !NODES.empty? and !NET.empty?
-        nodes = NODES
-        subnet = NET
-      else
-        CommonTools::error("This script must be run inside an OAR reservation or the nodes and subnet must explicitly be set") if not ENV['OAR_JOB_ID']
-        subnet = `g5k-subnets -p`.strip
-        CommonTools::error("No ip subnet reserved") if subnet.empty?
-        nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
-        CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
-        nodes.each do |n|
-          `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{n}:#{IMAGE}`
-        end
-      end
-    else
-      nodes = [ 'distem-jessie-1', 'distem-jessie-2' ]
+    if !NODES.empty? and !NET.empty?
+      nodes = NODES
       subnet = NET
+    else
+      CommonTools::error("This script must be run inside an OAR reservation or the nodes and subnet must explicitly be set") if not ENV['OAR_JOB_ID']
+      subnet = `g5k-subnets -p`.strip
+      CommonTools::error("No ip subnet reserved") if subnet.empty?
+      nodes = IO.readlines(ENV['OAR_NODE_FILE']).collect { |line| line.strip }.uniq
+      CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
+    end
+    nodes.each do |n|
+      `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{n}:#{IMAGE}`
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
@@ -149,13 +135,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       f.puts(pnode)
     }
     f.close
-    distemcmd = ''
-    if (MODE == 'g5k')
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network"
-      distemcmd += ' -g -U https://github.com/alxmerlin/distem.git' if GIT
-    else
-      distemcmd += "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} -g --ci #{DISTEMROOT}"
-    end
+    distemcmd = "#{DISTEMBOOTSTRAP} -c #{@@coordinator} -f #{f.path} --enable-admin-network"
+    distemcmd += ' -g -U https://github.com/alxmerlin/distem.git' if GIT
     distemcmd += " --max-vifaces 250 -r net-ssh-multi #{extra_params}"
     system(distemcmd)
   end
@@ -275,8 +256,9 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input #{MODE == 'g5k' ? 3:1}"))
+      puts launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input 3")
+      check_result(res)
     }
   end
 
@@ -285,7 +267,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output #{MODE == 'g5k' ? 3:1}"))
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} output 3")
+      check_result(res)
     }
   end
 
@@ -294,7 +277,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input #{MODE == 'g5k' ? 3:1}"))
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} input 3")
+      check_result(res)
     }
   end
 
@@ -303,7 +287,8 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output #{MODE == 'g5k' ? 3:1}"))
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-bandwidth.rb')} #{@@ref['bandwidth']['error']} output 3")
+      check_result(res)
     }
   end
 
@@ -385,7 +370,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       max_freq = @@ref['hpcc']['freqs'].last
       [1,2,4].each { |nb_cpu|
         ['HOGS','GOV'].each { |policy|
-          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{nb_cpu} #{policy} #{max_freq}"))
+          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu-update.rb')} #{nb_cpu} #{policy} #{max_freq}"))
         }
       }
     }

@@ -21,9 +21,12 @@ def run_exp(band, f, ip)
     REPETS.times { |i|  # repeat the measurement repets time
       `distem --execute vnode=node2,command="iperf -t 10 -y c -c #{ip[0]}"`
     }
-  data = o.read
-  result = data.split(',').last.to_f / 1e6
-  nums.push result
+    data = o.read
+    puts data
+    data.each_line do |l|
+      result = l.split(',').last.to_f / 1e6
+      nums.push result
+    end
   end
   if ((nums.mean) > ((1 + ERROR) * band / f)) || ((nums.mean) < ((1 - ERROR) * band / f))
     puts "ERROR: requested #{band / f}mbits, measured #{nums.mean}mbits"
