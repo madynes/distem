@@ -2,7 +2,7 @@
 bandwidth:
   error: 25
 latency:
-  error: 20
+  error: 25
 cpu:
   error: 20
   max: 2600
