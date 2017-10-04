@@ -246,69 +246,23 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-     launch_vnodes(session, {'pf_kind' => '1node_cpu'})
-     puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{@@ref['cpu']['error']} hogs #{@@ref['cpu']['max']}")
+      launch_vnodes(session, {'pf_kind' => '1node_cpu'})
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{@@ref['cpu']['error']} hogs #{@@ref['cpu']['max']}")
       check_result(res)
     }
   end
 
-  def test_08_hpcc_hogs
+  def test_08_cpu_gov
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
       launch_vnodes(session, {'pf_kind' => '1node_cpu'})
-      [1,4].each { |nb_cpu|
-        cpu = "#{nb_cpu}cpu"
-        (0..(@@ref['hpcc']['freqs'].length - 1)).each { |i|
-          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-hpcc.rb')} #{nb_cpu} HOGS #{@@ref['hpcc']['freqs'][i]} #{@@ref['hpcc']['error']} #{@@ref['hpcc']['results'][cpu]['dgemm'][i]} #{@@ref['hpcc']['results'][cpu]['fft'][i]} #{@@ref['hpcc']['results'][cpu]['hpl'][i]}"))
-        }
-      }
+      puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{@@ref['cpu']['error']} gov #{@@ref['cpu']['max']}")
+      check_result(res)
     }
   end
 
-  def test_09_vectorized_init_and_connectivity
-    install_distem
-    puts "\n\n**** Running #{this_method} ****"
-    Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '50nodes'})
-      @@pnodes.uniq.each { |pnode|
-        session.exec!("scp -o StrictHostKeyChecking=no /tmp/ip #{pnode}:/tmp") if (pnode != @@coordinator)
-      }
-    }
-    @@pnodes.uniq.each { |pnode|
-      Net::SSH.start(pnode, USER) { |session|
-        check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-connectivity.rb')}"))
-      }
-    }
-  end
-
-  def test_10_set_peers_latency
-    install_distem
-    puts "\n\n**** Running #{this_method} ****"
-    Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '50nodes'})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-matrix-latencies.rb')}"))
-    }
-  end
-
-  def test_11_set_arptables
-    install_distem
-    puts "\n\n**** Running #{this_method} ****"
-    Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '50nodes'})
-      check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-check-arp-tables.rb')}"))
-    }
-  end
-
-  def test_12_wait_vnodes
-    install_distem
-    puts "\n\n**** Running #{this_method} ****"
-    Net::SSH.start(@@coordinator, USER) { |session|
-      launch_vnodes(session, {'pf_kind' => '200nodes', 'pnodes' => @@pnodes})
-    }
-  end
-
-  def test_13_cpu_update
+  def test_10_cpu_update
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
@@ -316,13 +270,13 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       max_freq = @@ref['hpcc']['freqs'].last
       [1,2,4].each { |nb_cpu|
         ['HOGS','GOV'].each { |policy|
-          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu.rb')} #{nb_cpu} #{policy} #{max_freq}"))
+          check_result(session.exec!("ruby #{File.join(ROOT,'exps/exp-cpu-update.rb')} #{nb_cpu} #{policy} #{max_freq}"))
         }
       }
     }
   end
 
-  def test_14_events
+  def test_11_events
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
