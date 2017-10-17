@@ -16,7 +16,6 @@ require 'net/ssh/multi'
 DISTEMROOT = ARGV[0]
 
 ROOT = "#{DISTEMROOT}/test/experimental_testing"
-# USER = `id -nu`.strip
 USER = "root"
 GIT = (ARGV[1] == 'true')
 CLUSTER = ARGV[2]
@@ -111,7 +110,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
       CommonTools::error("Not enough nodes") if nodes.length < MIN_PNODES
     end
     nodes.each do |n|
-      `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{n}:#{IMAGE}`
+      `scp -o StrictHostKeyChecking=no #{IMAGE_FRONTEND} #{USER}@#{n}:#{IMAGE}`
     end
     @@coordinator = nodes.first
     @@pnodes = nodes
@@ -256,7 +255,7 @@ class ExperimentalTesting < MiniTest::Unit::TestCase
     install_distem
     puts "\n\n**** Running #{this_method} ****"
     Net::SSH.start(@@coordinator, USER) { |session|
-      puts launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
+      launch_vnodes(session, {'pf_kind' => '2nodes', 'pnodes' => @@pnodes})
       puts res = session.exec!("ruby #{File.join(ROOT,'exps/exp-latency.rb')} #{@@ref['latency']['error']} input 3")
       check_result(res)
     }
