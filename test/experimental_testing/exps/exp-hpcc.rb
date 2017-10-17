@@ -36,7 +36,7 @@ Distem.client { |cl|
   cl.vnode_execute('node1','rm -rf /root/hpccoutf.txt')
   ITER.times.each { |i|
     if nb_cpu > 1 then
-      cl.vnode_execute('node1', "/usr/bin/mpiexec -np #{nb_cpu} /usr/bin/hpcc")
+      cl.vnode_execute('node1', "/usr/bin/mpiexec --allow-run-as-root -np #{nb_cpu} /usr/bin/hpcc")
     else
       cl.vnode_execute('node1', "/usr/bin/hpcc")
     end
