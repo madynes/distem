@@ -20,9 +20,11 @@ applications targetting such environments.
 
 
 ## Authors
-* Lucas Nussbaum <lucas.nussbaum@loria.fr>
-* Luc Sarzyniec <luc.sarzyniec@inria.fr>
+* Lucas Nussbaum <lucas.nussbaum@loria.fr> (main contact point)
 * Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+* Luc Sarzyniec <luc.sarzyniec@inria.fr>
+* Cristian Ruiz <cristian.ruiz@inria.fr>
+* Alexandre Merlin <alexandre.merlin@inria.fr>
 
 ## License
 
