@@ -15,13 +15,13 @@ require 'net/ssh/multi'
 
 DISTEMROOT = ARGV[0]
 
-ROOT = "#{DISTEMROOT}/test/experimental_testing"
+ROOT= "/tmp/distem/test/experimental_testing"
 USER = "root"
 GIT = (ARGV[1] == 'true')
 CLUSTER = ARGV[2]
 IMAGE_FRONTEND = '/home/amerlin/public/distem-test-img.tgz'
 IMAGE = '/tmp/distem-test-img.tgz'
-REFFILE = "#{ROOT}/ref_#{CLUSTER}.yml"
+REFFILE = "#{DISTEMROOT}/test/experimental_testing/ref_#{CLUSTER}.yml"
 MIN_PNODES = 2
 DISTEMBOOTSTRAP = "/grid5000/code/bin/distem-bootstrap"
 NET = ARGV[3]
@@ -86,7 +86,7 @@ class CommonTools
   end
 end
 
-class ExperimentalTesting < MiniTest::Unit::TestCase
+class ExperimentalTesting < MiniTest::Test
   @@initialized = false
   @@coordinator = nil
   @@pnodes = nil
