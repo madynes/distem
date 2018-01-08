@@ -133,7 +133,7 @@ module Distem
         cmd += "brctl delbr #{brname};"
         cmd += "/bin/ip addr add #{ip}/#{netmask} dev #{interface}"
         if default_gw
-          cmd += ";route add -net 0.0.0.0 gw #{default_gw} dev #{interface}"
+          cmd += ";ip route add default via #{default_gw} dev #{interface}"
         end
         Shell.run(cmd)
       end
