@@ -313,7 +313,7 @@ end
 begin
   optparse.parse!
 rescue OptionParser::MissingArgument,OptionParser::InvalidOption => err
-  puts err
+  $stderr.puts err
   exit 1
 end
 
@@ -405,26 +405,26 @@ options['f_options'].each { |option|
       vnode = cl.vnode_info(options['vnode'])
       viface_addr = vnode['vifaces'].collect{ |vif| vif['name'] == options['iface'] }.include?(true)
       if not viface_addr
-        puts 'The address of the virtual interface cannot be found'
+        $stderr.puts 'The address of the virtual interface cannot be found'
         exit 1
       end
 
       if options['direction'] and !['input','output'].include?(options['direction'].downcase)
-        puts "Invalid direction '#{options['direction']}'"
+        $stderr.puts "Invalid direction '#{options['direction']}'"
         exit 1
       end
 
       tmplimit = {}
       if options['bw'] then
         if (options['bw'] != 'unlimited') && !Distem::Resource::Bandwidth.is_valid(options['bw'])
-          puts "Could not parse bandwidth units: #{options['bw']}"
+          $stderr.puts puts "Could not parse bandwidth units: #{options['bw']}"
           exit 1
         end
         tmplimit['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
       end
       if options['latency'] then
         if (options['latency'] != 'none') && !Distem::Resource::Latency.is_valid(options['latency'])
-          puts "Could not parse latency units: #{options['latency']}"
+          $stderr.puts "Could not parse latency units: #{options['latency']}"
           exit 1
         end
         tmplimit['latency'] = (options['latency'] != 'none') ? { "delay" => options['latency'] } : {}
@@ -438,7 +438,7 @@ options['f_options'].each { |option|
       end
       pp cl.viface_update(options['vnode'], options['iface'], params)
     else
-      puts 'At lease one of the two parameters bw or latency must be set'
+      $stderr.puts 'At lease one of the two parameters bw or latency must be set'
       exit 1
     end
   when 'set_vcpu'
@@ -492,7 +492,7 @@ options['f_options'].each { |option|
       if File.exist?(options['configfile'])
         str = File.read(options['configfile'])
       else
-        puts "File '#{options['configfile']}' not found !"
+        $stderr.puts "File '#{options['configfile']}' not found !"
         exit 1
       end
     else
@@ -510,7 +510,7 @@ options['f_options'].each { |option|
       pp cl.pnodes_quit()
     end
   else
-    puts "Invalid option: #{option}"
+    $stderr.puts "Invalid option: #{option}"
     exit 1
   end
 }
