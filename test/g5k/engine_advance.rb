@@ -63,7 +63,7 @@ class NetworkTesting < MiniTest::Test
     install_distem
     cmd = "distem --create-vnetwork vnetwork=vnet,address=#{NETWORK.join('/')}"
     DistemTools.coordinator_execute(cmd)
-    cmd = "distem --create-vnode vnode=N,pnode=#{@@pnodes[0]},rootfs=#{IMAGE}"
+    cmd = "distem --create-vnode vnode=N,pnode=#{@@pnodes[0]},rootfs=/root/image_distem_test.tgz"
     DistemTools.coordinator_execute(cmd)
     cmd = "distem --set-vcpu vnode=N,corenb=1,cpu_speed=unlimited"
     DistemTools.coordinator_execute(cmd)
