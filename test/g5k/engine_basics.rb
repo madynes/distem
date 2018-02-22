@@ -10,9 +10,7 @@ if ARGV.length < 4
 end
 BOOTSTRAP = ARGV[0] # Bootstrap used by frontend to install distem
 TEST_LOCATION = ARGV[1] # Folder containing platforms, exps
-# Ignore for now
-# IMAGE = ARGV[2] # Image location
-IMAGE = "http://public.nancy.grid5000.fr/~amerlin/distem-test-img.tgz"
+IMAGE = ARGV[2] # Image location
 GIT = ARGV[3] # Address of the git project
 pnodes = ARGV[4] ? ARGV[4].split(',') : nil
 network = ARGV[5] ? ARGV[5].split('/') : nil
