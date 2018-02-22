@@ -71,8 +71,7 @@ class NetworkTesting < MiniTest::Test
     # Ugly...:
     cmd_vnode = "stress-ng --cpu 1 -t 10 -M | grep CPU: | rev | cut -d' ' -f1 | rev"
     ref = DistemTools.vnode_execute('N', cmd_vnode).to_f
-    (1..10).each do |ratio|
-      r = ratio.to_f / 10
+    [1.0, 0.8, 0.6, 0.4, 0.2] do |r|
       cmd = "distem --config-vcpu vnode=N,cpu_speed=#{r},unit=ratio"
       DistemTools.coordinator_execute(cmd)
       res = DistemTools.vnode_execute('N', cmd_vnode).to_f
