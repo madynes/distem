@@ -2,7 +2,7 @@ require_relative 'common_tools'
 require_relative 'distem_tools'
 require 'minitest/autorun'
 
-MIN_PNODES = 2
+MIN_PNODES = 1
 
 if ARGV.length < 4
   CommonTools.error("Usage: #{$PROGRAM_NAME} BOOTSTRAP_PATH TEST_FOLDER" \
