@@ -30,7 +30,7 @@ NETWORK = network
 
 CommonTools.error('Not enough nodes') if PNODES.length < MIN_PNODES
 
-class NetworkTesting < MiniTest::Test
+class AdvanceTesting < MiniTest::Test
   @@pnodes = PNODES
   @@initialized = false
   @@launched = false
