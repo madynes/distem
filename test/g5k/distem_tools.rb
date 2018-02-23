@@ -57,7 +57,7 @@ class DistemTools
   # Could be better
   def self.prepare_pnodes(image_url, pnodes)
     pnodes.each do |pnode|
-      CommonTools.execute_ssh(pnode, "wget #{image_url} -o #{IMG_ADDRESS}")
+      CommonTools.execute_ssh(pnode, "wget #{image_url} -O #{IMG_ADDRESS}")
     end
   end
 
