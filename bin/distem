@@ -224,7 +224,7 @@ optparse = OptionParser.new(USAGE) do |opts|
   ) do |str|
     options['f_options'] << 'config_viface'
     h = sub_opts_to_hash(str)
-    exit 1 if not check_opts('config-viface', h, ['vnode','iface'], ['bw','latency','direction'])
+    exit 1 if not check_opts('config-viface', h, ['vnode','iface'], ['bw','latency', 'loss', 'corruption', 'duplication', 'reordering', 'direction'])
     options.update(h)
   end
   opts.separator "Memory management:"
@@ -401,7 +401,7 @@ options['f_options'].each { |option|
   when 'complete_vroutes'
     pp cl.vroute_complete()
   when 'config_viface'
-    if (options['bw'] || options['latency']) then
+    if ['bw', 'latency', 'loss', 'corruption', 'duplication', 'reordering'].any {|k| options.key? k}
       vnode = cl.vnode_info(options['vnode'])
       viface_addr = vnode['vifaces'].collect{ |vif| vif['name'] == options['iface'] }.include?(true)
       if not viface_addr
@@ -415,19 +415,47 @@ options['f_options'].each { |option|
       end
 
       tmplimit = {}
-      if options['bw'] then
+      if options['bw']
         if (options['bw'] != 'unlimited') && !Distem::Resource::Bandwidth.is_valid(options['bw'])
           $stderr.puts puts "Could not parse bandwidth units: #{options['bw']}"
           exit 1
         end
         tmplimit['bandwidth'] = (options['bw'] != 'unlimited') ? { "rate" => options['bw'] } : {}
       end
-      if options['latency'] then
+      if options['latency']
         if (options['latency'] != 'none') && !Distem::Resource::Latency.is_valid(options['latency'])
           $stderr.puts "Could not parse latency units: #{options['latency']}"
           exit 1
         end
         tmplimit['latency'] = (options['latency'] != 'none') ? { "delay" => options['latency'] } : {}
+      end
+      if options['loss']
+        if (options['loss'] != 'none') && !options['latency'].match(/^[0-9]{3}%/)
+          $stderr.puts "Could not parse loss: #{options['loss']}"
+          exit 1
+        end
+        tmplimit['loss'] = (options['loss'] != 'none') ? { "loss" => options['loss'] } : {}
+      end
+      if options['corruption']
+        if (options['corruption'] != 'none') && !options['corruption'].match(/^[0-9]{3}%/)
+          $stderr.puts "Could not parse corruption: #{options['corruption']}"
+          exit 1
+        end
+        tmplimit['corruption'] = (options['corruption'] != 'none') ? { "corruption" => options['corruption'] } : {}
+      end
+      if options['duplication']
+        if (options['duplication'] != 'none') && !options['duplication'].match(/^[0-9]{3}%/)
+          $stderr.puts "Could not parse duplication: #{options['duplication']}"
+          exit 1
+        end
+        tmplimit['duplication'] = (options['duplication'] != 'none') ? { "duplication" => options['duplication'] } : {}
+      end
+      if options['reordering']
+        if (options['reordering'] != 'none') && !options['reordering'].match(/^[0-9]{3}%/)
+          $stderr.puts "Could not parse loss: #{options['reordering']}"
+          exit 1
+        end
+        tmplimit['reordering'] = (options['reordering'] != 'none') ? { "reordering" => options['reordering'] } : {}
       end
       params = {}
       if options['direction']
