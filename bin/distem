@@ -401,7 +401,7 @@ options['f_options'].each { |option|
   when 'complete_vroutes'
     pp cl.vroute_complete()
   when 'config_viface'
-    if ['bw', 'latency', 'loss', 'corruption', 'duplication', 'reordering'].any {|k| options.key? k}
+    if ['bw', 'latency', 'loss', 'corruption', 'duplication', 'reordering'].any? {|k| options.key? k}
       vnode = cl.vnode_info(options['vnode'])
       viface_addr = vnode['vifaces'].collect{ |vif| vif['name'] == options['iface'] }.include?(true)
       if not viface_addr
