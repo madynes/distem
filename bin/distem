@@ -430,7 +430,7 @@ options['f_options'].each { |option|
         tmplimit['latency'] = (options['latency'] != 'none') ? { "delay" => options['latency'] } : {}
       end
       if options['loss']
-        if (options['loss'] != 'none') && !options['latency'].match(/^[0-9]{3}%/)
+        if (options['loss'] != 'none') && !options['loss'].match(/^[0-9]{3}%/)
           $stderr.puts "Could not parse loss: #{options['loss']}"
           exit 1
         end
@@ -452,7 +452,7 @@ options['f_options'].each { |option|
       end
       if options['reordering']
         if (options['reordering'] != 'none') && !options['reordering'].match(/^[0-9]{3}%/)
-          $stderr.puts "Could not parse loss: #{options['reordering']}"
+          $stderr.puts "Could not parse reordering: #{options['reordering']}"
           exit 1
         end
         tmplimit['reordering'] = (options['reordering'] != 'none') ? { "reordering" => options['reordering'] } : {}
