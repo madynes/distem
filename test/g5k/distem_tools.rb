@@ -54,7 +54,6 @@ class DistemTools
     CommonTools.copy(coord, test_folder, '.', recursive: true)
   end
 
-  # Could be better
   def self.prepare_pnodes(image_url, pnodes)
     pnodes.each do |pnode|
       CommonTools.execute_ssh(pnode, "wget #{image_url} -O #{IMG_ADDRESS}")
@@ -123,4 +122,39 @@ class DistemTools
     end
   end
 
+  def self.iface_exist(iface_name, vnode, pnode)
+    cmd = "ip -o link show up | grep -q #{vnode}-#{iface_name}"
+    ret = CommonTools.execute_ssh(pnode, cmd)
+    ret[:code] == 0
+  end
+
+  def self.lxc_state(name, pnode)
+    cmd = "lxc-ls -f -F NAME,STATE"
+    ret = CommonTools.execute_ssh(pnode, cmd)
+    raise "Can't call lxc-ls on #{pnode}" unless ret[:code].zero?
+    ret[:stdout].lines.each do |line|
+      n, s = line.split()
+      if n == name
+        return s
+      end
+    end
+    return "NOTHERE"
+  end
+
+  def self.tc_state(pnode, vnode, iface)
+    cmd = "tc qdisc | grep #{vnode}-#{iface_name}" 
+    ret = CommonTools.execute_ssh(pnode, cmd)
+    tc = ret[:stdout].strip.split('root', 2)
+    config = {}
+    if tc.include? "limit"
+      config[:limit] = tc.match(/limit ([[:alnum:]]*)/).to_i
+    end
+    if tc.include? "rate"
+      config[:rate] = tc.match(/rate ([[:alnum:]]*)/)
+    end
+    if tc.include? "delay"
+      config[:delay] = tc.match(/delay (?<delay>[\.0-9]*)s/)["delay"].to_f
+    end
+    config
+  end
 end
