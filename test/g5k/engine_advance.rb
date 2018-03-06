@@ -84,7 +84,7 @@ class AdvanceTesting < MiniTest::Test
       res = DistemTools.vnode_execute('N', cmd_vnode).to_f
       error = 100 * (((ref*r) - res ).abs / (ref*r))
       puts "REF: #{(ref*r).round} GET: #{res.round} ERROR #{error}"
-      assert error < 20
+      assert error < 30
     end
   end
 
@@ -103,7 +103,7 @@ class AdvanceTesting < MiniTest::Test
       res = DistemTools.vnode_execute('N', cmd_vnode).to_f
       error = 100 * (((ref*r) - res ).abs / (ref*r))
       puts "REF: #{(ref*r).round} GET: #{res.round} ERROR #{error}"
-      assert error < 20
+      assert error < 30
     end
   end
 
