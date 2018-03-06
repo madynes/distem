@@ -430,32 +430,32 @@ options['f_options'].each { |option|
         tmplimit['latency'] = (options['latency'] != 'none') ? { "delay" => options['latency'] } : {}
       end
       if options['loss']
-        if (options['loss'] != 'none') && !options['loss'].match(/^[0-9]{3}%/)
+        if (options['loss'] != 'none') && !options['loss'].match(/^[0-9]{1,3}%/)
           $stderr.puts "Could not parse loss: #{options['loss']}"
           exit 1
         end
-        tmplimit['loss'] = (options['loss'] != 'none') ? { "loss" => options['loss'] } : {}
+        tmplimit['loss'] = (options['loss'] != 'none') ? { "loss" => { "percent" => options['loss'] }} : {}
       end
       if options['corruption']
-        if (options['corruption'] != 'none') && !options['corruption'].match(/^[0-9]{3}%/)
+        if (options['corruption'] != 'none') && !options['corruption'].match(/^[0-9]{1,3}%/)
           $stderr.puts "Could not parse corruption: #{options['corruption']}"
           exit 1
         end
-        tmplimit['corruption'] = (options['corruption'] != 'none') ? { "corruption" => options['corruption'] } : {}
+        tmplimit['corruption'] = (options['corruption'] != 'none') ? { "corruption" => { "percent" => options['corruption'] }} : {}
       end
       if options['duplication']
-        if (options['duplication'] != 'none') && !options['duplication'].match(/^[0-9]{3}%/)
+        if (options['duplication'] != 'none') && !options['duplication'].match(/^[0-9]{1,3}%/)
           $stderr.puts "Could not parse duplication: #{options['duplication']}"
           exit 1
         end
-        tmplimit['duplication'] = (options['duplication'] != 'none') ? { "duplication" => options['duplication'] } : {}
+        tmplimit['duplication'] = (options['duplication'] != 'none') ? { "duplication" => { "percent" => options['duplication'] }} : {}
       end
       if options['reordering']
-        if (options['reordering'] != 'none') && !options['reordering'].match(/^[0-9]{3}%/)
+        if (options['reordering'] != 'none') && !options['reordering'].match(/^[0-9]{1,3}%/)
           $stderr.puts "Could not parse reordering: #{options['reordering']}"
           exit 1
         end
-        tmplimit['reordering'] = (options['reordering'] != 'none') ? { "reordering" => options['reordering'] } : {}
+        tmplimit['reordering'] = (options['reordering'] != 'none') ? { "reordering" => { "percent" => options['reordering'] }} : {}
       end
       params = {}
       if options['direction']
