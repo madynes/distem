@@ -1,0 +1,23 @@
+This tests are made to run on Grid'5000 but could be run anywhere.
+They depend on distem-bootstrap to install Distem for each test.
+
+Tests are divided in 3 programs:
+    - basics
+    - network
+    - advance
+
+basics and advance need 1 node, network need 2.
+
+They are all called the same way:
+    ruby engine_[basics, network, advance].rb BOOTSTRAP_PATH TEST_FOLDER IMAGE_PATH GIT_PROJECT PNODES NETWORK
+
+    BOOTSTRAP_PATH: location of the bootstrap program (eg: /grid5000/code/bin/distem-bootstrap)
+    TEST_FOLDER: Folder with two subfolders: topology and experiments. it contains all topology and scripts deployable by tests. By default, should point to the provided "scripts" folder. (eg: ./script)
+    IMAGE_PATH: The address of the Distem image to use. It will be copy with wget for each pnode. iputils-ping, stress-ng and md5sum must be install on the image. The tests are written by using Debian-Jessie version of the tools, so bug may occurs with newer versions when parsing the output. (eg: http://public.nancy.grid5000.fr/~amerlin/distem-test-img.tgz)
+    GIT: git address of the project to test (eg: https://github.com/madynes/distem)
+    PNODES: PNodes, comma separated (eg: grisou-38,grisou-43)
+    NETWORK: Network with mask to use, the mask must be 22 or lower (eg: 10.144.0.0/22)
+
+Minitest options can be added at the end, for example, you can specify the name of the test to run by using "-n /regex/" at the end of the command:
+
+ruby  engine_network.rb /grid5000/code/bin/distem-bootstrap ./scripts "http://public.nancy.grid5000.fr/~amerlin/distem-test-img.tgz" https://github.com/alxmerlin/distem.git grisou-38,grisou-43 10.144.0.0/22 -p -v -n /latency/
