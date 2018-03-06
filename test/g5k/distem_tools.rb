@@ -7,7 +7,7 @@ class DistemTools
   TEST_ADDRESS = '/root/scripts/'.freeze
 
   def self.install_distem(pnodes, bootstrap, extra_params = '',
-                          git_url: nil, coord: nil)
+                          git_url: nil, coord: nil, adm: false)
 
     # change to tmp file
     f = Tempfile.new('distemnodes', tmpdir = '.')
@@ -21,7 +21,8 @@ class DistemTools
     @@coord = coord
     @@pnodes = pnodes
 
-    distemcmd = "#{bootstrap} -c #{coord} -f #{f.path} --enable-admin-network"
+    distemcmd = "#{bootstrap} -c #{coord} -f #{f.path} "
+    distemcmd += " --enable-admin-network " if adm
     distemcmd += " -g -U #{git_url}" if git_url
     distemcmd += " --max-vifaces 250 -r net-ssh-multi #{extra_params}"
     CommonTools.execute_on_frontend(distemcmd)
@@ -142,19 +143,8 @@ class DistemTools
   end
 
   def self.tc_state(pnode, vnode, iface)
-    cmd = "tc qdisc | grep #{vnode}-#{iface_name}" 
+    cmd = "tc qdisc | grep #{vnode}-#{iface}"
     ret = CommonTools.execute_ssh(pnode, cmd)
-    tc = ret[:stdout].strip.split('root', 2)
-    config = {}
-    if tc.include? "limit"
-      config[:limit] = tc.match(/limit ([[:alnum:]]*)/).to_i
-    end
-    if tc.include? "rate"
-      config[:rate] = tc.match(/rate ([[:alnum:]]*)/)
-    end
-    if tc.include? "delay"
-      config[:delay] = tc.match(/delay (?<delay>[\.0-9]*)s/)["delay"].to_f
-    end
-    config
+    ret[:stdout].strip.split('root', 2)[1]
   end
 end

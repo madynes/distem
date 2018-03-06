@@ -57,11 +57,11 @@ class BasicTesting < MiniTest::Test
     @@coordinator = nil
   end
 
-  def test_setup
-    CommonTools.msg('Running setup test')
+  def test_deploy
+    CommonTools.msg('Running deploy test')
     install_distem
     DistemTools.deploy_topology('1node', @@pnodes, NETWORK)
-    conf = eval(DistemTools.coordinator_execute('distem --get-vnode-info')) # Better?
+    conf = eval(DistemTools.coordinator_execute('distem --get-vnode-info'))
     assert_instance_of Hash, conf
     assert_equal conf.keys.count, 1
     k = conf.keys[0]
@@ -73,35 +73,90 @@ class BasicTesting < MiniTest::Test
     CommonTools.msg('Running lxc test')
     install_distem
     pnode = @@pnodes[0]
-    cmd = "distem --create-vnode vnode=testnode,pnode=#{pnode},rootfs=file:#{IMAGE}"
+    cmd = "distem --create-vnode vnode=testnode,pnode=#{pnode},rootfs=/root/image_distem_test.tgz"
     DistemTools.coordinator_execute(cmd)
     DistemTools.coordinator_execute("distem --start-vnode testnode")
-    assert_equal DistemTools.lxc_state('testnode', pnode) 'RUNNING'
+    assert_equal DistemTools.lxc_state('testnode', pnode), 'RUNNING'
     DistemTools.coordinator_execute("distem --stop-vnode testnode")
-    assert_equal DistemTools.lxc_state('testnode', pnode) 'STOPPED'
+    assert_equal DistemTools.lxc_state('testnode', pnode), 'STOPPED'
     DistemTools.coordinator_execute("distem --start-vnode testnode")
-    assert_equal DistemTools.lxc_state('testnode', pnode) 'RUNNING'
+    assert_equal DistemTools.lxc_state('testnode', pnode), 'RUNNING'
     DistemTools.coordinator_execute("distem --stop-vnode testnode")
-    assert_equal DistemTools.lxc_state('testnode', pnode) 'STOPPED'
+    assert_equal DistemTools.lxc_state('testnode', pnode), 'STOPPED'
     DistemTools.coordinator_execute("distem --remove-vnode testnode")
-    assert_equal DistemTools.lxc_state('testnode', pnode) 'NOTHERE'
+    assert_equal DistemTools.lxc_state('testnode', pnode), 'NOTHERE'
   end
 
   def test_iface
     CommonTools.msg('Running iface test')
     install_distem
     pnode = @@pnodes[0]
-    cmd = "distem --create-vnetwork vnetwork=vnetwork,address=#{NETWORK[0]}/#{NETWORK[1]}"
+    assert NETWORK[1].to_i <= 22
+    subnet1 = NETWORK[0]
+    m = subnet1.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/)
+    new_m3 = m[3].to_i + 1
+    subnet2 = "#{m[1]}.#{m[2]}.#{new_m3}.#{m[4]}"
+    cmd = "distem --create-vnetwork vnetwork=vnetwork1,address=#{subnet1}/24"
     DistemTools.coordinator_execute(cmd)
-    cmd = "distem --create-vnode vnode=testnode,pnode=#{pnode},rootfs=file:#{IMAGE}"
+    cmd = "distem --create-vnetwork vnetwork=vnetwork2,address=#{subnet2}/24"
     DistemTools.coordinator_execute(cmd)
-    cmd = "distem --create-viface vnode=testnode,iface=if0,vnetwork=vnetwork"
-    cmd = "distem --create-viface vnode=testnode,iface=if2,vnetwork=vnetwork"
+    cmd = "distem --create-vnode vnode=testnode,pnode=#{pnode},rootfs=/root/image_distem_test.tgz"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --create-viface vnode=testnode,iface=if0,vnetwork=vnetwork1"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --create-viface vnode=testnode,iface=if1,vnetwork=vnetwork2"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --remove-viface vnode=testnode,iface=if1"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --create-viface vnode=testnode,iface=if2,vnetwork=vnetwork2"
+    DistemTools.coordinator_execute(cmd)
     DistemTools.coordinator_execute("distem --start-vnode testnode")
     assert DistemTools.iface_exist("if0", "testnode", pnode)
-    assert DistemTools.iface_exist("if0", "testnode", pnode)
+    refute DistemTools.iface_exist("if1", "testnode", pnode)
     assert DistemTools.iface_exist("if2", "testnode", pnode)
+  end
 
+  def test_algo
+    CommonTools.msg('Running algo switch test')
+    install_distem
+    pnode = @@pnodes[0]
+    conf = eval(DistemTools.coordinator_execute("distem --get-pnode-info #{pnode}"))
+    assert_instance_of Hash, conf
+    assert_equal conf['algorithms']['cpu'].upcase, 'HOGS'
+    DistemTools.run_xp('switch_algo', ['no_vnode'], "#{pnode} gov")
+    conf = eval(DistemTools.coordinator_execute("distem --get-pnode-info #{pnode}"))
+    assert_instance_of Hash, conf
+    assert_equal conf['algorithms']['cpu'].upcase, 'GOV'
+  end
+
+  def test_tc
+    CommonTools.msg('Running tc test')
+    install_distem
+    pnode = @@pnodes[0]
+    cmd = "distem --create-vnetwork vnetwork=vnetwork,address=#{NETWORK[0]}/#{NETWORK[1]}"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --create-vnode vnode=testnode,pnode=#{pnode},rootfs=/root/image_distem_test.tgz"
+    DistemTools.coordinator_execute(cmd)
+    cmd = "distem --create-viface vnode=testnode,iface=if0,vnetwork=vnetwork"
+    DistemTools.coordinator_execute(cmd)
+    DistemTools.coordinator_execute("distem --start-vnode testnode")
+    cmd = "distem --config-viface vnode=testnode,iface=if0,loss=25%,direction=INPUT"
+    DistemTools.coordinator_execute(cmd)
+    out_tc = DistemTools.tc_state(pnode, 'testnode', 'if0')
+    assert out_tc.match(/loss 25%/)
+    cmd = "distem --config-viface vnode=testnode,iface=if0,duplication=10%,corruption=50%,direction=INPUT"
+    DistemTools.coordinator_execute(cmd)
+    out_tc = DistemTools.tc_state(pnode, 'testnode', 'if0')
+    refute out_tc.match(/loss/)
+    assert out_tc.match(/duplicate 10%/)
+    assert out_tc.match(/corrupt 50%/)
+    cmd = "distem --config-viface vnode=testnode,iface=if0,latency=1s,direction=INPUT"
+    DistemTools.coordinator_execute(cmd)
+    out_tc = DistemTools.tc_state(pnode, 'testnode', 'if0')
+    refute out_tc.match(/loss/)
+    refute out_tc.match(/duplicate/)
+    refute out_tc.match(/corrupt/)
+    assert out_tc.match(/delay (1\.0s|1s|1000ms)/)
   end
 
 end

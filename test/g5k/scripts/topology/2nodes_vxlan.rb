@@ -24,7 +24,7 @@ Distem.client do |cl|
   cl.vnodes_start(['node1', 'node2'])
   sleep(10)
   puts "Checking if the nodes is up"
-  ret = cl.wait_vnodes({'timeout' => 180, 'port' => 22})
+  ret = cl.wait_vnodes({'vnodes' => ['node1', 'node2'], 'timeout' => 180, 'port' => 22})
   cl.set_global_etchosts
   if ret
     exit 0
