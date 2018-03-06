@@ -130,7 +130,7 @@ class DistemTools
   end
 
   def self.lxc_state(name, pnode)
-    cmd = "lxc-ls -f -F NAME,STATE"
+    cmd = "lxc-ls -f -F name,state"
     ret = CommonTools.execute_ssh(pnode, cmd)
     raise "Can't call lxc-ls on #{pnode}" unless ret[:code].zero?
     ret[:stdout].lines.each do |line|
