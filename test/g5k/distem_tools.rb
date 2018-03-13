@@ -24,7 +24,7 @@ class DistemTools
     distemcmd = "#{bootstrap} -c #{coord} -f #{f.path} "
     distemcmd += " --enable-admin-network " if adm
     distemcmd += " -g -U #{git_url}" if git_url
-    distemcmd += " --max-vifaces 250 -r net-ssh-multi #{extra_params}"
+    distemcmd += " --max-vifaces 250 -r \"net-ssh -v4.2\",net-ssh-multi #{extra_params}"
     CommonTools.execute_on_frontend(distemcmd)
   end
 
