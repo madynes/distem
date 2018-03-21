@@ -355,7 +355,7 @@ options['f_options'].each { |option|
     end
   when 'shell'
     vnode = cl.vnode_info(options['vnode'])
-    system("ssh -t #{options['user']}@#{vnode['host']} 'lxc-console -n #{options['vnode']}'")
+    system("ssh -t #{options['user']}@#{vnode['host']} 'lxc-console -t 0 -n #{options['vnode']}'")
   when 'execute'
     puts cl.vnode_execute(options['vnode'],options['command']).join("\n")
   when 'copy_to','copy_from'
