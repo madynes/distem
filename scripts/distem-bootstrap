@@ -253,14 +253,12 @@ optparse = OptionParser.new do |opts|
     options[:alevin] = path
   end
 
-  opts.on( '--debian-version <version>', 'Choose the Debian version (squeeze, wheezy or jessie)') do |v|
+  opts.on( '--debian-version <version>', 'Choose the Debian version (jessie or stretch)') do |v|
     case v
-    when 'squeeze'
-      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb'
-    when 'wheezy'
-      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb'
     when 'jessie'
       options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb-jessie'
+    when 'stretch'
+      options[:deb_repo]  = 'http://distem.gforge.inria.fr/deb-stretch'
     else
       puts 'Unsupported Debian version'
       exit 1
