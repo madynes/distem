@@ -3,7 +3,7 @@ require 'rake/testtask'
 require 'rdoc/task'
 require 'rake/packagetask'
 
-DISTEM_VERSION='1.2'
+DISTEM_VERSION='1.3'
 
 begin
   require 'rake/extensiontask'
