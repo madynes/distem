@@ -11,9 +11,10 @@ module LXCWrapper # :nodoc: all
         _destroy(contname,wait)
         lxc_version = get_lxc_version()
         if lxc_version >= '1.0.8'
-          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none",true)
+          Distem::Lib::Shell.run("lxc-update-config -c #{configfile}", true)
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none", true)
         else
-          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}", true)
         end
       }
     end
