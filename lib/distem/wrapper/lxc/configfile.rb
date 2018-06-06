@@ -42,7 +42,7 @@ module LXCWrapper # :nodoc: all
         #  "tmpfs defaults 0 0"
         # f.puts "lxc.mount.entry=uniq #{vnode.filesystem.path}/home/my " \
         #  "none defaults 0 0"
-        f.puts "lxc.console = #{File.join(PATH_LOG_DIR,vnode.name)}"
+        #f.puts "lxc.console = #{File.join(PATH_LOG_DIR,vnode.name)}"
 
         vnode.vifaces.each do |viface|
           f.puts "lxc.network.type = veth"
