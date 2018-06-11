@@ -42,6 +42,8 @@ module LXCWrapper # :nodoc: all
         #  "tmpfs defaults 0 0"
         # f.puts "lxc.mount.entry=uniq #{vnode.filesystem.path}/home/my " \
         #  "none defaults 0 0"
+        
+        #LXC3 is not able to deal with this option for the moment
         #f.puts "lxc.console = #{File.join(PATH_LOG_DIR,vnode.name)}"
 
         vnode.vifaces.each do |viface|
@@ -74,11 +76,27 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
         end
 
-        # Warning, this is working only since Wheezy, and the cgroup_enable=memory kernel parameter must be added on the kernel command line
+        #V2 needs a recent kernel version, systemd >=238 and LXC>=3.0 as
+        #it requires the unified hierarchy to be enabled by default on the system.
+        #Otherwise manual setup of unified hierarchy is required on the system 
+        #(kernel parameters, mounting of cgroup2...) as well as the activation of the different
+        #controllers (memory, io, ...), on the unified tree.
+        #In any case, using v2 controllers requires cgroup_no_v1=c1,c2 in kernel parameters
+        #or to use a custom systemd configuration.
         if vnode.vmem
-          f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
-          # This is not working on Debian wheezy, even with the swapaccount=1 kernel paramater. Mayber LXC 0.9 is required
-          #f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+          #Only hard limit is implemented in v1 because the soft limit is not reliable
+          if !vnode.vmem.has_key?('hierarchy') || vnode.vmem['hierarchy'] == 'v1'
+            f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
+
+          f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+
+          elsif vnode.vmem['hierarchy'] == 'v2'
+            f.puts "lxc.cgroup2.memory.high = #{vnode.vmem['soft_limit']}M" if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
+
+            f.puts "lxc.cgroup2.memory.max = #{vnode.vmem['hard_limit']}M" if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
+
+          f.puts "lxc.cgroup2.memory.swap.max = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+          end
         end
 
         #Deal with an issue when using systemd (infinite loop inducing high CPU load)
