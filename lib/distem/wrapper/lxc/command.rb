@@ -9,9 +9,15 @@ module LXCWrapper # :nodoc: all
     def self.create(contname, configfile, wait=true)
       @@lxc.synchronize {
         _destroy(contname,wait)
-        lxc_version = get_lxc_version()
-        if lxc_version >= '1.0.8'
+        lxc_version = Gem::Version.new(get_lxc_version())
+
+        if lxc_version >= Gem::Version.new('3.0.0')
+          #Configuration file syntax has changed since LXC3, but it provides a
+          #binary to upate from legacy conf. files.
           Distem::Lib::Shell.run("lxc-update-config -c #{configfile}", true)
+        end
+
+        if lxc_version >= Gem::Version.new('1.0.8')
           Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none", true)
         else
           Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}", true)
