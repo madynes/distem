@@ -9,8 +9,10 @@ module Distem
       PATH_DISTEM_LOGS='/var/log/distem/'
       # The directory used to store temporary files
       PATH_DISTEMTMP='/tmp/distem/'
-      # The cgroups directory to use
-      PATH_SYSV_CGROUP='/dev/cgroup'
+      # The legacy hierarchy will be mounted here
+      PATH_SYSV_CGROUP1='/dev/cgroup1'
+      # The unified hierarchy will be mounted here
+      PATH_SYSV_CGROUP2='/dev/cgroup2'
       # The default maximum number of virual network interfaces (used with ifb)
       MAX_VIFACES=64
       # The default maximum number of PTY creatable on the physical machine
@@ -50,23 +52,37 @@ module Distem
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exist?(PATH_DISTEMTMP)
       end
 
-      def self.has_cgroups?
+      def self.has_cgroup1?
         return Lib::Shell.run("mount | grep cgroup; true").empty?
+      end
+
+      def self.has_cgroup2?
+        return Lib::Shell.run("mount | grep cgroup2; true").empty?
       end
 
       # Initialize (mount) the CGroup filesystem that will be used by the system (LXC, ...)
       def self.set_cgroups
-        if has_cgroups?
-          Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP}")
-          Lib::Shell.run("mount -t cgroup cgroup #{PATH_SYSV_CGROUP}")
+        if has_cgroup1?
+          Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP1}")
+          Lib::Shell.run("mount -t cgroup cgroup #{PATH_SYSV_CGROUP1}")
+        end
+        if has_cgroup2?
+          Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP2}")
+          Lib::Shell.run("mount -t cgroup2 none #{PATH_SYSV_CGROUP2}")
         end
       end
 
-      # Clean (umount) the CGroup filesystem used by the system
+      # Deactivate limits and clean (umount) the CGroup filesystem used by the system
       def self.unset_cgroups
-        if has_cgroups?
-          Lib::Shell.run("umount #{PATH_SYSV_CGROUP}")
-          Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP}")
+        if has_cgroup1?
+          Lib::Shell.run("find #{PATH_SYSV_CGROUP1}/lxc/* -depth -type d -print -exec rmdir {} \;")
+          Lib::Shell.run("umount #{PATH_SYSV_CGROUP1}")
+          Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP1}")
+        end
+        if has_cgroup2?
+          Lib::Shell.run("find #{PATH_SYSV_CGROUP2}/lxc/* -depth -type d -print -exec rmdir {} \;")
+          Lib::Shell.run("umount #{PATH_SYSV_CGROUP2}")
+          Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP2}")
         end
       end
 
