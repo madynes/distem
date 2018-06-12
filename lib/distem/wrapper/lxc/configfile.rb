@@ -93,8 +93,8 @@ module LXCWrapper # :nodoc: all
           elsif vnode.vmem['hierarchy'] == 'v2'
             #LXC does not do the following by itself, so we have to do it manually
             #https://github.com/lxc/lxc/issues/2379
-            cg2_path = Lib::Shell::run("mount | grep cgroup2 | cut -d ' ' -f3")
-            Lib::Shell::run("echo '+memory' > #{cg2_path}/cgroup.subtree_control")
+            cg2_path = Distem::Lib::Shell::run("mount | grep cgroup2 | cut -d ' ' -f3")
+            Distem::Lib::Shell::run("echo '+memory' > #{cg2_path}/cgroup.subtree_control")
             #
 
             f.puts "lxc.cgroup2.memory.high = #{vnode.vmem['soft_limit']}M" if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
