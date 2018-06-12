@@ -24,6 +24,7 @@ module Distem
 
       # Set memory to a Vnode
       def set(opts)
+        @hierarchy = opts['hierarchy'] if opts['hierarchy']
         @mem = opts['mem'].to_i if opts['mem']
         @swap = opts['swap'].to_i if opts['swap']
         @hard_limit = opts['hard_limit'].to_i if opts['hard_limit']
