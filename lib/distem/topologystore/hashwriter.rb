@@ -155,6 +155,9 @@ module Distem
         return {
           'mem' => vmem.mem.to_s,
           'swap' => vmem.swap.to_s,
+          'hierarchy' => vmem.hierarchy,
+          'soft_limit' => vmem.soft_limit.to_s
+          'hard_limit' => vmem.hard_limit.to_s
         }
       end
 
