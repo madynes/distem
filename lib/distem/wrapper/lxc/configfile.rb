@@ -106,11 +106,11 @@ module LXCWrapper # :nodoc: all
           end
         end
 
-        if vnode.filesystem && vnode.filesystem.has_key('disk_throttling') \
-          && vnode.filesystem.disk_throttling.has_key('limits')
+        if vnode.filesystem && vnode.filesystem.has_key?('disk_throttling') \
+          && vnode.filesystem.disk_throttling.has_key?('limits')
 
           #default=v2
-          hrchy = vnode.filesystem.disk_throttling.has_key('hierarchy')? vnode.filesystem.disk_throttling.hierarchy : 'v2'
+          hrchy = vnode.filesystem.disk_throttling.has_key?('hierarchy')? vnode.filesystem.disk_throttling.hierarchy : 'v2'
 
           vnode.filesystem.disk_throttling.limits.each { |limit|
             if limit.has_key?('device')
