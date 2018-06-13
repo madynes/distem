@@ -1162,10 +1162,10 @@ module Distem
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
         if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
-          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Hash)
+          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
 
-          desc['disk_throttling']['limits'].each_key { |k|
-            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" if (k.has_key?('read_limit') || k.has_key?('write_limit')) && !k.has_key?('device')
+          desc['disk_throttling']['limits'].each { |l|
+            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
           }
         else
           desc['disk_throttling'] = nil
