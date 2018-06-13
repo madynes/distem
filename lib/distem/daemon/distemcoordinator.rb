@@ -78,9 +78,9 @@ module Distem
             block = Proc.new {
               Admin.pnode_run_server(pnode)
               cl = NetAPI::Client.new(target, 4568)
-              ret = cl.pnode_init(nil,desc,async)
+              ret = cl.pnode_init(nil, desc, async)
               # here ret should always contains one element
-              updateobj_pnode(pnode,ret)
+              updateobj_pnode(pnode, ret)
               pnode.status = Resource::Status::RUNNING
               if @admin_network && (target == @node_name)
                 vnetwork_sync(@admin_network,pnode)
@@ -1161,11 +1161,12 @@ module Distem
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
-        if desc.has_key?('disk_throttling') && desc['disk_throttling']
-          desc['disk_throttling'].each_key { |k|
-            raise Lib::InvalidParameterError, "filesystem/disk_throttling/#{k}" if !['device','read_limit', 'write_limit'].include?(k)
+        if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
+          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Hash)
+
+          desc['disk_throttling']['limits'].each_key { |k|
+            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" if (k.has_key?('read_limit') || k.has_key?('write_limit')) && !k.has_key?('device')
           }
-          raise Lib::MissingParameterError, "filesystem/disk_throttling/device" if (desc['disk_throttling'].has_key?('read_limit') || desc['disk_throttling'].has_key?('write_limit')) && !desc['disk_throttling'].has_key?('device')
         else
           desc['disk_throttling'] = nil
         end
@@ -1757,7 +1758,7 @@ module Distem
         return hash
       end
 
-      def updateobj_pnode(pnode,hash)
+      def updateobj_pnode(pnode, hash)
         pnode.memory.capacity = hash['memory']['capacity'].split[0].to_i
         pnode.memory.swap = hash['memory']['swap'].split[0].to_i
 
