@@ -110,14 +110,14 @@ module LXCWrapper # :nodoc: all
           && vnode.filesystem.disk_throttling.has_key?('limits')
 
           #default=v2
-          hrchy = vnode.filesystem.disk_throttling.has_key?('hierarchy')? vnode.filesystem.disk_throttling.hierarchy : 'v2'
+          hrchy = vnode.filesystem.disk_throttling.has_key?('hierarchy')? vnode.filesystem.disk_throttling['hierarchy'] : 'v2'
 
-          vnode.filesystem.disk_throttling.limits.each { |limit|
+          vnode.filesystem.disk_throttling['limits'].each { |limit|
             if limit.has_key?('device')
-              major, minor = `stat --printf %t,%T #{limit.device}`.split(',')
+              major, minor = `stat --printf %t,%T #{limit['device']}`.split(',')
               f.puts "lxc.cgroup.devices.allow = b #{major}:#{minor} rwm #/dev/sdX"
-              wbps = limit.has_key?('write_limit')? limit.write_limit : 'max'
-              rbps = limit.has_key?('read_limit')? limit.read_limit : 'max'
+              wbps = limit.has_key?('write_limit')? limit['write_limit']: 'max'
+              rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
 
               if hrchy == 'v2'
                 f.puts "lxc.cgroup2.io.max = #{major}:#{minor} wbps=#{wbps} rbps=#{rbps}"
