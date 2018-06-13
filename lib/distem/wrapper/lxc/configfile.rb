@@ -83,6 +83,7 @@ module LXCWrapper # :nodoc: all
         #controllers (memory, io, ...), on the unified tree.
         #In any case, using v2 controllers requires cgroup_no_v1=c1,c2 in kernel parameters
         #or to use a custom systemd configuration.
+        #Swap limitation requires swapaccount=1 for v1 or v2
         if vnode.vmem
           #Only hard limit is implemented in v1 because the soft limit is not reliable
           if !vnode.vmem.has_key?('hierarchy') || vnode.vmem['hierarchy'] == 'v1'
@@ -101,8 +102,31 @@ module LXCWrapper # :nodoc: all
 
             f.puts "lxc.cgroup2.memory.max = #{vnode.vmem['hard_limit']}M" if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
 
-          f.puts "lxc.cgroup2.memory.swap.max = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+            f.puts "lxc.cgroup2.memory.swap.max = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
           end
+        end
+
+        if vnode.filesystem && vnode.filesystem.has_key('disk_throttling') \
+          && vnode.filesystem.disk_throttling.has_key('limits')
+
+          #default=v2
+          hrchy = vnode.filesystem.has_key('hierarchy')? vnode.filesystem.hierarchy : 'v2'
+
+          vnode.filesystem.disk_throttling.each { |limit|
+            if limit.has_key?('device')
+              major, minor = `stat --printf %t,%T #{limit.device}`.split(',')
+              f.puts "lxc.cgroup.devices.allow = b #{major}:#{minor} rwm #/dev/sdX"
+              wbps = limit.has_key?('write_limit')? limit.write_limit : 'max'
+              rbps = limit.has_key?('read_limit')? limit.read_limit : 'max'
+
+              if hrchy == 'v2'
+                f.puts "lxc.cgroup2.io.max = #{major}:#{minor} wbps=#{wbps} rbps=#{rbps}"
+              elsif hrchy == 'v1'
+                f.puts "lxc.cgroup.blkio.throttle.write_bps_device = #{major}:#{minor} #{wbps}"
+                f.puts "lxc.cgroup.blkio.throttle.read_bps_device = #{major}:#{minor} #{rbps}"
+              end
+            end
+          }
         end
 
         #Deal with an issue when using systemd (infinite loop inducing high CPU load)
