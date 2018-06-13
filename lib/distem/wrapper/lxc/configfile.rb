@@ -92,12 +92,6 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
 
           elsif vnode.vmem['hierarchy'] == 'v2'
-            #LXC does not do the following by itself, so we have to do it manually
-            #https://github.com/lxc/lxc/issues/2379
-            cg2_path = Distem::Lib::Shell::run("mount | grep cgroup2 | cut -d ' ' -f3")
-            Distem::Lib::Shell::run("echo '+memory' > #{cg2_path.chomp}/cgroup.subtree_control")
-            #
-
             f.puts "lxc.cgroup2.memory.high = #{vnode.vmem['soft_limit']}M" if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
 
             f.puts "lxc.cgroup2.memory.max = #{vnode.vmem['hard_limit']}M" if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
@@ -122,8 +116,6 @@ module LXCWrapper # :nodoc: all
               rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
 
               if hrchy == 'v2'
-                cg2_path = Distem::Lib::Shell::run("mount | grep cgroup2 | cut -d ' ' -f3")
-                Distem::Lib::Shell::run("echo '+io' > #{cg2_path.chomp}/cgroup.subtree_control")
                 f.puts "lxc.cgroup2.io.max = #{major}:#{minor} wbps=#{wbps} rbps=#{rbps}"
               elsif hrchy == 'v1'
                 f.puts "lxc.cgroup.blkio.throttle.write_bps_device = #{major}:#{minor} #{wbps}"
