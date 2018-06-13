@@ -120,6 +120,8 @@ module LXCWrapper # :nodoc: all
               rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
 
               if hrchy == 'v2'
+                cg2_path = Distem::Lib::Shell::run("mount | grep cgroup2 | cut -d ' ' -f3")
+                Distem::Lib::Shell::run("echo '+io' > #{cg2_path.chomp}/cgroup.subtree_control")
                 f.puts "lxc.cgroup2.io.max = #{major}:#{minor} wbps=#{wbps} rbps=#{rbps}"
               elsif hrchy == 'v1'
                 f.puts "lxc.cgroup.blkio.throttle.write_bps_device = #{major}:#{minor} #{wbps}"
