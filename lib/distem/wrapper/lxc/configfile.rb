@@ -89,7 +89,7 @@ module LXCWrapper # :nodoc: all
           if !vnode.vmem.has_key?('hierarchy') || vnode.vmem['hierarchy'] == 'v1'
             f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
 
-          f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnodh5 e.vmem['swap'] != ''
+          f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
 
           elsif vnode.vmem['hierarchy'] == 'v2'
             #LXC does not do the following by itself, so we have to do it manually
