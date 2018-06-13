@@ -115,6 +115,8 @@ module LXCWrapper # :nodoc: all
           vnode.filesystem.disk_throttling['limits'].each { |limit|
             if limit.has_key?('device')
               major, minor = `stat --printf %t,%T #{limit['device']}`.split(',')
+              raise Distem::Lib::InvalidParameterError, "Invalid device #{limit['device']}" if !$?.success?
+
               f.puts "lxc.cgroup.devices.allow = b #{major}:#{minor} rwm #/dev/sdX"
               wbps = limit.has_key?('write_limit')? limit['write_limit']: 'max'
               rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
