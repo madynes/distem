@@ -163,6 +163,7 @@ module Distem
 
       def add_vmem(opts)
         @vmem = VMem.new(opts)
+        vnode.host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem
       end
 
       def update_vmem(opts)

@@ -408,7 +408,7 @@ module Distem
               end
             end
           end
-          vmem_create(vnode.name, desc['vmem']) if desc['vmem']
+          vmem_update(vnode.name, desc['vmem']) if desc['vmem']
           vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
           vnodes << vnode
         }
@@ -547,7 +547,6 @@ module Distem
               else
                 vnode.host = @daemon_resources.get_pnode_available(vnode)
               end
-              vnode.host.memory.allocate({:mem => vnode.vmem.mem, :swap => vnode.vmem.swap}) if vnode.vmem
               vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
             }
           end
@@ -1661,9 +1660,9 @@ module Distem
         w.run
       end
 
-      def vmem_create(vnodename, opts)
+      def vmem_update(vnodename, opts)
         vnode = vnode_get(vnodename)
-        vnode.add_vmem(opts)
+        vnode.update_vmem(opts)
         return opts
       end
 
