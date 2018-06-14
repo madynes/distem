@@ -29,7 +29,7 @@ module Distem
         @swap = opts['swap'].to_i if opts['swap']
         @hard_limit = opts['hard_limit'].to_i if opts['hard_limit']
         @soft_limit = opts['soft_limit'].to_i if opts['soft_limit']
-        @mem = [vnode.vmem.hard_limit, vnode.vmem.soft_limit].compact.min if @hierarchy == 'v2'
+        @mem = [@hard_limit, @soft_limit].compact.min if @hierarchy == 'v2'
       end
 
       def remove
