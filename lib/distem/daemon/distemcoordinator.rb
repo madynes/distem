@@ -547,6 +547,7 @@ module Distem
               else
                 vnode.host = @daemon_resources.get_pnode_available(vnode)
               end
+              vnode.account_memory()
               vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
             }
           end

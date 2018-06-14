@@ -161,14 +161,15 @@ module Distem
         @vcpu = nil
       end
 
-      def add_vmem(opts)
-        @vmem = VMem.new(opts)
-        vnode.host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem
+
+      def account_memory()
+        @host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem
       end
 
       def update_vmem(opts)
-        remove_vmem if @vmem
-        add_vmem(opts)
+        remove_vmem
+        @vmem = VMem.new(opts)
+        account_memory() if @status == Resource::Status::RUNNING
       end
 
       def remove_vmem
