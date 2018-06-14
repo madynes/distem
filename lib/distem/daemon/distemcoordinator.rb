@@ -1165,7 +1165,8 @@ module Distem
           raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
 
           desc['disk_throttling']['limits'].each { |l|
-            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
+            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
+              if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
           }
         else
           desc['disk_throttling'] = nil
