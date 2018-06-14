@@ -67,7 +67,7 @@ module Distem
           #Get the controllers available on the v2 hierarchy and activate them on the tree
           #LXC does not do the following by itself, so we have to do it manually
           #https://github.com/lxc/lxc/issues/2379
-          controllers = Lib::Shell.run("sed -r 's/([^ ]+)/+\1/g' #{@cgroup2_path}/cgroup.controllers"\
+          controllers = Lib::Shell.run("sed -r 's/([^ ]+)/+&/g' #{@cgroup2_path}/cgroup.controllers"\
                                        "> #{@cgroup2_path}/cgroup.subtree_control")
       end
 
