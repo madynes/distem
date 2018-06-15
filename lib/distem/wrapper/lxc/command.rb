@@ -140,7 +140,7 @@ module LXCWrapper # :nodoc: all
     end
 
     def self._ls(cache=true)
-      return Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
+      return Distem::Lib::Shell.run('lxc-ls -1',true).split(/\n/)
     end
 
     def self._wait_disapear(contname)
