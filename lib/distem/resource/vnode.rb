@@ -163,18 +163,22 @@ module Distem
 
 
       def account_memory()
-        @host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem
+        @host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem && @host
+      end
+
+      def discard_memory()
+        @host.memory.deallocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem && @host
       end
 
       def update_vmem(opts)
         remove_vmem
         @vmem = VMem.new(opts)
-        account_memory() if @status == Resource::Status::RUNNING
+        account_memory() if @status != Resource::Status::DOWN
       end
 
       def remove_vmem
         if @vmem
-          @host.memory.deallocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @host
+          discard_memory()
           @vmem.remove()
           @vmem = nil
         end
