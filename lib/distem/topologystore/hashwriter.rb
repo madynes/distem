@@ -148,7 +148,7 @@ module Distem
         return {
           'capacity' => memory.capacity.to_s,
           'swap' => memory.swap.to_s,
-          'max_mem_usage' => memory.allocated_capacity
+          'max_mem_usage' => memory.allocated_capacity.to_s
         }
       end
 
