@@ -818,6 +818,13 @@ module Distem
         return result!
       end
 
+      put '/vnodes/:vnodename/vmem/?' do
+        check do
+          desc = params['desc'] ? JSON.parse(params['desc']) : {}
+          @body = @daemon.vmem_update(params['vnodename'], desc)
+        end
+      end
+
       post '/global_arptable/?' do
         check do
           data = params.has_key?('data') ? params['data'] : nil

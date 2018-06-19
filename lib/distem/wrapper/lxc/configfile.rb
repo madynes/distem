@@ -86,10 +86,10 @@ module LXCWrapper # :nodoc: all
         #Swap limitation requires swapaccount=1 for v1 or v2
         if vnode.vmem
           #Only hard limit is implemented in v1 because the soft limit is not reliable
-          if !vnode.vmem.has_key?('hierarchy') || vnode.vmem['hierarchy'] == 'v1'
+          if vnode.vmem['hierarchy'] == 'v1'
             f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
 
-          f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+            f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
 
           elsif vnode.vmem['hierarchy'] == 'v2'
             f.puts "lxc.cgroup2.memory.high = #{vnode.vmem['soft_limit']}M" if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
@@ -97,14 +97,17 @@ module LXCWrapper # :nodoc: all
             f.puts "lxc.cgroup2.memory.max = #{vnode.vmem['hard_limit']}M" if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
 
             f.puts "lxc.cgroup2.memory.swap.max = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+          else
+            raise Distem::Lib::InvalidParameterError, "hierarchy must be 'v1' or 'v2'"
           end
         end
 
         if vnode.filesystem && vnode.filesystem.disk_throttling \
           && vnode.filesystem.disk_throttling.has_key?('limits')
 
-          #default=v2
-          hrchy = vnode.filesystem.disk_throttling.has_key?('hierarchy')? vnode.filesystem.disk_throttling['hierarchy'] : 'v2'
+          raise Distem::Lib::MissingParameterError, 'hierarchy is required' if !vnode.filesystem.disk_throttling.has_key?('hierarchy')
+
+          hrchy = vnode.filesystem.disk_throttling['hierarchy']
 
           vnode.filesystem.disk_throttling['limits'].each { |limit|
             if limit.has_key?('device')
@@ -120,6 +123,8 @@ module LXCWrapper # :nodoc: all
               elsif hrchy == 'v1'
                 f.puts "lxc.cgroup.blkio.throttle.write_bps_device = #{major}:#{minor} #{wbps}"
                 f.puts "lxc.cgroup.blkio.throttle.read_bps_device = #{major}:#{minor} #{rbps}"
+              else
+                raise Distem::Lib::InvalidParameterError, "hierarchy must be 'v1' or 'v2'"
               end
             end
           }

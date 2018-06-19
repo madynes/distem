@@ -412,6 +412,7 @@ module Distem
           vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
           vnodes << vnode
         }
+
         vnode_status_update(names,description['status'],async) if description['status']
         return vnodes
       end
@@ -1162,16 +1163,11 @@ module Distem
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
-        if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
-          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
 
-          desc['disk_throttling']['limits'].each { |l|
-            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
-              if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
-          }
-        else
-          desc['disk_throttling'] = nil
+        if !vfilesystem_throttling_check(desc)
+            desc['disk_throttling'] = nil
         end
+
         vnode.filesystem = Resource::FileSystem.new(desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
         return vnode.filesystem
       end
@@ -1183,9 +1179,25 @@ module Distem
         vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
         vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
         vnode.filesystem.cow = parse_bool(desc['cow']) if desc['cow']
+        if !vfilesystem_throttling_check(desc)
+
+
+        end
         return vnode.filesystem
       end
 
+      def vfilesystem_throttling_check(desc)
+        if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
+          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
+
+          desc['disk_throttling']['limits'].each { |l|
+            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
+              if (l.has_key?('read_limit') |P| l.has_key?('write_limit')) && !l.has_key?('device')
+          }
+        else
+          return false
+        end
+      end
       # Retrieve informations about the virtual node filesystem
       # ==== Returns
       # Resource::FileSystem object
@@ -1662,10 +1674,14 @@ module Distem
         w.run
       end
 
-      def vmem_update(vnodename, opts)
+      def vmem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        vnode.update_vmem(opts)
-        return opts
+        vnode.update_vmem(desc)
+        if vnode.status == Resource::Status::RUNNING
+          cl = NetAPI::Client.new(vnode.host.address, 4568)
+          cl.vmem_update(vnode.name, desc)
+        end
+        return desc
       end
 
       def set_global_arptable(param = nil, arp_file = nil)

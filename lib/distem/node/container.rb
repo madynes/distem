@@ -143,6 +143,7 @@ module Distem
         raise @vnode.name if @vnode.status == Resource::Status::RUNNING
         @@contsem.synchronize do
           LXCWrapper::Command.start(@vnode.name)
+          LXCWrapper::Command.sync(@vnode) #resync is needed if throttling has been updated
           @vnode.vifaces.each do |viface|
             Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(viface)} gso off || true")
             Lib::Shell::run("ethtool -K #{Lib::NetTools.get_iface_name(viface)} tso off || true")
@@ -165,7 +166,7 @@ module Distem
       #       Lib::Shell::run("echo \"#{major}:0 #{limit}\" > #{cgroup_path}/blkio.throttle.write_bps_device")
       #     end
       #   end
-         @stopped = false
+        @stopped = false
       end
 
       # Stop all the resources associated to a virtual node (Shutdown the virtual node)
@@ -212,6 +213,7 @@ module Distem
       def reconfigure
           @cpuforge.apply
           @networkforges.each_value { |netforge| netforge.apply }
+          LXCWrapper::Command.sync(@vnode)
       end
 
       def set_global_etchosts(data)
@@ -230,7 +232,7 @@ module Distem
         }
       end
 
-      # Congigure a virtual node (set LXC config files, ...) on a physical machine
+      # Configure a virtual node (set LXC config files, ...) on a physical machine
       def configure(distempnode)
         @@confsem.synchronize do
           rootfspath = nil

@@ -17,7 +17,6 @@ module Distem
       # Create a new VMem
       #
       def initialize(opts = nil)
-        @hierarchy = 'v1'
         @mem = @swap = @hard_limit = @soft_limit = nil
         set(opts) if opts
       end

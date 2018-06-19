@@ -702,6 +702,10 @@ module Distem
         post_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { :desc => desc })
       end
 
+      def vmem_update(vnodename, desc)
+        put_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { :desc => desc })
+      end
+
       # Fill the ARP tables of all the Vnodes
       #
       # @param [Array] data The whole ip->mac information. Format is [[mac1,ip1],[mac2,ip2],...]

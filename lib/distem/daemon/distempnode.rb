@@ -221,7 +221,11 @@ module Distem
         names = [names] if !names.is_a?(Array)
         names.each_index { |i|
           name = names[i]
-          vnode = vnode_get(name)
+          begin
+            vnode = vnode_get(name)
+          rescue Lib::ResourceNotFoundError
+            next
+          end
           desc = descs.is_a?(Array) ? descs[i] : Marshal.load(Marshal.dump(descs))
           downkeys(desc)
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
@@ -240,7 +244,14 @@ module Distem
               vcpu_create(vnode.name,desc['vcpu'])
             end
           end
-          vnode.vmem = desc['vmem'] if desc['vmem']
+
+          vmem_update(vnode.name, desc['vmem']) if desc['vmem']
+          #vnode.vmem = desc['vmem'] if desc['vmem']
+
+          if vnode.status != Resource::Status::INIT
+            @node_config.vnode_reconfigure(vnode)
+          end
+
           if desc['vifaces']
             desc['vifaces'].each do |ifdesc|
               if vnode.get_viface_by_name(ifdesc['name'])
@@ -269,6 +280,7 @@ module Distem
         ret = vnode.dup
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
         vnode.remove_vcpu()
+        vnode.remove_vmem()
         @node_config.vnode_remove(vnode)
         return ret
       end
@@ -819,6 +831,15 @@ module Distem
           archivepath = Lib::FileManager::compress(vnode.filesystem.path)
         end
         return archivepath
+      end
+
+      def vmem_update(vnodename, desc)
+        vnode = vnode_get(vnodename)
+        reconf = vnode.vmem ? true : false
+        vnode.vmem = desc if desc
+        if reconf
+          @node_config.vnode_reconfigure(vnode)
+        end
       end
 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
