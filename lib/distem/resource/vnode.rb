@@ -173,7 +173,8 @@ module Distem
       def update_vmem(opts)
         remove_vmem
         @vmem = VMem.new(opts)
-        account_memory() if @status != Resource::Status::DOWN
+        account_memory() if ![Resource::Status::DOWN, Resource::Status::FROZEN, Resource::Status::INIT, \
+                              Resource::Status::READY].include?(@status)
       end
 
       def remove_vmem
