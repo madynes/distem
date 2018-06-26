@@ -391,7 +391,15 @@ module Distem
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
           vnode_attach(vnode.name,desc['host']) if desc['host']
-          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+
+          if desc['vfilesystem']
+            if vnode.filesystem
+              vfilesystem_update(vnode.name, desc['vfilesystem'])
+            else
+              vfilesystem_create(vnode.name, desc['vfilesystem'])
+            end
+          end
+
           if desc['vcpu']
             if vnode.vcpu
               vcpu_update(vnode.name,desc['vcpu'])
@@ -1156,7 +1164,7 @@ module Distem
       end
 
 
-      def vfilesystem_create(vnodename,desc)
+      def vfilesystem_create(vnodename, desc)
         vnode = vnode_get(vnodename)
         raise Lib::AlreadyExistingResourceError, 'filesystem' if vnode.filesystem
         raise Lib::MissingParameterError, "filesystem/image" unless \
@@ -1172,30 +1180,31 @@ module Distem
         return vnode.filesystem
       end
 
-      def vfilesystem_update(vnodename,desc)
+      def vfilesystem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        raise Lib::UninitializedResourceError, "filesystem" unless \
-        vnode.filesystem
+        raise Lib::UninitializedResourceError, "filesystem" unless vnode.filesystem
+
         vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
         vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
         vnode.filesystem.cow = parse_bool(desc['cow']) if desc['cow']
-        if !vfilesystem_throttling_check(desc)
 
-
+        if vfilesystem_throttling_check(desc) && vnode.status == Resource::Status::RUNNING
+          cl = NetAPI::Client.new(vnode.host.address, 4568)
+          cl.vfilesystem_update(vnode.name, desc)
+          vnode.filesystem.disk_throttling = desc['disk_throttling']
         end
+
         return vnode.filesystem
       end
 
       def vfilesystem_throttling_check(desc)
         if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
           raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
-
           desc['disk_throttling']['limits'].each { |l|
             raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
-              if (l.has_key?('read_limit') |P| l.has_key?('write_limit')) && !l.has_key?('device')
+              if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
           }
-        else
-          return false
+          return true
         end
       end
       # Retrieve informations about the virtual node filesystem
@@ -1676,7 +1685,8 @@ module Distem
 
       def vmem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        vnode.update_vmem(desc)
+        vnode.update_vmem(desc) #related to resource:Memory
+
         if vnode.status == Resource::Status::RUNNING
           cl = NetAPI::Client.new(vnode.host.address, 4568)
           cl.vmem_update(vnode.name, desc)

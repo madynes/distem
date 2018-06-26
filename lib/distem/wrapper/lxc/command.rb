@@ -72,6 +72,30 @@ module LXCWrapper # :nodoc: all
               if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
         end
       end
+
+      if vnode.filesystem && vnode.filesystem.disk_throttling \
+        && vnode.filesystem.disk_throttling.has_key?('limits')
+
+        hrchy = vnode.filesystem.disk_throttling['hierarchy']
+
+        vnode.filesystem.disk_throttling['limits'].each { |limit|
+          if limit.has_key?('device')
+            major, minor = `stat --printf %t,%T #{limit['device']}`.split(',').map{|n| n.to_i(16)}
+            raise Distem::Lib::InvalidParameterError, "Invalid device #{limit['device']}" if !$?.success?
+
+            Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} devices.allow 'b #{major}:#{minor} rwm'")
+            wbps = limit.has_key?('write_limit')? limit['write_limit']: 'max'
+            rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
+
+            if hrchy == 'v2'
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} io.max '#{major}:#{minor} wbps=#{wbps} rbps=#{rbps}'")
+            elsif hrchy == 'v1'
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} blkio.throttle.write_bps_device '#{major}:#{minor} #{wbps}'")
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} blkio.throttle.read_bps_device '#{major}:#{minor} #{rbps}'")
+            end
+          end
+        }
+      end
     end
 
     def self.clean(wait=false)

@@ -815,6 +815,15 @@ module Distem
         return vnode.filesystem
       end
 
+      def vfilesystem_update(vnodename, desc)
+        vnode = vnode_get(vnodename)
+        reconf = vnode.filesystem.disk_throttling ? true : false
+        vnode.filesystem.disk_throttling = desc['disk_throttling'] if desc.has_key?('disk_throttling')
+        if reconf
+          @node_config.vnode_reconfigure(vnode)
+        end
+      end
+
       # Get a compressed archive of the current filesystem (tgz)
       # WARNING: You have to contact the physical node the vnode is hosted on directly
       # ==== Returns
