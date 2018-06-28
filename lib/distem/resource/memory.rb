@@ -8,9 +8,13 @@ module Distem
       # The capacity of the Swap (in MB)
       attr_accessor :swap
       # The allocated RAM (in MB)
-      attr_accessor :allocated_capacity
+      def allocated_capacity
+        [@allocated_capacity, @capacity].min
+      end
       # The allocated Swap (in MB)
-      attr_accessor :allocated_swap
+      def allocated_swap
+        [@allocated_swap, @swap].min
+      end
 
       # Create a new Memory
       def initialize(capacity=0,swap=0)
@@ -23,10 +27,9 @@ module Distem
       end
 
       def allocate(opts)
-        if ((opts[:mem] && (opts[:mem].to_i > (@capacity - @allocated_capacity))) ||
-            (opts[:swap] && (opts[:swap].to_i > (@swap - @allocated_swap))))
-          raise Lib::UnavailableResourceError
-        end
+        opts[:mem] = @capacity if opts[:mem] == 'max'
+        opts[:swap] = @swap if opts[:swap] == 'max'
+
         if opts[:mem]
           @capacity_lock.synchronize {
             @allocated_capacity += opts[:mem].to_i
@@ -40,6 +43,9 @@ module Distem
       end
 
       def deallocate(opts)
+        opts[:mem] = @capacity if opts[:mem] == 'max'
+        opts[:swap] = @swap if opts[:swap] == 'max'
+
         if opts[:mem]
           @capacity_lock.synchronize {
             @allocated_capacity -= opts[:mem].to_i

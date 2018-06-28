@@ -161,7 +161,8 @@ module Distem
         @vcpu = nil
       end
 
-
+      #Accounting of vnode max memory usage in pnode memory
+      #vnode's memory max use should be accounted only when container is not down
       def account_memory()
         @host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem && @host
       end
@@ -184,6 +185,7 @@ module Distem
           @vmem = nil
         end
       end
+      #
 
       # Compare two virtual nodes
       # ==== Attributes

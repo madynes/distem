@@ -41,6 +41,31 @@ module Distem
               raise "Not implemented (yet?) : #{@change_type} on #{@resource_desc['type']}"
             end
 
+          elsif @change_type == 'memory_limit'
+            case @resource_desc['type']
+              when 'limit_v1'
+                cl.vmem_update(@resource_desc['vnodename'], {:mem => @event_value})
+              when 'soft_limit'
+                cl.vmem_update(@resource_desc['vnodename'], {:soft_limit => @event_value})
+              when 'hard_limit'
+                cl.vmem_update(@resource_desc['vnodename'], {:hard_limit => @event_value})
+              when 'swap'
+                cl.vmem_update(@resource_desc['vnodename'], {:swap => @event_value})
+          end
+
+          elsif @change_type == 'disk_throttling'
+            case @resource_desc['type']
+              when 'read_limit'
+                cl.vfilesystem_update(@resource_desc['vnodename'], \
+                 {'disk_throttling' => {'limits' => [{'device'  => @resource_desc['device'], 'read_limit' => @event_value}]}})
+              when 'write_limit'
+                cl.vfilesystem_update(@resource_desc['vnodename'], \
+                 {'disk_throttling' => {'limits' => [{'device'  => @resource_desc['device'], 'write_limit' => @event_value}]}})
+              when 'rw_limit'
+                cl.vfilesystem_update(@resource_desc['vnodename'], \
+                 {'disk_throttling' => {'limits' => [{'device'  => @resource_desc['device'], 'read_limit' => @event_value, 'write_limit' => @event_value}]}})
+          end
+
           elsif @change_type == 'power'
             if @event_value.to_f > 1
               cl.vcpu_update(@resource_desc['vnodename'], @event_value, 'mhz')

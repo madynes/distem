@@ -390,7 +390,7 @@ module Distem
           vnode = vnode_get(name)
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-          vnode_attach(vnode.name,desc['host']) if desc['host']
+          vnode_attach(vnode.name, desc['host']) if desc['host']
 
           if desc['vfilesystem']
             if vnode.filesystem
@@ -417,7 +417,7 @@ module Distem
             end
           end
           vmem_update(vnode.name, desc['vmem']) if desc['vmem']
-          vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
+          vnode_mode_update(vnode.name, desc['mode']) if desc['mode']
           vnodes << vnode
         }
 
@@ -1197,6 +1197,7 @@ module Distem
         return vnode.filesystem
       end
 
+      #Check if a vfilesystem description correctly set the disk_throttling parameters
       def vfilesystem_throttling_check(desc)
         if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
           raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
@@ -1207,6 +1208,7 @@ module Distem
           return true
         end
       end
+
       # Retrieve informations about the virtual node filesystem
       # ==== Returns
       # Resource::FileSystem object
@@ -1685,13 +1687,12 @@ module Distem
 
       def vmem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        vnode.update_vmem(desc) #related to resource:Memory
+        vnode.update_vmem(desc) #related to resource::Memory
 
         if vnode.status == Resource::Status::RUNNING
           cl = NetAPI::Client.new(vnode.host.address, 4568)
           cl.vmem_update(vnode.name, desc)
         end
-        return desc
       end
 
       def set_global_arptable(param = nil, arp_file = nil)

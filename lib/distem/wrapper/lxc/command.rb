@@ -56,20 +56,25 @@ module LXCWrapper # :nodoc: all
     def self.sync(vnode)
       return unless _status(vnode.name) != Status::STOPPED
 
-      if vnode.vmem
-        if vnode.vmem['hierarchy'] == 'v1'
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.limit_in_bytes '#{vnode.vmem['mem']}M'") \
-              if vnode.vmem.has_key?('mem') && @vnode.vmem['mem'] != ''
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.memsw.limit_in_bytes '#{vnode.vmem['swap']}M'") \
-              if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+      getv = lambda { |v| v == "max" ? "max" : "#{v}M" }
 
-        elsif vnode.vmem['hierarchy'] == 'v2'
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.high '#{vnode.vmem['soft_limit']}M'") \
-              if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.max '#{vnode.vmem['hard_limit']}M'") \
-              if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.swap.max '#{vnode.vmem['swap']}M'") \
-              if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
+      if vnode.vmem
+        if vnode.vmem.hierarchy == 'v1'
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.limit_in_bytes #{getv.call(vnode.vmem.mem)}") \
+            if vnode.vmem.mem && vnode.vmem.mem != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.memsw.limit_in_bytes #{getv.call(vnode.vmem.swap)}") \
+            if vnode.vmem.swap && vnode.vmem.swap != ''
+
+        elsif vnode.vmem.hierarchy == 'v2'
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.high #{getv.call(vnode.vmem.soft_limit)}") \
+            if vnode.vmem.soft_limit && vnode.vmem.soft_limit != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.max #{getv.call(vnode.vmem.hard_limit)}") \
+            if vnode.vmem.hard_limit && vnode.vmem.hard_limit != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.swap.max #{getv.call(vnode.vmem.swap)}") \
+              if vnode.vmem.swap && vnode.vmem.swap != ''
         end
       end
 

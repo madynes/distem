@@ -797,7 +797,6 @@ module Distem
         return vcpu
       end
 
-
       def vfilesystem_create(vnodename,desc)
         vnode = vnode_get(vnodename)
 
@@ -817,11 +816,18 @@ module Distem
 
       def vfilesystem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        reconf = vnode.filesystem.disk_throttling ? true : false
-        vnode.filesystem.disk_throttling = desc['disk_throttling'] if desc.has_key?('disk_throttling')
-        if reconf
+        previous_dt = vnode.filesystem.disk_throttling
+
+        if desc && desc.has_key?('disk_throttling')
+          desc['disk_throttling']['hierarchy'] = previous_dt['hierarchy'] if previous_dt #can't update hrchy
+          vnode.filesystem.disk_throttling = desc['disk_throttling']
+        end
+
+        if previous_dt
           @node_config.vnode_reconfigure(vnode)
         end
+
+        return vnode.filesystem
       end
 
       # Get a compressed archive of the current filesystem (tgz)
@@ -842,13 +848,19 @@ module Distem
         return archivepath
       end
 
+      #Update the vmem description and reconfigure vnode
+      #to sync the cgroups limitations
       def vmem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        reconf = vnode.vmem ? true : false
-        vnode.vmem = desc if desc
-        if reconf
+        previous_vmem = vnode.vmem
+        if desc
+          desc['hierarchy'] = previous_vmem.hierarchy if previous_vmem  #can't update hrchy
+          vnode.vmem = Resource::VMem.new(desc)
+        end
+        if previous_vmem
           @node_config.vnode_reconfigure(vnode)
         end
+        return vnode.vmem
       end
 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).
