@@ -1199,12 +1199,16 @@ module Distem
 
       #Check if a vfilesystem description correctly set the disk_throttling parameters
       def vfilesystem_throttling_check(desc)
-        if desc.has_key?('disk_throttling') && desc['disk_throttling'] && desc['disk_throttling'].has_key?('limits')
-          raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
-          desc['disk_throttling']['limits'].each { |l|
-            raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
-              if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
-          }
+        if desc.has_key?('disk_throttling') && desc['disk_throttling']
+          if desc['disk_throttling'].has_key?('limits')
+            raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
+            desc['disk_throttling']['limits'].each { |l|
+              raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
+                if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
+            }
+          end
+          raise Lib::InvalidParameterError, "filesystem/disk_throttling/hierarchy" \
+              if desc.has_key?('hierarchy') && !['v1', 'v2'].include?(desc['hierarchy'])
           return true
         end
       end
