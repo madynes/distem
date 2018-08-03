@@ -693,7 +693,7 @@ module Distem
       end
 
       # Create a new memory limitation
-      #
+      # @param [String] vnodename The vnode's name to create
       # @param [String] mem The required amount of RAM
       # @param [String] swap The required amount of swap
       # @param [String] hierarchy The hierarchy where memory controller is mounted (default to v1)
@@ -704,7 +704,7 @@ module Distem
       end
 
       # Update a memory limitation
-      #
+      # @param [String] vnodename The vnode's name to update
       # @param [Hash] desc The memory limitation description
       def vmem_update(vnodename, desc)
         put_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { 'desc' => desc })

@@ -819,7 +819,8 @@ module Distem
         previous_dt = vnode.filesystem.disk_throttling
 
         if desc && desc.has_key?('disk_throttling')
-          desc['disk_throttling']['hierarchy'] = previous_dt['hierarchy'] if previous_dt #can't update hrchy
+          #can't update hrchy
+          desc['disk_throttling']['hierarchy'] = previous_dt['hierarchy'] if previous_dt && previous_dt.has_key?('hierarchy')
           vnode.filesystem.disk_throttling = desc['disk_throttling']
         end
 

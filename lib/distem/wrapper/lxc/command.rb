@@ -53,6 +53,7 @@ module LXCWrapper # :nodoc: all
       }
     end
 
+    #Apply vnode specs. to the container (i.e: limits)
     def self.sync(vnode)
       return unless _status(vnode.name) != Status::STOPPED
 
