@@ -824,9 +824,7 @@ module Distem
           vnode.filesystem.disk_throttling = desc['disk_throttling']
         end
 
-        if previous_dt
-          @node_config.vnode_reconfigure(vnode)
-        end
+        @node_config.vnode_reconfigure(vnode)
 
         return vnode.filesystem
       end
