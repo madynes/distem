@@ -23,13 +23,13 @@ module Distem
 
       # Set memory to a Vnode
       def set(opts)
-        @hierarchy = opts['hierarchy'] if opts['hierarchy']
-        @mem = opts['mem'] if opts['mem']
-        @swap = opts['swap'] if opts['swap']
-        @hard_limit = opts['hard_limit'] if opts['hard_limit']
-        @soft_limit = opts['soft_limit'] if opts['soft_limit']
+        @hierarchy = opts['hierarchy']
+        @mem = opts['mem']
+        @swap = opts['swap']
+        @hard_limit = opts['hard_limit']
+        @soft_limit = opts['soft_limit']
         if @hierarchy == 'v2'
-          @mem = [@hard_limit, @soft_limit].reject{|v| v == 'max'}.compact.min
+          @mem = [@hard_limit, @soft_limit].reject{|v| v == 'max'}.compact.map{|n| n.to_i}.min
           @mem = 'max' if @mem.nil? && [@hard_limit, @soft_limit].include?('max')
         end
       end
