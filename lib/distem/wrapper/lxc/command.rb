@@ -54,6 +54,16 @@ module LXCWrapper # :nodoc: all
     end
 
     #Apply vnode specs. to the container (i.e: limits)
+
+    #Note on cgroups:
+    #V2 needs a recent kernel version, systemd >=238 and LXC>=3.0 as
+    #it requires the unified hierarchy to be enabled by default on the system.
+    #Otherwise manual setup of unified hierarchy is required on the system 
+    #(kernel parameters, mounting of cgroup2...) as well as the activation of the different
+    #controllers (memory, io, ...), on the unified tree. (see lib/distem/node/admin.rb)
+    #In any case, using v2 controllers requires cgroup_no_v1=c1,c2 in kernel parameters
+    #or to use a custom systemd configuration.
+    #Swap limitation requires swapaccount=1 for v1 or v2
     def self.sync(vnode)
       return unless _status(vnode.name) != Status::STOPPED
 

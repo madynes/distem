@@ -76,60 +76,6 @@ module LXCWrapper # :nodoc: all
           f.puts "lxc.cgroup.cpuset.cpus = #{cores}"
         end
 
-        #V2 needs a recent kernel version, systemd >=238 and LXC>=3.0 as
-        #it requires the unified hierarchy to be enabled by default on the system.
-        #Otherwise manual setup of unified hierarchy is required on the system 
-        #(kernel parameters, mounting of cgroup2...) as well as the activation of the different
-        #controllers (memory, io, ...), on the unified tree.
-        #In any case, using v2 controllers requires cgroup_no_v1=c1,c2 in kernel parameters
-        #or to use a custom systemd configuration.
-        #Swap limitation requires swapaccount=1 for v1 or v2
-        # if vnode.vmem
-        #   #Only hard limit is implemented in v1 because the soft limit is not reliable
-        #   if vnode.vmem.hierarchy == 'v1'
-        #     f.puts "lxc.cgroup.memory.limit_in_bytes = #{vnode.vmem['mem']}M" if vnode.vmem.has_key?('mem') && vnode.vmem['mem'] != ''
-
-        #     f.puts "lxc.cgroup.memory.memsw.limit_in_bytes = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
-
-        #   elsif vnode.vmem['hierarchy'] == 'v2'
-        #     f.puts "lxc.cgroup2.memory.high = #{vnode.vmem['soft_limit']}M" if vnode.vmem.has_key?('soft_limit') && vnode.vmem['soft_limit'] != ''
-
-        #     f.puts "lxc.cgroup2.memory.max = #{vnode.vmem['hard_limit']}M" if vnode.vmem.has_key?('hard_limit') && vnode.vmem['hard_limit'] != ''
-
-        #     f.puts "lxc.cgroup2.memory.swap.max = #{vnode.vmem['swap']}M" if vnode.vmem.has_key?('swap') && vnode.vmem['swap'] != ''
-        #   else
-        #     raise Distem::Lib::InvalidParameterError, "hierarchy must be 'v1' or 'v2'"
-        #   end
-        # end
-
-        # if vnode.filesystem && vnode.filesystem.disk_throttling \
-        #   && vnode.filesystem.disk_throttling.has_key?('limits')
-
-        #   raise Distem::Lib::MissingParameterError, 'hierarchy is required' if !vnode.filesystem.disk_throttling.has_key?('hierarchy')
-
-        #   hrchy = vnode.filesystem.disk_throttling['hierarchy']
-
-        #   vnode.filesystem.disk_throttling['limits'].each { |limit|
-        #     if limit.has_key?('device')
-        #       major, minor = `stat --printf %t,%T #{limit['device']}`.split(',').map{|n| n.to_i(16)}
-        #       raise Distem::Lib::InvalidParameterError, "Invalid device #{limit['device']}" if !$?.success?
-
-        #       f.puts "lxc.cgroup.devices.allow = b #{major}:#{minor} rwm #/dev/sdX"
-        #       wbps = limit.has_key?('write_limit')? limit['write_limit']: 'max'
-        #       rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
-
-        #       if hrchy == 'v2'
-        #         f.puts "lxc.cgroup2.io.max = #{major}:#{minor} wbps=#{wbps} rbps=#{rbps}"
-        #       elsif hrchy == 'v1'
-        #         f.puts "lxc.cgroup.blkio.throttle.write_bps_device = #{major}:#{minor} #{wbps}"
-        #         f.puts "lxc.cgroup.blkio.throttle.read_bps_device = #{major}:#{minor} #{rbps}"
-        #       else
-        #         raise Distem::Lib::InvalidParameterError, "hierarchy must be 'v1' or 'v2'"
-        #       end
-        #     end
-        #   }
-        # end
-
         #Deal with an issue when using systemd (infinite loop inducing high CPU load)
         #http://serverfault.com/questions/658052/systemd-journal-in-debian-jessie-lxc-container-eats-100-cpu
         if system('lxc-start --version')
