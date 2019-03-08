@@ -161,22 +161,31 @@ module Distem
         @vcpu = nil
       end
 
-      def add_vmem(opts)
-        @vmem = VMem.new(opts)
+      #Accounting of vnode max memory usage in pnode memory
+      #vnode's memory max use should be accounted only when container is not down
+      def account_memory()
+        @host.memory.allocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem && @host
+      end
+
+      def discard_memory()
+        @host.memory.deallocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @vmem && @host
       end
 
       def update_vmem(opts)
-        remove_vmem if @vmem
-        add_vmem(opts)
+        remove_vmem
+        @vmem = VMem.new(opts)
+        account_memory() if ![Resource::Status::DOWN, Resource::Status::FROZEN, Resource::Status::INIT, \
+                              Resource::Status::READY].include?(@status)
       end
 
       def remove_vmem
         if @vmem
-          @host.memory.deallocate({:mem => @vmem.mem, :swap => @vmem.swap}) if @host
+          discard_memory()
           @vmem.remove()
           @vmem = nil
         end
       end
+      #
 
       # Compare two virtual nodes
       # ==== Attributes

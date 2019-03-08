@@ -148,6 +148,8 @@ module Distem
         return {
           'capacity' => memory.capacity.to_s,
           'swap' => memory.swap.to_s,
+          'max_mem_usage' => memory.allocated_capacity.to_s,
+          'max_swap_usage' => memory.allocated_swap.to_s
         }
       end
 
@@ -155,6 +157,9 @@ module Distem
         return {
           'mem' => vmem.mem.to_s,
           'swap' => vmem.swap.to_s,
+          'hierarchy' => vmem.hierarchy,
+          'soft_limit' => vmem.soft_limit.to_s,
+          'hard_limit' => vmem.hard_limit.to_s
         }
       end
 

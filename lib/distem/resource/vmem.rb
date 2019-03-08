@@ -4,26 +4,38 @@ module Distem
 
     # Abstract representation of a virtual memory resource
     class VMem
-      # Max memory
+      attr_reader :hierarchy
+      # Max memory (cg1)
       attr_reader :mem
-      # Max swap memory
+      # Max swap memory (cg1/cg2)
       attr_reader :swap
+      # Hard limit (cg2)
+      attr_reader :hard_limit
+      # Soft limit (cg2)
+      attr_reader :soft_limit
 
       # Create a new VMem
       #
       def initialize(opts = nil)
-        @mem = @swap = nil
+        @mem = @swap = @hard_limit = @soft_limit = nil
         set(opts) if opts
       end
 
       # Set memory to a Vnode
       def set(opts)
-        @mem = opts['mem'].to_i if opts['mem']
-        @swap = opts['swap'].to_i if opts['swap']
+        @hierarchy = opts['hierarchy']
+        @mem = opts['mem']
+        @swap = opts['swap']
+        @hard_limit = opts['hard_limit']
+        @soft_limit = opts['soft_limit']
+        if @hierarchy == 'v2'
+          @mem = [@hard_limit, @soft_limit].reject{|v| v == 'max'}.compact.map{|n| n.to_i}.min
+          @mem = 'max' if @mem.nil? && [@hard_limit, @soft_limit].include?('max')
+        end
       end
 
       def remove
-        @mem = @swap = nil
+        @mem = @swap = @hard_limit = @soft_limit = nil
       end
     end
   end

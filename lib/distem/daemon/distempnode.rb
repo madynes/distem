@@ -221,7 +221,11 @@ module Distem
         names = [names] if !names.is_a?(Array)
         names.each_index { |i|
           name = names[i]
-          vnode = vnode_get(name)
+          begin
+            vnode = vnode_get(name)
+          rescue Lib::ResourceNotFoundError
+            next
+          end
           desc = descs.is_a?(Array) ? descs[i] : Marshal.load(Marshal.dump(descs))
           downkeys(desc)
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
@@ -240,7 +244,14 @@ module Distem
               vcpu_create(vnode.name,desc['vcpu'])
             end
           end
-          vnode.vmem = desc['vmem'] if desc['vmem']
+
+          vmem_update(vnode.name, desc['vmem']) if desc['vmem']
+          #vnode.vmem = desc['vmem'] if desc['vmem']
+
+          if vnode.status != Resource::Status::INIT
+            @node_config.vnode_reconfigure(vnode)
+          end
+
           if desc['vifaces']
             desc['vifaces'].each do |ifdesc|
               if vnode.get_viface_by_name(ifdesc['name'])
@@ -269,6 +280,7 @@ module Distem
         ret = vnode.dup
         vnode.vifaces.each { |viface| viface_remove(name,viface.name) }
         vnode.remove_vcpu()
+        vnode.remove_vmem()
         @node_config.vnode_remove(vnode)
         return ret
       end
@@ -785,7 +797,6 @@ module Distem
         return vcpu
       end
 
-
       def vfilesystem_create(vnodename,desc)
         vnode = vnode_get(vnodename)
 
@@ -799,6 +810,21 @@ module Distem
         desc['disk_throttling'] = nil if !desc.has_key?('disk_throttling')
 
         vnode.filesystem = Resource::FileSystem.new(CGI.unescape(desc['image']),desc['shared'],desc['cow'],desc['disk_throttling'])
+
+        return vnode.filesystem
+      end
+
+      def vfilesystem_update(vnodename, desc)
+        vnode = vnode_get(vnodename)
+        previous_dt = vnode.filesystem.disk_throttling
+
+        if desc && desc.has_key?('disk_throttling')
+          #can't update hrchy
+          desc['disk_throttling']['hierarchy'] = previous_dt['hierarchy'] if previous_dt && previous_dt.has_key?('hierarchy')
+          vnode.filesystem.disk_throttling = desc['disk_throttling']
+        end
+
+        @node_config.vnode_reconfigure(vnode)
 
         return vnode.filesystem
       end
@@ -819,6 +845,21 @@ module Distem
           archivepath = Lib::FileManager::compress(vnode.filesystem.path)
         end
         return archivepath
+      end
+
+      #Update the vmem description and reconfigure vnode
+      #to sync the cgroups limitations
+      def vmem_update(vnodename, desc)
+        vnode = vnode_get(vnodename)
+        previous_vmem = vnode.vmem
+        if desc
+          desc['hierarchy'] = previous_vmem.hierarchy if previous_vmem  #can't update hrchy
+          vnode.vmem = Resource::VMem.new(desc)
+        end
+        if previous_vmem
+          @node_config.vnode_reconfigure(vnode)
+        end
+        return vnode.vmem
       end
 
       # Create a new virtual network specifying his range of IP address (IPv4 atm).

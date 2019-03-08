@@ -78,9 +78,9 @@ module Distem
             block = Proc.new {
               Admin.pnode_run_server(pnode)
               cl = NetAPI::Client.new(target, 4568)
-              ret = cl.pnode_init(nil,desc,async)
+              ret = cl.pnode_init(nil, desc, async)
               # here ret should always contains one element
-              updateobj_pnode(pnode,ret)
+              updateobj_pnode(pnode, ret)
               pnode.status = Resource::Status::RUNNING
               if @admin_network && (target == @node_name)
                 vnetwork_sync(@admin_network,pnode)
@@ -390,8 +390,16 @@ module Distem
           vnode = vnode_get(name)
           vnode.sshkey = desc['ssh_key'] if desc['ssh_key'] and \
           (desc['ssh_key'].is_a?(Hash) or desc['ssh_key'].nil?)
-          vnode_attach(vnode.name,desc['host']) if desc['host']
-          vfilesystem_create(vnode.name,desc['vfilesystem']) if desc['vfilesystem']
+          vnode_attach(vnode.name, desc['host']) if desc['host']
+
+          if desc['vfilesystem']
+            if vnode.filesystem
+              vfilesystem_update(vnode.name, desc['vfilesystem'])
+            else
+              vfilesystem_create(vnode.name, desc['vfilesystem'])
+            end
+          end
+
           if desc['vcpu']
             if vnode.vcpu
               vcpu_update(vnode.name,desc['vcpu'])
@@ -408,10 +416,11 @@ module Distem
               end
             end
           end
-          vmem_create(vnode.name, desc['vmem']) if desc['vmem']
-          vnode_mode_update(vnode.name,desc['mode']) if desc['mode']
+          vmem_update(vnode.name, desc['vmem']) if desc['vmem']
+          vnode_mode_update(vnode.name, desc['mode']) if desc['mode']
           vnodes << vnode
         }
+
         vnode_status_update(names,description['status'],async) if description['status']
         return vnodes
       end
@@ -547,10 +556,10 @@ module Distem
               else
                 vnode.host = @daemon_resources.get_pnode_available(vnode)
               end
-              vnode.host.memory.allocate({:mem => vnode.vmem.mem, :swap => vnode.vmem.swap}) if vnode.vmem
               vnode.vcpu.attach if vnode.vcpu and !vnode.vcpu.attached?
             }
           end
+          @daemon_resources_lock.synchronize { vnode.account_memory() }
           vnodes << vnode
         }
         vnodesperpnode = Hash.new
@@ -656,6 +665,7 @@ module Distem
           }
           w.run
           vnodes.each { |vnode|
+            vnode.discard_memory()
             vnode.status = Resource::Status::DOWN
           }
         }
@@ -1154,33 +1164,53 @@ module Distem
       end
 
 
-      def vfilesystem_create(vnodename,desc)
+      def vfilesystem_create(vnodename, desc)
         vnode = vnode_get(vnodename)
         raise Lib::AlreadyExistingResourceError, 'filesystem' if vnode.filesystem
         raise Lib::MissingParameterError, "filesystem/image" unless \
         desc['image']
         desc['shared'] = parse_bool(desc['shared'])
         desc['cow'] = parse_bool(desc['cow'])
-        if desc.has_key?('disk_throttling') && desc['disk_throttling']
-          desc['disk_throttling'].each_key { |k|
-            raise Lib::InvalidParameterError, "filesystem/disk_throttling/#{k}" if !['device','read_limit', 'write_limit'].include?(k)
-          }
-          raise Lib::MissingParameterError, "filesystem/disk_throttling/device" if (desc['disk_throttling'].has_key?('read_limit') || desc['disk_throttling'].has_key?('write_limit')) && !desc['disk_throttling'].has_key?('device')
-        else
-          desc['disk_throttling'] = nil
+
+        if !vfilesystem_throttling_check(desc)
+            desc['disk_throttling'] = nil
         end
+
         vnode.filesystem = Resource::FileSystem.new(desc['image'],desc['shared'],desc['cow'],desc['disk_throttling'])
         return vnode.filesystem
       end
 
-      def vfilesystem_update(vnodename,desc)
+      def vfilesystem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        raise Lib::UninitializedResourceError, "filesystem" unless \
-        vnode.filesystem
+        raise Lib::UninitializedResourceError, "filesystem" unless vnode.filesystem
+
         vnode.filesystem.image = URI.encode(desc['image']) if desc['image']
         vnode.filesystem.shared = parse_bool(desc['shared']) if desc['shared']
         vnode.filesystem.cow = parse_bool(desc['cow']) if desc['cow']
+
+        if vfilesystem_throttling_check(desc) && vnode.status == Resource::Status::RUNNING
+          cl = NetAPI::Client.new(vnode.host.address, 4568)
+          cl.vfilesystem_update(vnode.name, desc)
+          vnode.filesystem.disk_throttling = desc['disk_throttling']
+        end
+
         return vnode.filesystem
+      end
+
+      #Check if a vfilesystem description correctly set the disk_throttling parameters
+      def vfilesystem_throttling_check(desc)
+        if desc.has_key?('disk_throttling') && desc['disk_throttling']
+          if desc['disk_throttling'].has_key?('limits')
+            raise Lib::InvalidParameterError, "filesystem/disk_throttling/limits" if !desc['disk_throttling']['limits'].is_a?(Array)
+            desc['disk_throttling']['limits'].each { |l|
+              raise Lib::MissingParameterError, "filesystem/disk_throttling/limits/device" \
+                if (l.has_key?('read_limit') || l.has_key?('write_limit')) && !l.has_key?('device')
+            }
+          end
+          raise Lib::InvalidParameterError, "filesystem/disk_throttling/hierarchy" \
+              if desc.has_key?('hierarchy') && !['v1', 'v2'].include?(desc['hierarchy'])
+          return true
+        end
       end
 
       # Retrieve informations about the virtual node filesystem
@@ -1659,10 +1689,14 @@ module Distem
         w.run
       end
 
-      def vmem_create(vnodename, opts)
+      def vmem_update(vnodename, desc)
         vnode = vnode_get(vnodename)
-        vnode.add_vmem(opts)
-        return opts
+        vnode.update_vmem(desc) #related to resource::Memory
+
+        if vnode.status == Resource::Status::RUNNING
+          cl = NetAPI::Client.new(vnode.host.address, 4568)
+          cl.vmem_update(vnode.name, desc)
+        end
       end
 
       def set_global_arptable(param = nil, arp_file = nil)
@@ -1757,7 +1791,7 @@ module Distem
         return hash
       end
 
-      def updateobj_pnode(pnode,hash)
+      def updateobj_pnode(pnode, hash)
         pnode.memory.capacity = hash['memory']['capacity'].split[0].to_i
         pnode.memory.swap = hash['memory']['swap'].split[0].to_i
 

@@ -9,8 +9,6 @@ module Distem
       PATH_DISTEM_LOGS='/var/log/distem/'
       # The directory used to store temporary files
       PATH_DISTEMTMP='/tmp/distem/'
-      # The cgroups directory to use
-      PATH_SYSV_CGROUP='/dev/cgroup'
       # The default maximum number of virual network interfaces (used with ifb)
       MAX_VIFACES=64
       # The default maximum number of PTY creatable on the physical machine
@@ -18,6 +16,11 @@ module Distem
 
       # The maximal number of virtual network interfaces that can be created on this machine
       @@vifaces_max=MAX_VIFACES
+
+      #The path to cgroup1 for this pnode (i.e /sys/fs/cgroup)
+      @cgroup1_path=nil
+      #The path to cgroup2 for this pnode (i.e /sys/fs/cgroup/unified)
+      @cgroup2_path=nil
 
       # Initialize a physical node (set cgroups, bridge, ifb, fill the PNode cpu and memory informations, ...)
       # ==== Attributes
@@ -50,24 +53,28 @@ module Distem
         Lib::Shell.run("rm -R #{PATH_DISTEMTMP}") if File.exist?(PATH_DISTEMTMP)
       end
 
-      def self.has_cgroups?
-        return Lib::Shell.run("mount | grep cgroup; true").empty?
-      end
-
-      # Initialize (mount) the CGroup filesystem that will be used by the system (LXC, ...)
+      # Set paths to the cgroups fs, mount them otherwise
       def self.set_cgroups
-        if has_cgroups?
-          Lib::Shell.run("mkdir #{PATH_SYSV_CGROUP}")
-          Lib::Shell.run("mount -t cgroup cgroup #{PATH_SYSV_CGROUP}")
-        end
+          #We assume cgroup1 is always mounted somewhere on a tmpfs: should work on most systems
+          @cgroup1_path = Lib::Shell.run("mount | grep cgroup |  grep tmpfs | cut -d ' ' -f3").lines.first.chomp
+          #
+          @cgroup2_path = Lib::Shell.run("mount | grep cgroup2 | cut -d ' ' -f3").lines.first.chomp
+          if @cgroup2_path == ''
+            @cgroup2_path = '/sys/fs/cgroup/unified'
+            Lib::Shell.run("mkdir -p #{@cgroup2_path}")
+            Lib::Shell.run("mount -t cgroup2 rw,nosuid,nodev,noexec,relatime #{@cgroup2_path}")
+          end
+          #Get the controllers available on the v2 hierarchy and activate them on the tree
+          #LXC does not do the following by itself, so we have to do it manually
+          #https://github.com/lxc/lxc/issues/2379
+          controllers = Lib::Shell.run("sed -r 's/([^ ]+)/+&/g' #{@cgroup2_path}/cgroup.controllers"\
+                                       "> #{@cgroup2_path}/cgroup.subtree_control")
       end
 
-      # Clean (umount) the CGroup filesystem used by the system
+      # Deactivate limits
       def self.unset_cgroups
-        if has_cgroups?
-          Lib::Shell.run("umount #{PATH_SYSV_CGROUP}")
-          Lib::Shell.run("rmdir #{PATH_SYSV_CGROUP}")
-        end
+          Lib::Shell.run("find #{@cgroup1_path}/*/lxc/* -depth -type d -print -exec rmdir {} \\;", true)
+          Lib::Shell.run("find #{@cgroup2_path}/lxc/* -depth -type d -print -exec rmdir {} \\;", true)
       end
 
       def self.set_pty(num=MAX_PTY)

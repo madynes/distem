@@ -56,6 +56,10 @@ module Distem
         raise unless vtraffic.is_a?(Resource::VIface::VTraffic)
       end
 
+      def visit_vmem(vmem) # :nodoc:
+        raise unless vmem.is_a?(Resource::VMem)
+      end
+
       def visit_bandwidth(limitbw) # :nodoc:
         raise unless limitbw.is_a?(Resource::Bandwidth)
       end
@@ -93,6 +97,9 @@ module Distem
         return str
       end
 
+      def visit_fixnum(fn)
+        return fn
+      end
 
       # Visit an Hash object, call the "visit" method for each *values* in the Hash.
       # ==== Attributes

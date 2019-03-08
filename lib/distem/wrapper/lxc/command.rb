@@ -9,11 +9,18 @@ module LXCWrapper # :nodoc: all
     def self.create(contname, configfile, wait=true)
       @@lxc.synchronize {
         _destroy(contname,wait)
-        lxc_version = get_lxc_version()
-        if lxc_version >= '1.0.8'
-          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none",true)
+        lxc_version = Gem::Version.new(get_lxc_version())
+
+        if lxc_version >= Gem::Version.new('3.0.0')
+          #Configuration file syntax has changed since LXC3, but it provides a
+          #binary to upate from legacy conf. files.
+          Distem::Lib::Shell.run("lxc-update-config -c #{configfile}", true)
+        end
+
+        if lxc_version >= Gem::Version.new('1.0.8')
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile} -t none", true)
         else
-          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}",true)
+          Distem::Lib::Shell.run("lxc-create -n #{contname} -f #{configfile}", true)
         end
       }
     end
@@ -44,6 +51,67 @@ module LXCWrapper # :nodoc: all
       @@lxc.synchronize {
         _stop(contname,wait)
       }
+    end
+
+    #Apply vnode specs. to the container (i.e: limits)
+
+    #Note on cgroups:
+    #V2 needs a recent kernel version, systemd >=238 and LXC>=3.0 as
+    #it requires the unified hierarchy to be enabled by default on the system.
+    #Otherwise manual setup of unified hierarchy is required on the system 
+    #(kernel parameters, mounting of cgroup2...) as well as the activation of the different
+    #controllers (memory, io, ...), on the unified tree. (see lib/distem/node/admin.rb)
+    #In any case, using v2 controllers requires cgroup_no_v1=c1,c2 in kernel parameters
+    #or to use a custom systemd configuration.
+    #Swap limitation requires swapaccount=1 for v1 or v2
+    def self.sync(vnode)
+      return unless _status(vnode.name) != Status::STOPPED
+
+      getv = lambda { |v| v == "max" ? "max" : "#{v}M" }
+
+      if vnode.vmem
+        if vnode.vmem.hierarchy == 'v1'
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.limit_in_bytes #{getv.call(vnode.vmem.mem)}") \
+            if vnode.vmem.mem && vnode.vmem.mem != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.memsw.limit_in_bytes #{getv.call(vnode.vmem.swap)}") \
+            if vnode.vmem.swap && vnode.vmem.swap != ''
+
+        elsif vnode.vmem.hierarchy == 'v2'
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.high #{getv.call(vnode.vmem.soft_limit)}") \
+            if vnode.vmem.soft_limit && vnode.vmem.soft_limit != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.max #{getv.call(vnode.vmem.hard_limit)}") \
+            if vnode.vmem.hard_limit && vnode.vmem.hard_limit != ''
+
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.swap.max #{getv.call(vnode.vmem.swap)}") \
+              if vnode.vmem.swap && vnode.vmem.swap != ''
+        end
+      end
+
+      if vnode.filesystem && vnode.filesystem.disk_throttling \
+        && vnode.filesystem.disk_throttling.has_key?('limits')
+
+        hrchy = vnode.filesystem.disk_throttling['hierarchy']
+
+        vnode.filesystem.disk_throttling['limits'].each { |limit|
+          if limit.has_key?('device')
+            major, minor = `stat --printf %t,%T #{limit['device']}`.split(',').map{|n| n.to_i(16)}
+            raise Distem::Lib::InvalidParameterError, "Invalid device #{limit['device']}" if !$?.success?
+
+            Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} devices.allow 'b #{major}:#{minor} rwm'")
+            wbps = limit.has_key?('write_limit')? limit['write_limit']: 'max'
+            rbps = limit.has_key?('read_limit')? limit['read_limit'] : 'max'
+
+            if hrchy == 'v2'
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} io.max '#{major}:#{minor} wbps=#{wbps} rbps=#{rbps}'")
+            elsif hrchy == 'v1'
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} blkio.throttle.write_bps_device '#{major}:#{minor} #{wbps}'")
+              Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} blkio.throttle.read_bps_device '#{major}:#{minor} #{rbps}'")
+            end
+          end
+        }
+      end
     end
 
     def self.clean(wait=false)
@@ -133,7 +201,7 @@ module LXCWrapper # :nodoc: all
     end
 
     def self._ls(cache=true)
-      return Distem::Lib::Shell.run('lxc-ls',true).split(/\n/)
+      return Distem::Lib::Shell.run('lxc-ls -1',true).split(/\n/)
     end
 
     def self._wait_disapear(contname)

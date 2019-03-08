@@ -693,13 +693,21 @@ module Distem
       end
 
       # Create a new memory limitation
-      #
+      # @param [String] vnodename The vnode's name to create
       # @param [String] mem The required amount of RAM
       # @param [String] swap The required amount of swap
+      # @param [String] hierarchy The hierarchy where memory controller is mounted (default to v1)
       # @return [Hash] The memory limitation
-      def vmem_create(vnodename, mem, swap = nil)
-        desc = { :mem => mem, :swap => swap}
+      def vmem_create(vnodename, mem, swap = nil, hierarchy = 'v1')
+        desc = { :mem => mem, :swap => swap, :hierarchy => hierarchy}
         post_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { :desc => desc })
+      end
+
+      # Update a memory limitation
+      # @param [String] vnodename The vnode's name to update
+      # @param [Hash] desc The memory limitation description
+      def vmem_update(vnodename, desc)
+        put_json("/vnodes/#{CGI.escape(vnodename)}/vmem", { 'desc' => desc })
       end
 
       # Fill the ARP tables of all the Vnodes
@@ -780,6 +788,7 @@ module Distem
           f = CLASSMAP.select { |i, j| v.is_a?(i) }.to_a.first
           raise "Dictionary contains an element of unsupported class #{v.class}." if f.nil?
           h2[k] = f.last.call(v)
+          h2[k] = h2[k].first if h2[k].is_a?(Array)
         }
         h2
       end
@@ -798,7 +807,7 @@ module Distem
           @resource[route].send(method, data) { |response, request, result|
             ret = check_error(result, response)
             if json then
-              ret = (ret == "") ? nil : JSON.parse(ret)
+              ret = (ret == "" || !ret.is_a?(String)) ? nil : JSON.parse(ret)
             end
           }
         end
