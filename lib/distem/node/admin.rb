@@ -58,8 +58,9 @@ module Distem
           #We assume cgroup1 is always mounted somewhere on a tmpfs: should work on most systems
           @cgroup1_path = Lib::Shell.run("mount | grep cgroup |  grep tmpfs | cut -d ' ' -f3").lines.first.chomp
           #
-          @cgroup2_path = Lib::Shell.run("mount | grep cgroup2 | cut -d ' ' -f3").lines.first.chomp
-          if @cgroup2_path == ''
+          @cgroup2_path = Lib::Shell.run("mount | grep cgroup2 | cut -d ' ' -f3").lines.first
+          @cgroup2_path = @cgroup2_path.chomp unless @cgroup2_path.nil?
+          unless @cgroup2_path.nil?
             @cgroup2_path = '/sys/fs/cgroup/unified'
             Lib::Shell.run("mkdir -p #{@cgroup2_path}")
             Lib::Shell.run("mount -t cgroup2 rw,nosuid,nodev,noexec,relatime #{@cgroup2_path}")
@@ -68,13 +69,14 @@ module Distem
           #LXC does not do the following by itself, so we have to do it manually
           #https://github.com/lxc/lxc/issues/2379
           controllers = Lib::Shell.run("sed -r 's/([^ ]+)/+&/g' #{@cgroup2_path}/cgroup.controllers"\
-                                       "> #{@cgroup2_path}/cgroup.subtree_control")
+                                       "> #{@cgroup2_path}/cgroup.subtree_control") unless @cgroup2_path.nil?
+
       end
 
       # Deactivate limits
       def self.unset_cgroups
           Lib::Shell.run("find #{@cgroup1_path}/*/lxc/* -depth -type d -print -exec rmdir {} \\;", true)
-          Lib::Shell.run("find #{@cgroup2_path}/lxc/* -depth -type d -print -exec rmdir {} \\;", true)
+          Lib::Shell.run("find #{@cgroup2_path}/lxc/* -depth -type d -print -exec rmdir {} \\;", true) unless @cgroup2_path.nil?
       end
 
       def self.set_pty(num=MAX_PTY)
