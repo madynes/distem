@@ -60,11 +60,6 @@ module Distem
           #
           @cgroup2_path = Lib::Shell.run("mount | grep cgroup2 | cut -d ' ' -f3").lines.first
           @cgroup2_path = @cgroup2_path.chomp unless @cgroup2_path.nil?
-          unless @cgroup2_path.nil?
-            @cgroup2_path = '/sys/fs/cgroup/unified'
-            Lib::Shell.run("mkdir -p #{@cgroup2_path}")
-            Lib::Shell.run("mount -t cgroup2 rw,nosuid,nodev,noexec,relatime #{@cgroup2_path}")
-          end
           #Get the controllers available on the v2 hierarchy and activate them on the tree
           #LXC does not do the following by itself, so we have to do it manually
           #https://github.com/lxc/lxc/issues/2379
