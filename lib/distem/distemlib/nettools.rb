@@ -6,8 +6,8 @@ module Distem
     class NetTools
       # Name used for the bridge set up on a physical machine
       DEFAULT_BRIDGE='br0'
-      VXLAN_BRIDGE_PREFIX='vxlanbr'
-      VXLAN_INTERFACE_PREFIX='vxlan'
+      VXLAN_BRIDGE_PREFIX='vxlbr'
+      VXLAN_INTERFACE_PREFIX='vxl'
       LOCALHOST='localhost' # :nodoc:
       @@nic_count=1
       @@addr_default=nil
