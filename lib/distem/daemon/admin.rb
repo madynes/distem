@@ -88,7 +88,7 @@ module Distem
 
         ret = ""
         Net::SSH.start(vnode.vifaces[0].address.to_s, 'root', :keys => ssh_keys_priv, :password => 'root') do |ssh|
-          ret = ssh.exec!(command)
+          ret = ssh.exec!(command).to_s
         end
 
         return ret

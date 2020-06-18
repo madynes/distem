@@ -164,7 +164,7 @@ module Distem
         check do
           desc = {}
           desc = JSON.parse(params['desc']) if params['desc']
-          target = (params['target'] == "") ? nil : JSON.parse(params['target'])
+          target = (params['target'] == "" or params['target'].nil?) ? nil : JSON.parse(params['target'])
           @body = @daemon.pnode_create(target,desc,params['async'])
         end
         return result!

@@ -75,7 +75,7 @@ class NetworkTesting < MiniTest::Test
     CommonTools.msg "## Starting vxlan transfert test"
     install_distem
     DistemTools.deploy_topology('2nodes_vxlan', @@pnodes, NETWORK)
-    sleep 10
+    sleep 20
     cmd ='dd if=/dev/urandom of=file bs=1M count=100'
     DistemTools.vnode_execute('node1', cmd)
     src_hash = DistemTools.vnode_execute('node1', 'md5sum file')
