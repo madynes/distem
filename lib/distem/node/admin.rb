@@ -70,8 +70,8 @@ module Distem
 
       # Deactivate limits
       def self.unset_cgroups
-          Lib::Shell.run("find #{@cgroup1_path}/*/lxc/* -depth -type d -print -exec rmdir {} \\;", true)
-          Lib::Shell.run("find #{@cgroup2_path}/lxc/* -depth -type d -print -exec rmdir {} \\;", true) unless @cgroup2_path.nil?
+          Lib::Shell.run("find #{@cgroup1_path}/ -depth -ipath '*/lxc/*' -type d -print -exec rmdir {} \\;", true)
+          Lib::Shell.run("find #{@cgroup2_path}/ -depth -ipath 'lxc/*' -type d -print -exec rmdir {} \\;", true) unless @cgroup2_path.nil?
       end
 
       def self.set_pty(num=MAX_PTY)
