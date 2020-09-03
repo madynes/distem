@@ -74,7 +74,7 @@ module LXCWrapper # :nodoc: all
           Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.limit_in_bytes #{getv.call(vnode.vmem.mem)}") \
             if vnode.vmem.mem && vnode.vmem.mem != ''
 
-          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.memsw.limit_in_bytes #{getv.call(vnode.vmem.swap)}") \
+          Distem::Lib::Shell::run("lxc-cgroup -n #{vnode.name} memory.memsw.limit_in_bytes #{getv.call(vnode.vmem.mem.to_i + vnode.vmem.swap.to_i)}") \
             if vnode.vmem.swap && vnode.vmem.swap != ''
 
         elsif vnode.vmem.hierarchy == 'v2'

@@ -434,7 +434,7 @@ Net::SSH::Multi.start do |session|
   exec(session,"grep -q '#{rule}' /etc/security/limits.conf; true || echo '#{rule} #{ULIMIT_OPEN_FILES}' >> /etc/security/limits.conf")
 
   # setup Debian repo
-  exec(session,"grep -q '#{options[:deb_repo]}' /etc/apt/sources.list || echo 'deb #{options[:deb_repo]} ./\ndeb-src #{options[:deb_repo]} ./' >> /etc/apt/sources.list")
+  exec(session,"grep -q '#{options[:deb_repo]}' /etc/apt/sources.list || echo 'deb [trusted=yes] #{options[:deb_repo]} ./\ndeb-src [trusted=yes] #{options[:deb_repo]} ./' >> /etc/apt/sources.list")
 
   msg("Updating debian packages list",MSG_INFO)
   exec(session,'apt-get update -q')

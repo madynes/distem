@@ -726,7 +726,7 @@ module Distem
       # @param [Hash] Options. Format is {'vnodes' => vnodes, 'timeout' => timeout, 'port' => port }. vnodes can be a single node (String) or several nodes (Array), if not specified, all the vnodes are considered. timeout is an integer value specified in seconds, if not specified the default value is 600 seconds. port is an integer value, if not specified the default value is 22 (SSH port).
       # @return true if the vnodes are ready or false if the timeout has been reached
       def wait_vnodes(opts = {})
-        return (post_json('/wait_vnodes', {'opts' => opts}) == ['true'])
+        return (post_json('/wait_vnodes', {'opts' => opts.to_json}) == ['true'])
       end
 
       protected
