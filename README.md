@@ -1,3 +1,8 @@
+# This repository is no longer updated. The project is now hosted at https://gitlab.inria.fr/distem/distem
+
+
+
+
 # Distem
 
 Distem is a distributed systems emulator. When doing research on Cloud, P2P,
